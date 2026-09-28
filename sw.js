@@ -1,5 +1,5 @@
 // Brainforge Service Worker: funktioniert offline. Seite: zuerst Netz (neueste Version), sonst Cache.
-const CACHE = 'bf-v1';
+const CACHE = 'bf-v2';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png', './h2c.js'];
 
 self.addEventListener('install', (e) => {
@@ -22,7 +22,7 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== location.origin) return;
   // Eigene Dateien: Netz zuerst (damit Updates sofort da sind), offline aus dem Cache
   e.respondWith(
-    fetch(req)
+    fetch(req, { cache: 'no-cache' })
       .then((r) => {
         if (r.ok) caches.open(CACHE).then((c) => c.put(req, r.clone()));
         return r;
