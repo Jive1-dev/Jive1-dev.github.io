@@ -103,3 +103,9 @@ Erzeugt von `tools/gen-skills.js`. 6 Leitern (Handstand, Planche, L-Sitz, Press,
 `leitern[] = {id, name, startUebung, stufen[] = {nr, uebung (exercises-ID), name, test: {wert, einheit, text}}}`.
 `_meta.startStand`: was Benaja laut Abschnitt 2 schon kann. Freischalten nur über bestandenen Test, nie Rückstufen als Strafe.
 `node tools/gen-skills.js exercises.json skills.json`
+
+## videos.json
+Erzeugt von `tools/gen-videos.py`. `videos["<id>"] = {id, url, titel, kanal|null, sprache, geprueft} | null`.
+**Alle `geprueft: false`:** youtube.com war aus Claude Bs Umgebung nicht erreichbar, die Links stammen nur aus Suchtreffern.
+Die App zeigt nur Videos mit `geprueft: true`. Benaja (oder ein Claude mit YouTube-Zugang) schaut jedes einmal an und setzt das Feld.
+Einbetten: `https://www.youtube-nocookie.com/embed/{id}`, erst nach Tippen laden.

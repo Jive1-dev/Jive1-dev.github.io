@@ -1,0 +1,487 @@
+{
+ "_meta": {
+  "version": 1,
+  "stand": "2026-11-01",
+  "autor": "Claude B",
+  "quelle": "Web-Suche vom 1.11.2026. Nur Links, die in Suchtreffern standen. Titel wie im Treffer.",
+  "geprueft": false,
+  "warnung": "youtube.com war aus der Arbeitsumgebung nicht erreichbar: Videos sind NICHT angeschaut, Kanal und Inhalt (auch Regel: keine okkulten Inhalte) sind nicht geprüft. Vor dem Einschalten jedes Video einmal ansehen und `geprueft` pro Eintrag auf true setzen. Ungeprüfte Videos zeigt die App nicht.",
+  "einbetten": "https://www.youtube-nocookie.com/embed/{id} erst nach Tippen laden.",
+  "ohneVideo": [
+   "assistpu",
+   "bridge",
+   "calf2",
+   "calfstretch",
+   "catcow",
+   "chintuck",
+   "circles",
+   "cossack",
+   "crunch",
+   "door",
+   "doorrow",
+   "doorrowlow",
+   "dragon",
+   "foot",
+   "ftplank",
+   "hipflex",
+   "hollowrock",
+   "hspu",
+   "hsshape",
+   "incpu",
+   "kneepu",
+   "kneeraise",
+   "legswing",
+   "pikecomp",
+   "pikelift",
+   "puhs",
+   "reary",
+   "scap",
+   "squat",
+   "straddle",
+   "strpress",
+   "support",
+   "thrustb",
+   "triext",
+   "tuckpress",
+   "twist",
+   "vsit",
+   "wallangel",
+   "wrist",
+   "wristcurl"
+  ]
+ },
+ "videos": {
+  "wrist": null,
+  "scap": null,
+  "circles": null,
+  "legswing": null,
+  "catcow": null,
+  "squat": null,
+  "door": null,
+  "chintuck": null,
+  "wallangel": null,
+  "hipflex": null,
+  "calfstretch": null,
+  "hswall": {
+   "id": "fj6lKSg5bSM",
+   "url": "https://www.youtube.com/watch?v=fj6lKSg5bSM",
+   "titel": "3 Ways to get into a Chest-To-Wall Handstand",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "hskick": {
+   "id": "karmVwMgErk",
+   "url": "https://www.youtube.com/watch?v=karmVwMgErk",
+   "titel": "How to Kick Up to Handstand - Handstands 101",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "hsfree": {
+   "id": "6DPl4QlAY4k",
+   "url": "https://www.youtube.com/watch?v=6DPl4QlAY4k",
+   "titel": "How to Handstand and Balance Freestanding",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "hsshape": null,
+  "hspu": null,
+  "pllean": {
+   "id": "wKV5zVJTYBo",
+   "url": "https://www.youtube.com/watch?v=wKV5zVJTYBo",
+   "titel": "How To Planche Lean Correctly",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "frog": {
+   "id": "La4D-klsHLQ",
+   "url": "https://www.youtube.com/watch?v=La4D-klsHLQ",
+   "titel": "How to Frogstand Tutorial - Beginner Calisthenics",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "crow": {
+   "id": "Q5wCVzRqaPY",
+   "url": "https://www.youtube.com/watch?v=Q5wCVzRqaPY",
+   "titel": "Calisthenics Skills Anyone Can Learn: The Crow Pose",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "tuckpl": {
+   "id": "mCcxZJSljgk",
+   "url": "https://www.youtube.com/watch?v=mCcxZJSljgk",
+   "titel": "Tuck Planche Tutorial",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "advtuck": {
+   "id": "M65xGWsyPNY",
+   "url": "https://www.youtube.com/watch?v=M65xGWsyPNY",
+   "titel": "ADVANCED TUCK PLANCHE Tutorial",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "straddle": null,
+  "support": null,
+  "tuckl": {
+   "id": "r-LQKNxGJB0",
+   "url": "https://www.youtube.com/watch?v=r-LQKNxGJB0",
+   "titel": "L-Sit Tutorial On Floor, Bar And Parallel Bars (6 Step-by-Step Guide)",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "onel": {
+   "id": "49pZak4cQ_0",
+   "url": "https://www.youtube.com/watch?v=49pZak4cQ_0",
+   "titel": "How To Do A Single Leg L-Sit On Parallettes - Supported L-Sit Progression Exercises",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "lsit": {
+   "id": "r-LQKNxGJB0",
+   "url": "https://www.youtube.com/watch?v=r-LQKNxGJB0",
+   "titel": "L-Sit Tutorial On Floor, Bar And Parallel Bars (6 Step-by-Step Guide)",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "vsit": null,
+  "pikecomp": null,
+  "pikelift": null,
+  "crowhs": {
+   "id": "8lxZFHGHIQ8",
+   "url": "https://www.youtube.com/watch?v=8lxZFHGHIQ8",
+   "titel": "Crow to Handstand Progressions Beginner To Advanced",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "tuckpress": null,
+  "strpress": null,
+  "puhs": null,
+  "ftplank": null,
+  "incpu": null,
+  "pu": {
+   "id": "s1X8e4JFdbE",
+   "url": "https://www.youtube.com/watch?v=s1X8e4JFdbE",
+   "titel": "How To Do Push Ups Correctly",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "deeppu": {
+   "id": "cydG4okCjYU",
+   "url": "https://www.youtube.com/watch?v=cydG4okCjYU",
+   "titel": "Deep Push Ups: Paralletes",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "declpu": {
+   "id": "9yoySai9DuI",
+   "url": "https://www.youtube.com/watch?v=9yoySai9DuI",
+   "titel": "How To Do A Decline Push Up",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "kneepu": null,
+  "pppu": {
+   "id": "RvA22_Hiouw",
+   "url": "https://www.youtube.com/watch?v=RvA22_Hiouw",
+   "titel": "Pseudo Planche Push Up Progression Tutorial for Beginners",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "pike": {
+   "id": "pHR5yG6xBps",
+   "url": "https://www.youtube.com/watch?v=pHR5yG6xBps",
+   "titel": "Pike Push Up Tutorial For Beginners (With Progressions)",
+   "kanal": "Pat Chadwick",
+   "sprache": "en",
+   "geprueft": false
+  },
+  "pikeel": {
+   "id": "GoMrYWx6Cy8",
+   "url": "https://www.youtube.com/watch?v=GoMrYWx6Cy8",
+   "titel": "Elevated Pike Push-Ups Tutorial: Perfect Form & Strong Shoulders",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "benchdip": {
+   "id": "AWz_7B1cch0",
+   "url": "https://www.youtube.com/watch?v=AWz_7B1cch0",
+   "titel": "How To Properly Do Tricep Chair Dips - 3 Common Mistakes",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "benchdips": {
+   "id": "AWz_7B1cch0",
+   "url": "https://www.youtube.com/watch?v=AWz_7B1cch0",
+   "titel": "How To Properly Do Tricep Chair Dips - 3 Common Mistakes",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "dip": {
+   "id": "fwfZchB1mvA",
+   "url": "https://www.youtube.com/watch?v=fwfZchB1mvA",
+   "titel": "Dips Proper Form (Chest vs. Triceps)",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "triext": null,
+  "curl": {
+   "id": "nBzLCE-dcRQ",
+   "url": "https://www.youtube.com/watch?v=nBzLCE-dcRQ",
+   "titel": "Dumbbell Biceps Curl (Both Arms & Alternate)",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "ohe": {
+   "id": "a9oPnZReIRE",
+   "url": "https://www.youtube.com/watch?v=a9oPnZReIRE",
+   "titel": "Dumbbell Overhead Tricep Extension - OPEX Exercise Library",
+   "kanal": "OPEX",
+   "sprache": "en",
+   "geprueft": false
+  },
+  "lat": {
+   "id": "3VcKaXpzqRo",
+   "url": "https://www.youtube.com/watch?v=3VcKaXpzqRo",
+   "titel": "How To: Dumbbell Side Lateral Raise",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "row": {
+   "id": "9kbvlaLSTpE",
+   "url": "https://www.youtube.com/watch?v=9kbvlaLSTpE",
+   "titel": "One Arm Dumbbell Row: Correct Form & 5 COMMON MISTAKES",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "rfly": {
+   "id": "UO_v23hHAdM",
+   "url": "https://www.youtube.com/watch?v=UO_v23hHAdM",
+   "titel": "Bent Over Dumbbell Rear Delt Flyes (Exercise Tutorial + Form Tips)",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "wristcurl": null,
+  "revlunge": {
+   "id": "MyqQRJ2lW7Q",
+   "url": "https://www.youtube.com/watch?v=MyqQRJ2lW7Q",
+   "titel": "Dumbbell Reverse Lunges (Tutorial + Tips)",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "sldl": {
+   "id": "Zfr6wizR8rs",
+   "url": "https://www.youtube.com/watch?v=Zfr6wizR8rs",
+   "titel": "The BEST Single-Leg RDL Tutorial (Romanian Deadlift)",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "hang": {
+   "id": "OT-wTpxP9uo",
+   "url": "https://www.youtube.com/watch?v=OT-wTpxP9uo",
+   "titel": "Everyone Skips This Before Pull-Ups (Dead Hang Basics)",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "pullup": {
+   "id": "rmdn5X_KLkY",
+   "url": "https://www.youtube.com/watch?v=rmdn5X_KLkY",
+   "titel": "The PERFECT Pull-Up (Full Guide)",
+   "kanal": "Saturn Movement",
+   "sprache": "en",
+   "geprueft": false
+  },
+  "negpu": {
+   "id": "gbPURTSxQLY",
+   "url": "https://www.youtube.com/watch?v=gbPURTSxQLY",
+   "titel": "How To Do a Negative Pull-Up",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "assistpu": null,
+  "doorrow": null,
+  "doorrowlow": null,
+  "reary": null,
+  "bss": {
+   "id": "VPhhE6bBzZE",
+   "url": "https://www.youtube.com/watch?v=VPhhE6bBzZE",
+   "titel": "How To Do Bulgarian Split Squats Correctly",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "bssdb": {
+   "id": "VPhhE6bBzZE",
+   "url": "https://www.youtube.com/watch?v=VPhhE6bBzZE",
+   "titel": "How To Do Bulgarian Split Squats Correctly",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "pistol": {
+   "id": "zSrpQDZwdD0",
+   "url": "https://www.youtube.com/watch?v=zSrpQDZwdD0",
+   "titel": "PISTOL SQUATS lernen (Technik Tutorial)",
+   "kanal": null,
+   "sprache": "de",
+   "geprueft": false
+  },
+  "boxpistol": {
+   "id": "6dV4hFahrpU",
+   "url": "https://www.youtube.com/watch?v=6dV4hFahrpU",
+   "titel": "6 Pistol Squat Progressions — Beginner to Advanced",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "bridge": null,
+  "thrust1": {
+   "id": "3KbkpCgW2pQ",
+   "url": "https://www.youtube.com/watch?v=3KbkpCgW2pQ",
+   "titel": "Single-Leg Glute Bridge: A Step-by-Step Guide",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "thrustb": null,
+  "nordic": {
+   "id": "K7Gr4M79JnY",
+   "url": "https://www.youtube.com/watch?v=K7Gr4M79JnY",
+   "titel": "Nordic Hamstring Curl richtig ausführen (Zuhause, im Studio & Alternativen)",
+   "kanal": null,
+   "sprache": "de",
+   "geprueft": false
+  },
+  "calf2": null,
+  "calf1": {
+   "id": "Ux47hU-ePXs",
+   "url": "https://www.youtube.com/watch?v=Ux47hU-ePXs",
+   "titel": "How to Do Single Leg Calf Raises",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "calf1db": {
+   "id": "Ux47hU-ePXs",
+   "url": "https://www.youtube.com/watch?v=Ux47hU-ePXs",
+   "titel": "How to Do Single Leg Calf Raises",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "tib": {
+   "id": "UmHbtN0iFMg",
+   "url": "https://www.youtube.com/watch?v=UmHbtN0iFMg",
+   "titel": "How To Do a Tibialis Anterior Wall Raise",
+   "kanal": "Zenia Wood",
+   "sprache": "en",
+   "geprueft": false
+  },
+  "foot": null,
+  "cossack": null,
+  "sideplank": {
+   "id": "0M-erHBl48U",
+   "url": "https://www.youtube.com/watch?v=0M-erHBl48U",
+   "titel": "Side Plank Tutorial - Proper Form + 5 Progressions",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "crunch": null,
+  "hollowt": {
+   "id": "HAfUt2Cco74",
+   "url": "https://www.youtube.com/watch?v=HAfUt2Cco74",
+   "titel": "HOLLOW BODY HOLD Progressions (Beginner to Advanced)",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "hollow": {
+   "id": "HAfUt2Cco74",
+   "url": "https://www.youtube.com/watch?v=HAfUt2Cco74",
+   "titel": "HOLLOW BODY HOLD Progressions (Beginner to Advanced)",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "hollowrock": null,
+  "kneeraise": null,
+  "legraise": {
+   "id": "vb-rnjF9g8A",
+   "url": "https://www.youtube.com/watch?v=vb-rnjF9g8A",
+   "titel": "How to Do Lying Leg Raises",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "dragon": null,
+  "twist": null,
+  "jumpsq": {
+   "id": "JbuaU19KVGM",
+   "url": "https://www.youtube.com/watch?v=JbuaU19KVGM",
+   "titel": "Squat Jump Progression",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "broadjump": {
+   "id": "z1IDJMMg024",
+   "url": "https://www.youtube.com/watch?v=z1IDJMMg024",
+   "titel": "How to do the Broad Jump Properly",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "dbpress": {
+   "id": "bmy7tIopNt4",
+   "url": "https://www.youtube.com/watch?v=bmy7tIopNt4",
+   "titel": "Standing Dumbbell Shoulder Press (Tutorial + Tips)",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "goblet": {
+   "id": "zsN2WvklwDk",
+   "url": "https://www.youtube.com/watch?v=zsN2WvklwDk",
+   "titel": "Dumbbell Goblet Squat: Correct Form & Common Mistakes",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  },
+  "hangknee": {
+   "id": "MRcpnl4G3YA",
+   "url": "https://www.youtube.com/watch?v=MRcpnl4G3YA",
+   "titel": "Hanging Knee Raise Tutorial - True Form",
+   "kanal": null,
+   "sprache": "en",
+   "geprueft": false
+  }
+ }
+}
