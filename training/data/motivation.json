@@ -1,0 +1,162 @@
+{
+ "_meta": {
+  "version": 1,
+  "stand": "2026-11-01",
+  "autor": "Claude B",
+  "regeln": "Höchstens 2 Sätze pro Training (Start und Ende), nie im Pausen-Knopf (Regel 1). Nie derselbe Satz zweimal in einer Woche. Kein Satz rät zum Aufhören (Regel 6).",
+  "zitate": "Übersetzungen von Claude B, sinngemäss nah am englischen Babbitt/Perrin-Text bzw. Herodot. Stellen per Web-Suche geprüft (Perseus/Thayer). Plutarch schrieb Jahrhunderte später; die Sprüche sind Überlieferung, keine Tonaufnahme.",
+  "bibel": "Stellen korrekt, Text bewusst nur sinngemäss in einfachem Deutsch (kein Bibelzitat im Wortlaut). Die App kann den Originaltext verlinken, z. B. in seiner eigenen Bibel nachlesen.",
+  "raenge": "Eine Woche zählt, wenn mindestens 4 von 6 Trainingstagen gemacht sind (auch Minimalversion)."
+ },
+ "zitate": [
+  {
+   "text": "Mit ihm oder auf ihm.",
+   "wer": "eine spartanische Mutter, als sie ihrem Sohn den Schild gab",
+   "quelle": "Plutarch, Aussprüche spartanischer Frauen (Moralia 241F)",
+   "bezug": "Komm mit erledigter Arbeit zurück, nicht mit Ausreden."
+  },
+  {
+   "text": "Komm und hol sie.",
+   "wer": "Leonidas, als Xerxes die Waffen der Spartaner verlangte",
+   "quelle": "Plutarch, Aussprüche der Spartaner, Leonidas 11 (Moralia 225C–D)",
+   "bezug": "Was du dir erarbeitet hast, gibst du nicht her."
+  },
+  {
+   "text": "Umso besser: dann kämpfen wir im Schatten.",
+   "wer": "Dienekes bei den Thermopylen, als man ihm sagte, die Pfeile der Perser würden die Sonne verdunkeln",
+   "quelle": "Herodot, Historien 7,226",
+   "bezug": "Schwierige Umstände sind kein Grund, nicht anzutreten."
+  },
+  {
+   "text": "Wenn.",
+   "wer": "die Spartaner auf Philipps Drohung, er werde Lakonien zerstören, wenn er einmarschiere",
+   "quelle": "Plutarch, Über die Geschwätzigkeit (Moralia 511A)",
+   "bezug": "Wenig reden, viel tun."
+  },
+  {
+   "text": "Die Spartaner fragen nicht, wie viele Feinde es sind, sondern wo sie sind.",
+   "wer": "König Agis",
+   "quelle": "Plutarch, Aussprüche der Spartaner, Agis (Moralia 215D)",
+   "bezug": "Nicht zählen, wie viel noch kommt. Die nächste Übung machen."
+  },
+  {
+   "text": "Gut befestigt ist die Stadt, die von tapferen Männern umgeben ist und nicht von Ziegeln.",
+   "wer": "Lykurg",
+   "quelle": "Plutarch, Leben des Lykurg, Kap. 19 (Plutarch schreibt selbst, dass die Echtheit unsicher ist)",
+   "bezug": "Deine Stärke baust du selbst, Tag für Tag."
+  }
+ ],
+ "saetze": {
+  "start": [
+   "Eine Übung nach der anderen. Los.",
+   "Heute zählt nur heute.",
+   "Antreten. Der Rest kommt von selbst.",
+   "Disziplin ist, es auch dann zu machen, wenn du keine Lust hast.",
+   "Klein anfangen, sauber machen, dranbleiben."
+  ],
+  "ende": [
+   "Erledigt. Morgen wieder.",
+   "Gute Arbeit. Jetzt essen und schlafen, dann wachsen die Muskeln.",
+   "Ein Training mehr auf deinem Schild.",
+   "Das war ein Schritt nach vorne. Genau so.",
+   "Heute gemacht. Das zählt."
+  ],
+  "rekord": [
+   "Neuer Bestwert. Das ist der Beweis, dass es wirkt.",
+   "Mehr als letztes Mal. Genau darum geht es.",
+   "Rekord. Merk dir das Gefühl."
+  ],
+  "leichtereStufe": [
+   "Leichtere Stufe ist kein Rückschritt. Sauber schlägt schwer.",
+   "Gute Wahl. So bleibt die Technik sauber.",
+   "Auch die Spartaner haben mit den Grundlagen angefangen."
+  ],
+  "verpassterTag": [
+   "Kein Problem. Heute geht es weiter.",
+   "Ein Tag fehlt, die Woche läuft weiter. Antreten.",
+   "Wichtig ist nicht der verpasste Tag, sondern der nächste."
+  ],
+  "deload": [
+   "Leichte Woche: Jetzt wird der Körper stärker. Nicht mehr machen als geplant.",
+   "Erholung gehört zum Training. Diese Woche ist Teil des Plans."
+  ],
+  "testwoche": [
+   "Testwoche: Zeig, was du in 13 Wochen gebaut hast.",
+   "Heute misst du deinen Fortschritt. Volle Kraft, saubere Technik."
+  ]
+ },
+ "raenge": [
+  {
+   "abWochen": 0,
+   "name": "Rekrut",
+   "text": "Du hast angefangen. Das schaffen viele nicht."
+  },
+  {
+   "abWochen": 4,
+   "name": "Agoge",
+   "text": "Agoge hiess die Ausbildung der Spartaner. Du bist mitten drin."
+  },
+  {
+   "abWochen": 13,
+   "name": "Hoplit",
+   "text": "Hopliten waren die Fusssoldaten mit Schild und Speer. Phase I geschafft."
+  },
+  {
+   "abWochen": 26,
+   "name": "Spartiat",
+   "text": "Spartiaten waren die voll ausgebildeten Bürger von Sparta. Halbes Jahr geschafft."
+  },
+  {
+   "abWochen": 39,
+   "name": "Lochagos",
+   "text": "Ein Lochagos führte eine Einheit an. Drei Phasen geschafft."
+  },
+  {
+   "abWochen": 52,
+   "name": "Polemarch",
+   "text": "Der Polemarch führte das Heer. Ein ganzes Jahr Disziplin."
+  }
+ ],
+ "bibel": [
+  {
+   "stelle": "1. Korinther 9,24–27",
+   "sinngemaess": "Lauft so, dass ihr den Preis gewinnt. Jeder Wettkämpfer übt Disziplin in allem."
+  },
+  {
+   "stelle": "Philipper 4,13",
+   "sinngemaess": "Ich kann alles durch Christus, der mir Kraft gibt."
+  },
+  {
+   "stelle": "Jesaja 40,31",
+   "sinngemaess": "Die auf den Herrn hoffen, bekommen neue Kraft. Sie laufen und werden nicht müde."
+  },
+  {
+   "stelle": "Hebräer 12,1",
+   "sinngemaess": "Lasst uns mit Ausdauer den Lauf laufen, der vor uns liegt."
+  },
+  {
+   "stelle": "Hebräer 12,11",
+   "sinngemaess": "Jede Schulung ist im Moment nicht angenehm, aber später bringt sie Frucht."
+  },
+  {
+   "stelle": "Galater 6,9",
+   "sinngemaess": "Lasst uns nicht müde werden, Gutes zu tun. Zur richtigen Zeit werden wir ernten."
+  },
+  {
+   "stelle": "Kolosser 3,23",
+   "sinngemaess": "Was ihr tut, das tut von Herzen, als für den Herrn und nicht für Menschen."
+  },
+  {
+   "stelle": "2. Timotheus 4,7",
+   "sinngemaess": "Ich habe den guten Kampf gekämpft, den Lauf vollendet, den Glauben bewahrt."
+  },
+  {
+   "stelle": "1. Timotheus 4,8",
+   "sinngemaess": "Körperliches Training nützt etwas, der Glaube aber nützt für alles."
+  },
+  {
+   "stelle": "Josua 1,9",
+   "sinngemaess": "Sei stark und mutig. Hab keine Angst, denn Gott ist mit dir."
+  }
+ ]
+}
