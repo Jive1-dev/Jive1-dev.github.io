@@ -82,7 +82,19 @@ const meta = {
     "Skill": "Ein Kunststück wie Handstand oder Planche. Braucht Übung, nicht nur Kraft.",
     "Halten": "In einer Position bleiben, ohne dich zu bewegen. Gezählt wird in Sekunden.",
     "Negativ": "Nur den Rückweg machen, ganz langsam. Z. B. beim Klimmzug oben starten und langsam runter.",
-    "Rumpf": "Bauch, Rücken und Seiten zusammen: die Mitte vom Körper."
+    "Rumpf": "Bauch, Rücken und Seiten zusammen: die Mitte vom Körper.",
+    "Planche": "Skill: Körper waagrecht in der Luft, nur die Hände am Boden, Arme gestreckt.",
+    "Pike": "Hüfte hoch, Körper wie ein umgedrehtes «V».",
+    "Tuck": "Englisch für «angezogen»: Knie eng an die Brust.",
+    "L-Sitz": "Auf den Händen stützen, Beine gestreckt nach vorne: der Körper bildet ein «L».",
+    "Stütz": "Auf gestreckten Armen das ganze Gewicht tragen, Füsse in der Luft.",
+    "Hohlkreuz": "Unterer Rücken stark nach innen gebogen. Vermeiden: Bauch und Po anspannen.",
+    "Parallettes": "Zwei kleine Griffe für den Boden. Schonen die Handgelenke.",
+    "Grätsch": "Beine weit auseinander, gestreckt.",
+    "Rad": "Rausfallen aus dem Handstand: eine Hand zur Seite setzen und seitlich abrollen wie beim Radschlagen.",
+    "Rist": "Die Oberseite vom Fuss (wo die Schuhbändel sind).",
+    "explosiv": "So schnell und kräftig wie möglich.",
+    "Krähe": "Hände am Boden, Knie auf den Oberarmen, Füsse in der Luft."
   },
   handgelenkTipp: "Handgelenke drücken? Handtuch unter die Handballen oder Parallettes nehmen.",
   stoppRegel: "Sofort aufhören nur bei: stechendem Schmerz im Gelenk, Schwindel, Schwarzwerden vor den Augen oder Schmerz in der Brust. Muskelbrennen und Müdigkeit sind normal und gewollt."
