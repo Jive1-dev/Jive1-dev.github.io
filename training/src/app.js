@@ -118,7 +118,7 @@ function rank(){
   const r = MOT.raenge || MOT.raenge_list || [{ab:0,name:"Rekrut"},{ab:2,name:"Agoge-Schüler"},{ab:4,name:"Hoplit"},{ab:8,name:"Veteran"},{ab:13,name:"Krieger"},{ab:26,name:"Spartiat"},{ab:39,name:"Polemarch"},{ab:52,name:"Legende"}];
   const w = weeksDone(); let cur = r[0], next = null;
   r.forEach((x, i) => { const ab = x.ab ?? x.wochen ?? 0; if (w >= ab){ cur = x; next = r[i+1] || null; } });
-  return { name: cur.name, next, w };
+  return { name: cur.name, text: cur.text || "", next, w };
 }
 function streak(){
   let k = today(), n = 0; if (!S.logs[k]?.done) k = addDays(k, -1);
@@ -218,7 +218,7 @@ function viewHeute(){
         <h1 class="title-xl" style="margin-top:8px">${esc(day.name)}</h1>
         <p class="muted" style="margin-top:4px">${esc(day.muskelText || "")}</p>
         <div class="chips" style="margin-top:10px">${(day.muskeln || []).slice(0, 5).map(m => `<span class="mchip">${esc(muscleShort(m))}</span>`).join("")}</div>
-        ${week.typ !== "normal" ? `<p class="hint" style="margin-top:10px">${week.typ === "deload" ? "Leichte Woche: weniger Runden. Sehnen und Gelenke holen auf." : "Testwoche: Zeig, was du gewonnen hast."}</p>` : ""}
+        ${week.typ !== "normal" ? `<p class="hint" style="margin-top:10px">${esc(week.typ === "deload" ? (line("deload") || "Leichte Woche: weniger Runden. Sehnen und Gelenke holen auf.") : (line("testwoche") || "Testwoche: Zeig, was du gewonnen hast."))}</p>` : ""}
         ${day.fortschritt ? `<p class="hint" style="margin-top:10px">${esc(day.fortschritt)}</p>` : ""}
       </div>
       ${log.done ? `<div class="card"><div class="kicker">Erledigt</div><h3>Agoge bestanden ✓</h3><p class="muted" style="margin-top:6px">${esc(line("ende"))}</p>
@@ -238,11 +238,12 @@ function viewHeute(){
       </div>`}`;
   }
   $("#view").innerHTML = `<div class="stack">
-    ${q ? `<div class="quote"><p>«${esc(q.text)}»</p><small>${esc(q.quelle || q.stelle || "")}</small></div>` : ""}
+    ${q ? `<div class="quote"><p>«${esc(q.text)}»</p><small>${esc([q.wer, q.quelle || q.stelle].filter(Boolean).join(" · "))}</small></div>` : ""}
     ${main}
     <div class="card"><div class="split"><span class="kicker" style="margin:0">Wochenschild</span><span class="small num">${weekCount(k)} von 6 diese Woche</span></div>
       <div style="margin-top:10px">${weekShields(k)}</div>
-      <p class="small" style="margin-top:8px">Rang: <b>${esc(r.name)}</b>${r.next ? ` · «${esc(r.next.name)}» nach ${r.next.ab ?? r.next.wochen} Wochen mit mindestens 4 Trainings` : ""}</p></div>
+      <p class="small" style="margin-top:8px">Rang: <b>${esc(r.name)}</b>${r.text ? ` · ${esc(r.text)}` : ""}${r.next ? ` · «${esc(r.next.name)}» nach ${r.next.ab ?? r.next.wochen} Wochen mit mindestens 4 Trainings` : ""}</p></div>
+    ${(() => { const v = (MOT.bibel || [])[(weekOf(k) % Math.max(1, (MOT.bibel || []).length) + (MOT.bibel || []).length) % Math.max(1, (MOT.bibel || []).length)]; return v ? `<div class="card"><div class="kicker">Vers der Woche</div><p>${esc(v.sinngemaess || v.text || "")}</p><p class="small" style="margin-top:6px">${esc(v.stelle)} (sinngemäss)</p></div>` : ""; })()}
     <div class="card"><div class="kicker">Selbst eintragen</div><p class="small">Extra trainiert? Trag es ein, es zählt für Rekorde.</p>${extraForm()}</div>
   </div>`;
   $("#go")?.addEventListener("click", () => { log.started ||= Date.now(); save(); location.hash = "#agoge"; });
@@ -320,7 +321,8 @@ function renderStep(steps, log, k){
   const i = log.pos, s = steps[i], u = EX[s.id] || {name: exName(s.id), schritte:[], muskeln:[], fehler:[]};
   const h = history(s.id, k), next = steps[i + 1];
   const started = log.started || Date.now(); log.started = started;
-  const remainMin = steps.slice(i).reduce((a, x) => a + (isSec(x.einheit) ? (x.ziel || 20) : (x.ziel || 10) * 3) + x.pause, 0) / 60;
+  const planMin = log.short ? Math.min(25, progDay(k).day.minuten) : progDay(k).day.minuten;
+  const remainMin = planMin * (1 - i / steps.length);
   const endAt = new Date(Date.now() + remainMin * 6e4);
   const prev = log.sets[s.key]?.v;
   const startVal = prev ?? (h.last != null ? h.last : (s.ziel || 0));
@@ -336,18 +338,18 @@ function renderStep(steps, log, k){
     <div class="ag-card">
       ${i === 0 ? `<p class="hint">Agoge: so hiess die Ausbildung der Spartaner. Hier immer nur eine Übung, dann die nächste.</p>` : ""}
       <div class="eyebrow">${esc(s.block === "paar" ? "Supersatz" : s.title)}${s.rounds > 1 ? ` · ${s.rounds - s.r === 0 ? "letztes Mal" : `noch ${s.rounds - s.r + 1} Mal`}` : ""}</div>
-      ${u.handgelenk && log.wrist == null ? `<div class="card"><div class="kicker">Handgelenke heute?</div><div class="row"><button class="chip grow" data-wr="ok">Gut</button><button class="chip grow" data-wr="zwickt">Zwickt</button></div></div>` : ""}
+      ${u.handgelenk && s.block !== "aufwaermen" && log.wrist == null ? `<div class="card"><div class="kicker">Handgelenke heute?</div><div class="row"><button class="chip grow" data-wr="ok">Gut</button><button class="chip grow" data-wr="zwickt">Zwickt</button></div></div>` : ""}
       ${figSVG(s.id, u.muskeln || [])}
       <h2 class="ag-name">${esc(u.name)}</h2>
       <div class="chips">${(u.muskeln || []).slice(0, 4).map(m => `<span class="mchip">${esc(muscleShort(m))}</span>`).join("")}</div>
       <div class="goal"><b class="num">${esc(goal)}</b><span>${esc(s.test ? (s.text || "") : unitText(s.einheit))}${s.kg ? ` · ${S.settings.hantelKg} kg` : ""}</span></div>
       ${h.last != null ? `<div class="beat"><span>Letztes Mal <b class="num">${h.last}</b></span><span>Heute? <b class="num">${h.last + 1}</b></span><span>Rekord <b class="num">${h.best}</b></span></div>` : ""}
       ${s.tempo ? `<p class="hint">Tempo: ${esc(s.tempo)}</p>` : ""}
-      ${u.handgelenk ? `<p class="hint">${log.wrist === "zwickt" ? "Heute zwicken die Handgelenke: auf die Parallettes oder auf die Fäuste, Handtuch unter die Handballen, weniger weit lehnen. Sticht es: «Schmerz?» tippen." : esc(META.handgelenkTipp)}</p>` : ""}
+      ${u.handgelenk && (log.wrist === "zwickt" || !log.wristTip || log.wristTip === s.key) ? `<p class="hint">${log.wrist === "zwickt" ? "Heute zwicken die Handgelenke: auf die Parallettes oder auf die Fäuste, Handtuch unter die Handballen, weniger weit lehnen. Sticht es: «Schmerz?» tippen." : esc(META.handgelenkTipp)}</p>` : ""}
       ${(() => { const f = feelHist(s.id, k); return f.length >= 2 && f.every(x => x === "leicht") && u.schwerer && EX[u.schwerer] ? `<div class="beat"><span>Zweimal «leicht». Bereit für <b>${esc(EX[u.schwerer].name)}</b>?</span><button class="chip" id="harder">Ja</button></div>` : ""; })()}
       <ol class="steps">${(u.schritte || []).map(t => `<li>${glossify(t)}</li>`).join("")}</ol>
       <details class="more"><summary>Fehler vermeiden</summary><ul class="steps" style="margin-top:6px">${(u.fehler || []).map(t => `<li>${esc(t)}</li>`).join("")}</ul>${u.sicherheit ? `<p class="small" style="margin-top:6px">${esc(u.sicherheit)}</p>` : ""}</details>
-      ${vid ? `<div id="vidSlot"><button class="btn wide" id="vid">${ICON.play}Video ansehen${vid.kanal ? ` · ${esc(vid.kanal)}` : ""}</button></div>` : ""}
+      ${vid && (S.videoOk || {})[s.id] !== false ? `<div id="vidSlot"><button class="btn wide" id="vid">${ICON.play}Video ansehen${vid.kanal ? ` · ${esc(vid.kanal)}` : ""}</button>${(S.videoOk || {})[s.id] ? "" : `<p class="small" style="margin-top:4px">Aus einer Suche, von uns noch nicht angeschaut (englisch).</p>`}</div>` : ""}
       ${isSec(s.einheit) ? `<button class="watch" id="watch">Stoppuhr starten</button>` : ""}
       <div class="stepper"><button id="minus" aria-label="weniger">−</button><input id="val" class="num" type="number" inputmode="numeric" min="0" value="${startVal}" aria-label="${isSec(s.einheit) ? "Sekunden" : "Wiederholungen"}"><button id="plus" aria-label="mehr">+</button></div>
       ${showKg ? `<div class="row small"><span>Hanteln</span><button class="chip" id="kgm">−</button><b class="num" id="kgv">${S.settings.hantelKg} kg</b><button class="chip" id="kgp">+</button></div>` : ""}
@@ -364,6 +366,7 @@ function renderStep(steps, log, k){
       </div>
       ${next ? `<p class="next">Danach: ${esc(exName(next.id))}</p>` : ""}
     </div>`;
+  if (u.handgelenk && !log.wristTip){ log.wristTip = s.key; save(); }
   const clock = () => { const el = $("#clock"); if (el) el.textContent = fmt((Date.now() - started) / 1000); };
   clock(); const clockIv = setInterval(clock, 1000);
   const val = $("#val");
@@ -374,7 +377,9 @@ function renderStep(steps, log, k){
     const m = String(vid.url).match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([\w-]{11})/);
     const link = `<a class="small" href="${esc(vid.url)}" target="_blank" rel="noopener">Auf YouTube öffnen</a>`;
     if (!navigator.onLine){ $("#vidSlot").innerHTML = `<p class="small">Offline: Video geht nur mit Internet.</p>`; return; }
-    $("#vidSlot").innerHTML = m ? `<div class="video-box"><iframe src="https://www.youtube-nocookie.com/embed/${m[1]}?rel=0&modestbranding=1&playsinline=1" title="${esc(vid.titel || u.name)}" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe></div><p style="margin-top:6px">${link}</p>` : link;
+    $("#vidSlot").innerHTML = (m ? `<div class="video-box"><iframe src="https://www.youtube-nocookie.com/embed/${m[1]}?rel=0&modestbranding=1&playsinline=1" title="${esc(vid.titel || u.name)}" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>` : "") +
+      `<div class="row wrap" style="margin-top:6px">${link}<span class="grow"></span><span class="small">Zeigt es die Übung gut?</span><button class="chip" data-vok="1">Passt</button><button class="chip" data-vok="0">Nein</button></div>`;
+    $$("[data-vok]").forEach(c => c.onclick = () => { S.videoOk ||= {}; S.videoOk[s.id] = c.dataset.vok === "1"; save(); toast(c.dataset.vok === "1" ? "Gemerkt: Video passt." : "Ausgeblendet. Danke."); if (c.dataset.vok !== "1") $("#vidSlot").remove(); });
   });
   // Stoppuhr im Knopf: 3 Sek Vorlauf, dann zählt sie hoch, tippen = Stopp
   $("#watch")?.addEventListener("click", () => {
@@ -412,7 +417,7 @@ function renderStep(steps, log, k){
   $$("[data-wr]").forEach(c => c.onclick = () => { log.wrist = c.dataset.wr; save(); clearInterval(clockIv); renderStep(steps, log, k); mountFigs($("#view")); });
   $("#harder")?.addEventListener("click", () => { log.swaps[`${s.bi}.${s.ui}`] = u.schwerer; save(); toast(`Neue Stufe: ${EX[u.schwerer].name}`); clearInterval(clockIv); viewAgoge(); mountFigs($("#view")); });
   $("#easier").onclick = () => {
-    if (u.leichter && EX[u.leichter]){ log.swaps[`${s.bi}.${s.ui}`] = u.leichter; save(); toast(`Leichtere Stufe: ${EX[u.leichter].name}`); clearInterval(clockIv); viewAgoge(); mountFigs($("#view")); }
+    if (u.leichter && EX[u.leichter]){ log.swaps[`${s.bi}.${s.ui}`] = u.leichter; save(); toast(`Leichtere Stufe: ${EX[u.leichter].name}. ${line("leichtereStufe")}`); clearInterval(clockIv); viewAgoge(); mountFigs($("#view")); }
     else toast(u.leichterTipp || "Weniger Wiederholungen oder langsamer, dafür sauber.");
   };
   $("#swap").onclick = () => {
@@ -445,10 +450,10 @@ function viewBericht(){
     ${logoSVG(96)}
     <div class="eyebrow">Kampfbericht · ${longDate(k)}</div>
     <h1 class="title-xl">${log.done ? "Agoge bestanden" : "Noch nicht fertig"}</h1>
-    <div class="tiles" style="width:100%"><div class="tile"><b class="num">${dur ? fmt(dur) : "–"}</b><span>Minuten</span></div><div class="tile"><b class="num">${Object.keys(log.sets).length}</b><span>Sätze</span></div>
+    <div class="tiles" style="width:100%"><div class="tile"><b class="num">${dur ? fmt(dur) : "–"}</b><span>Minuten</span></div><div class="tile"><b class="num">${Object.values(log.sets).filter(x => !["aufwaermen","dehnen","haltung"].includes(EX[x.id]?.gruppe)).length}</b><span>harte Sätze</span></div>
       <div class="tile"><b class="num">${weekCount(k)}/6</b><span>Diese Woche</span></div><div class="tile"><b class="num">${recs.length}</b><span>Rekorde</span></div></div>
     ${recs.length ? `<div class="recs">${recs.map(r => `<div class="rec"><span>${esc(exName(r.id))}</span><b class="num">${r.prev} → ${r.best}</b></div>`).join("")}</div>` : `<p class="muted">${esc(line("ende"))}</p>`}
-    ${q ? `<div class="quote" style="text-align:left"><p>«${esc(q.text)}»</p><small>${esc(q.quelle || "")}</small></div>` : ""}
+    ${q ? `<div class="quote" style="text-align:left"><p>«${esc(q.text)}»</p><small>${esc([q.wer, q.quelle].filter(Boolean).join(" · "))}</small></div>` : ""}
     <div class="card" style="width:100%;text-align:left"><div class="kicker">Heute trainiert</div>${muscleMapSVG(muscleLoad([k]))}</div>
     ${(() => { let nk = addDays(k, 1); if (dayIdx(nk) === 6) nk = addDays(nk, 1); const nd = progDay(nk).day;
       return `<div class="card" style="width:100%;text-align:left"><div class="kicker">${dayIdx(addDays(k, 1)) === 6 ? "Morgen Ruhetag, dann" : "Morgen"}</div><h3>${esc(nd.name)}</h3><p class="muted" style="margin-top:4px">${esc(nd.muskelText || "")} · ${nd.minuten} Min</p></div>`; })()}

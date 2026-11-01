@@ -6,7 +6,7 @@ const opt = f => fs.existsSync(path.join(dir, f)) ? JSON.parse(rd(f)) : null;
 const data = { ex: opt("data/exercises.json"), prog: opt("data/program.json"), skills: opt("data/skills.json"),
   nut: opt("data/nutrition.json"), videos: opt("data/videos.json"), motiv: opt("data/motivation.json") };
 // videos.json darf ein _meta haben; die App erwartet { id: {url, kanal, titel} }
-if (data.videos){ const v = {}; Object.entries(data.videos).forEach(([k, x]) => { if (k !== "_meta" && x && x.url) v[k] = x; }); data.videos = v; }
+if (data.videos){ const src = data.videos.videos || data.videos, v = {}; Object.entries(src).forEach(([k, x]) => { if (k !== "_meta" && x && x.url) v[k] = x; }); data.videos = v; }
 const js = `const WA_DATA = ${JSON.stringify(data)};\n${rd("src/figures.js")}\n${rd("src/art.js")}\n${rd("src/app.js")}`;
 const body = `<title>Winter Arc Training</title>
 <meta name="claude:viewport-fit-sides" content="cover">
