@@ -111,6 +111,6 @@ Die App zeigt nur Videos mit `geprueft: true`. Benaja (oder ein Claude mit YouTu
 Einbetten: `https://www.youtube-nocookie.com/embed/{id}`, erst nach Tippen laden.
 
 ## motivation.json
-Erzeugt von `tools/gen-motivation.py`. `zitate[] {text, wer, quelle, bezug}` (6, Stellen geprüft) · `saetze{start, pause, ende, rekord, leichtereStufe, verpasst, deload, testwoche}[]` ·
+Erzeugt von `tools/gen-motivation.py`. `zitate[] {text, wer, quelle, hinweis?, bezug}` (6, Stellen geprüft) · `saetze{start, pause, ende, rekord, leichtereStufe, verpasst, deload, testwoche}[]` ·
 `raenge[] {ab, name, text}` (Rekrut 0 → Agoge 4 → Hoplit 13 → Spartiat 26 → Lochagos 39 → Polemarch 52; Woche zählt ab 4/6 Tagen) · `bibel[] {stelle, sinngemaess}` (10).
 Regel: max. 2 Sätze pro Training, nie im Pausen-Knopf.

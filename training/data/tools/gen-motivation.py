@@ -12,7 +12,7 @@ zitate = [
  {"text": "Die Spartaner fragen nicht, wie viele Feinde es sind, sondern wo sie sind.", "wer": "König Agis",
   "quelle": "Plutarch, Aussprüche der Spartaner, Agis (Moralia 215D)", "bezug": "Nicht zählen, wie viel noch kommt. Die nächste Übung machen."},
  {"text": "Gut befestigt ist die Stadt, die von tapferen Männern umgeben ist und nicht von Ziegeln.", "wer": "Lykurg",
-  "quelle": "Plutarch, Leben des Lykurg, Kap. 19 (Plutarch schreibt selbst, dass die Echtheit unsicher ist)", "bezug": "Deine Stärke baust du selbst, Tag für Tag."}
+  "quelle": "Plutarch, Leben des Lykurg 19", "hinweis": "Plutarch schreibt selbst, dass die Echtheit unsicher ist.", "bezug": "Deine Stärke baust du selbst, Tag für Tag."}
 ]
 saetze = {
  "start": ["Eine Übung nach der anderen. Los.", "Heute zählt nur heute.", "Antreten. Der Rest kommt von selbst.",
