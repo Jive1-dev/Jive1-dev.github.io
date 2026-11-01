@@ -173,29 +173,70 @@ const FIGS = {
   twist:  {ms:1300, k:[{p:[100,104], t:-90, ar:[[86,92,1],[90,92,-1]], lg:[[92,98,1,null],[108,98,-1,null]], ball:1}, {p:[100,104], t:-90, ar:[[110,92,1],[114,92,-1]], lg:[[92,98,1,null],[108,98,-1,null]], ball:1}]}
 };
 
-const REDUCED = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const FIG_KEYS = new Map();
 function figKeys(id){
   if (!FIG_KEYS.has(id)){ const f = FIGS[id]; FIG_KEYS.set(id, f.k.map(keyOf)); }
   return FIG_KEYS.get(id);
 }
-function figSVG(id, cls = ""){
+// ---------- Körper-Darstellung v2 ----------
+// Statt Strichen ein Körper mit Volumen: Rumpf, Arme, Beine als runde Glieder mit Umriss.
+// Die arbeitenden Muskeln einer Übung leuchten rot. Die abgewandte Körperseite ist dunkler (Tiefe).
+const FRONT_VIEW = new Set(["circles","wallangel","lat","dbpress","cossack","twist"]);
+const SEG_W = {chest:16, belly:13, neck:6, ua:8.5, fa:6.5, th:11.5, sh:8.5, ft:5};
+const MUSCLE_SEG = {
+  brust:["chest"], schulter_vorne:["chest","delt"], schulter_seite:["delt"], schulter_hinten:["delt","chest"],
+  ruecken_breit:["chest"], ruecken_oben:["chest"], nacken:["neck"], ruecken_unten:["belly"],
+  bauch:["belly"], bauch_seite:["belly"], hueftbeuger:["belly","th"],
+  trizeps:["ua"], bizeps:["ua"], unterarm:["fa"], handgelenk:["fa"], finger:["fa"],
+  po:["hip","th"], bein_vorne:["th"], bein_hinten:["th"], bein_innen:["th"], wade:["sh"], schienbein:["sh"], fuss:["ft"]
+};
+function figSVG(id, muscles = [], cls = ""){
   const f = FIGS[id] || FIGS.squat;
   const props = (f.props || []).map(([k, x]) => PROP[k](x)).join("");
-  return `<svg class="fig ${cls}" viewBox="14 -16 172 130" data-fig="${id}" aria-hidden="true">
+  return `<svg class="fig ${cls}" viewBox="14 -16 172 130" data-fig="${id}" data-mu="${muscles.join(" ")}" aria-hidden="true">
     <path class="ground" d="M14 111 H186"/>${props}<g class="ghost"></g><g class="live"></g></svg>`;
 }
-function figBody(){
-  return `<polyline data-k="t"/><polyline data-k="a0"/><polyline data-k="a1"/><polyline data-k="l0"/><polyline data-k="l1"/><rect class="db" data-k="d0" width="12" height="7" rx="2"/><rect class="db" data-k="d1" width="12" height="7" rx="2"/><circle class="ball" data-k="b" r="7"/><circle class="head" data-k="h" r="${LEN.HR}"/>`;
+function segEls(k){ return `<line class="ol" data-s="${k}"/><line class="sk" data-s="${k}"/><line class="mu" data-s="${k}"/>`; }
+function figBody(id){
+  const front = FRONT_VIEW.has(id);
+  const limb = (side, i) => `<g class="${side}" data-i="${i}">` + segEls("th") + segEls("sh") + segEls("ft") + `</g>`;
+  const arm = (side, i) => `<g class="${side}" data-a="${i}">` + segEls("ua") + segEls("fa") + `</g>`;
+  const far = front ? "near" : "far";
+  return limb(far,1) + arm(far,1) +
+    `<g class="near">${segEls("neck")}${segEls("belly")}${segEls("chest")}<circle class="hipc" r="6.5"/><circle class="delt" r="5.6"/></g>` +
+    limb("near",0) + arm("near",0) +
+    `<rect class="db" data-k="d0" width="13" height="7" rx="2"/><rect class="db" data-k="d1" width="13" height="7" rx="2"/><circle class="ball" data-k="b" r="7"/>` +
+    `<circle class="headol" data-k="ho" r="9.6"/><circle class="head" data-k="h" r="8"/>`;
+}
+function setLine(els, a, b, w){
+  els.forEach(el => {
+    if (!a || !b){ el.style.display = "none"; return; }
+    el.style.display = ""; el.setAttribute("x1", a[0].toFixed(1)); el.setAttribute("y1", a[1].toFixed(1)); el.setAttribute("x2", b[0].toFixed(1)); el.setAttribute("y2", b[1].toFixed(1));
+    const c = el.getAttribute("class"); el.setAttribute("stroke-width", c === "ol" ? w + 3.2 : c === "mu" ? Math.max(2, w - 3.5) : w);
+  });
 }
 function figDraw(g, id, S){
-  const f = FIGS[id], q = k => g.querySelector(`[data-k="${k}"]`), pt = a => `${a[0].toFixed(1)},${a[1].toFixed(1)}`;
-  q("t").setAttribute("points", `${pt(S.n)} ${pt(S.m)} ${pt(S.p)}`);
-  [0,1].forEach(i => { const el = q("a"+i), a = S.arms[i]; if (!a){ el.style.display = "none"; return; } el.style.display = ""; el.setAttribute("points", `${pt(S.n)} ${pt(a[0])} ${pt(a[1])}`); });
-  [0,1].forEach(i => { const el = q("l"+i), l = S.legs[i]; if (!l){ el.style.display = "none"; return; } el.style.display = ""; el.setAttribute("points", `${pt(S.p)} ${pt(l[0])} ${pt(l[1])}` + (l[2] ? ` ${pt(l[2])}` : "")); });
-  [0,1].forEach(i => { const r = q("d"+i), on = (f.db || []).includes(i) && S.arms[i]; r.style.display = on ? "" : "none"; if (on){ r.setAttribute("x", S.arms[i][1][0]-6); r.setAttribute("y", S.arms[i][1][1]-3.5); } });
-  const b = q("b"); if (S.ball && S.arms[1]){ b.style.display = ""; b.setAttribute("cx", (S.arms[0][1][0]+S.arms[1][1][0])/2); b.setAttribute("cy", S.arms[0][1][1]-4); } else b.style.display = "none";
-  const h = q("h"); h.setAttribute("cx", S.h[0].toFixed(1)); h.setAttribute("cy", S.h[1].toFixed(1));
+  const f = FIGS[id], q = sel => g.querySelectorAll(sel);
+  const seg = (scope, k, a, b) => setLine([...scope.querySelectorAll(`[data-s="${k}"]`)], a, b, SEG_W[k]);
+  const core = g.querySelector(".near");
+  seg(core, "chest", S.n, S.m); seg(core, "belly", S.m, S.p); seg(core, "neck", S.n, S.h);
+  [0,1].forEach(i => {
+    const ag = g.querySelector(`[data-a="${i}"]`), a = S.arms[i];
+    if (ag){ ag.style.display = a ? "" : "none"; if (a){ seg(ag, "ua", S.n, a[0]); seg(ag, "fa", a[0], a[1]); } }
+    const lg = g.querySelector(`[data-i="${i}"]`), l = S.legs[i];
+    if (lg){ lg.style.display = l ? "" : "none"; if (l){ seg(lg, "th", S.p, l[0]); seg(lg, "sh", l[0], l[1]); seg(lg, "ft", l[1], l[2]); } }
+  });
+  const hc = g.querySelector(".hipc"); hc.setAttribute("cx", S.p[0]); hc.setAttribute("cy", S.p[1]);
+  const dc = g.querySelector(".delt"); dc.setAttribute("cx", S.n[0]); dc.setAttribute("cy", S.n[1]);
+  [0,1].forEach(i => { const r = g.querySelector(`[data-k="d${i}"]`), on = (f.db || []).includes(i) && S.arms[i]; r.style.display = on ? "" : "none"; if (on){ r.setAttribute("x", S.arms[i][1][0]-6.5); r.setAttribute("y", S.arms[i][1][1]-3.5); } });
+  const b = g.querySelector('[data-k="b"]'); if (S.ball && S.arms[1]){ b.style.display = ""; b.setAttribute("cx", (S.arms[0][1][0]+S.arms[1][1][0])/2); b.setAttribute("cy", S.arms[0][1][1]-4); } else b.style.display = "none";
+  ["h","ho"].forEach(k => { const h = g.querySelector(`[data-k="${k}"]`); h.setAttribute("cx", S.h[0].toFixed(1)); h.setAttribute("cy", S.h[1].toFixed(1)); });
+}
+function figMuscles(svg, muscles){
+  const on = new Set(); muscles.forEach(m => (MUSCLE_SEG[m] || []).forEach(s => on.add(s)));
+  svg.querySelectorAll(".mu").forEach(el => el.classList.toggle("on", on.has(el.dataset.s)));
+  svg.querySelectorAll(".hipc").forEach(el => el.classList.toggle("on", on.has("hip")));
+  svg.querySelectorAll(".delt").forEach(el => el.classList.toggle("on", on.has("delt")));
 }
 function figState(id, now){
   const f = FIGS[id], K = figKeys(id), n = K.length;
@@ -209,21 +250,24 @@ function figState(id, now){
   const c = (now / f.ms) % n, i = Math.floor(c);
   return solve(mixKey(K[i], K[(i+1) % n], ease(c - i)));
 }
-// Alle sichtbaren Figuren in einem Takt animieren
+// Alle sichtbaren Figuren in einem Takt animieren; ausserhalb des Bildschirms pausieren sie
 const live = new Set();
+const figObserver = typeof IntersectionObserver === "function" ? new IntersectionObserver(es => es.forEach(e => { e.target.__vis = e.isIntersecting; }), {rootMargin:"100px"}) : null;
 function mountFigs(root){
   root.querySelectorAll("svg.fig").forEach(svg => {
     if (svg.dataset.ready) return; svg.dataset.ready = 1;
-    const id = svg.dataset.fig, live1 = svg.querySelector(".live"), ghost = svg.querySelector(".ghost");
-    live1.innerHTML = figBody();
-    const K = figKeys(id);
-    if (REDUCED){ ghost.innerHTML = figBody(); figDraw(ghost, id, solve(K[K.length-1])); }
-    figDraw(live1, id, solve(K[0]));
-    if (!REDUCED) live.add({svg, g: live1, id});
+    const id = svg.dataset.fig, g = svg.querySelector(".live"), ghost = svg.querySelector(".ghost");
+    g.innerHTML = figBody(id);
+    const K = figKeys(id), mus = (svg.dataset.mu || "").split(" ").filter(Boolean);
+    if (REDUCED){ ghost.innerHTML = figBody(id); figDraw(ghost, id, solve(K[K.length-1])); }
+    figDraw(g, id, solve(K[0])); figMuscles(svg, mus);
+    svg.__vis = true; if (figObserver) figObserver.observe(svg);
+    if (!REDUCED) live.add({svg, g, id});
   });
 }
 function figLoop(now){
-  for (const it of live){ if (!it.svg.isConnected){ live.delete(it); continue; } figDraw(it.g, it.id, figState(it.id, now)); }
+  for (const it of live){ if (!it.svg.isConnected){ live.delete(it); figObserver && figObserver.unobserve(it.svg); continue; } if (it.svg.__vis !== false) figDraw(it.g, it.id, figState(it.id, now)); }
   requestAnimationFrame(figLoop);
 }
+const REDUCED = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 if (!REDUCED && typeof requestAnimationFrame === "function") requestAnimationFrame(figLoop);
