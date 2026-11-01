@@ -2529,6 +2529,157 @@
       "schwerer": null,
       "leichterTipp": "Ohne Ball, Füsse am Boden.",
       "schwererTipp": "Füsse vom Boden heben."
+    },
+    {
+      "id": "jumpsq",
+      "name": "Strecksprung aus der Hocke",
+      "gruppe": "beine",
+      "muskeln": [
+        "bein_vorne",
+        "po",
+        "wade"
+      ],
+      "einheit": "wdh",
+      "material": [
+        "boden"
+      ],
+      "ziel": "Sprungkraft: Beine schnell und explosiv machen.",
+      "schritte": [
+        "Füsse schulterbreit, halbe Kniebeuge, Arme nach hinten.",
+        "Explosiv hochspringen, Arme nach oben schwingen.",
+        "Weich auf den Fussballen landen, Knie gebeugt.",
+        "Kurz stabil stehen, dann der nächste Sprung."
+      ],
+      "fehler": [
+        "Harte Landung mit gestreckten Knien.",
+        "Knie fallen bei der Landung nach innen."
+      ],
+      "sicherheit": "Leise landen: das schont die Gelenke. Auf Matte oder Teppich, nicht auf Fliesen in Socken.",
+      "leichter": "squat",
+      "schwerer": "broadjump",
+      "ohneFigur": true,
+      "figurErsatz": "squat"
+    },
+    {
+      "id": "broadjump",
+      "name": "Weitsprung aus dem Stand",
+      "gruppe": "beine",
+      "muskeln": [
+        "po",
+        "bein_vorne",
+        "bein_hinten"
+      ],
+      "einheit": "wdh",
+      "material": [
+        "boden"
+      ],
+      "ziel": "Sprungkraft nach vorne. Gut messbar in Zentimetern.",
+      "schritte": [
+        "Füsse schulterbreit an eine Linie.",
+        "Arme zurück, in die halbe Kniebeuge.",
+        "Mit beiden Beinen so weit wie möglich nach vorne springen.",
+        "Weich landen, Knie gebeugt. Zurücklaufen, nächster Sprung."
+      ],
+      "fehler": [
+        "Bei der Landung nach hinten fallen.",
+        "Ohne Armschwung."
+      ],
+      "sicherheit": "Braucht ca. 3 Meter freien Platz. Rutschfester Boden oder draussen.",
+      "leichter": "jumpsq",
+      "schwerer": null,
+      "ohneFigur": true,
+      "figurErsatz": "squat"
+    },
+    {
+      "id": "dbpress",
+      "name": "Schulterdrücken mit Hanteln",
+      "gruppe": "druecken",
+      "muskeln": [
+        "schulter_vorne",
+        "schulter_seite",
+        "trizeps"
+      ],
+      "einheit": "wdh",
+      "material": [
+        "hanteln"
+      ],
+      "ziel": "Kräftige, runde Schultern.",
+      "schritte": [
+        "Steh gerade, Hanteln auf Schulterhöhe, Handflächen nach vorne.",
+        "Bauch und Po fest.",
+        "Hanteln gerade nach oben drücken, bis die Arme gestreckt sind.",
+        "Langsam zurück auf Schulterhöhe."
+      ],
+      "fehler": [
+        "Hohlkreuz: Bauch und Po fest.",
+        "Nur halb hoch."
+      ],
+      "sicherheit": "Kein Schwung aus den Beinen.",
+      "leichter": "pike",
+      "schwerer": "pikeel",
+      "ohneFigur": true,
+      "figurErsatz": "ohe",
+      "tempo": "3 Sek runter, dann kräftig hoch"
+    },
+    {
+      "id": "goblet",
+      "name": "Kniebeuge mit Ball vor der Brust",
+      "gruppe": "beine",
+      "muskeln": [
+        "bein_vorne",
+        "po",
+        "bauch"
+      ],
+      "einheit": "wdh",
+      "material": [
+        "ball"
+      ],
+      "ziel": "Kniebeuge mit Gewicht. Hilft auch, aufrecht zu bleiben.",
+      "schritte": [
+        "Halte den 6-kg-Ball (oder eine Hantel) mit beiden Händen vor der Brust.",
+        "Füsse schulterbreit, Zehen leicht nach aussen.",
+        "Tief runter, Ellbogen innen an den Knien.",
+        "Hochdrücken."
+      ],
+      "fehler": [
+        "Oberkörper kippt nach vorne.",
+        "Fersen heben sich."
+      ],
+      "sicherheit": "Rücken gerade.",
+      "leichter": "squat",
+      "schwerer": "bssdb",
+      "ohneFigur": true,
+      "figurErsatz": "squat"
+    },
+    {
+      "id": "hangknee",
+      "name": "Knieheben hängend",
+      "gruppe": "bauch",
+      "muskeln": [
+        "bauch",
+        "hueftbeuger",
+        "unterarm"
+      ],
+      "einheit": "wdh",
+      "material": [
+        "stange"
+      ],
+      "ziel": "Bauch und Griff zusammen.",
+      "schritte": [
+        "Häng an der Stange, Arme gestreckt.",
+        "Knie langsam zur Brust ziehen.",
+        "Kurz oben halten.",
+        "Langsam runter, nicht schwingen."
+      ],
+      "fehler": [
+        "Mit Schwung.",
+        "Beine fallen lassen."
+      ],
+      "sicherheit": "Stange vorher prüfen.",
+      "leichter": "kneeraise",
+      "schwerer": null,
+      "ohneFigur": true,
+      "figurErsatz": "hang"
     }
   ]
 }

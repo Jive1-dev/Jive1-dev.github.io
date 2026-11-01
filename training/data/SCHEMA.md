@@ -44,8 +44,45 @@ Claude A liest diese Dateien in `training/src/*`. Änderungswünsche am Format b
 (z. B. `boxpistol.leichter = squat`, `cossack.leichter = squat`). Die App nimmt immer `leichter` bzw. `schwerer`
 der aktuellen Übung. Gibt es keine Stufe, zeigt sie `leichterTipp`.
 
+Zusätzlich 5 Übungen **ohne Figur** (`ohneFigur: true`, `figurErsatz` = vorläufig angezeigte Figur):
+`jumpsq`, `broadjump`, `dbpress`, `goblet`, `hangknee`. Wunsch an A: Figuren mit genau diesen IDs.
+
 ## program.json
-Folgt (52 Wochen, 4 Phasen). Format wird hier ergänzt.
+Erzeugt von `tools/gen-program.js` (nicht von Hand ändern, sondern Vorlage im Skript anpassen und neu erzeugen).
+
+```jsonc
+{
+  "_meta": { "phasen": [...], "deloadWochen": [5,10,...], "testWochen": [13,26,39,52],
+             "zeitmodell": {...}, "startwerte": {...}, "vorDemTraining": { "frage": "Was hast du heute schon gemacht?", ... } },
+  "wochen": [{
+    "woche": 1, "phase": "F", "typ": "normal" | "deload" | "test",
+    "fokus": "1 Satz für die Woche",
+    "tage": [{
+      "tag": "Mo", "name": "Oberkörper A", "minuten": 49,          // Summe der Blöcke, immer ≤ 60
+      "muskelText": "Rücken, Brust, Arme", "muskeln": ["ruecken_breit", ...],
+      "fortschritt": "Klimmzug: letzte Woche 3, heute 4.",          // fehlt in Deload-/Test-/Startwochen
+      "plan": [
+        { "block": "aufwaermen", "titel": "Aufwärmen", "min": 6, "uebungen": [{ "id": "wrist", "ziel": 30, "einheit": "sek" }] },
+        { "block": "skills", "titel": "Skills", "min": 10, "runden": 4, "pauseSek": 45, "hinweis": "...", "uebungen": [...] },
+        { "block": "test", ... },                                    // nur in Testwochen, statt Paar 1
+        { "block": "paar", "titel": "Paar 1", "min": 6, "runden": 3, "pauseSek": 35,
+          "uebungen": [ { "id": "pullup", "ziel": 3, "bereich": [3,5], "einheit": "wdh" },
+                        { "id": "deeppu", "ziel": 6, "bereich": [6,8], "einheit": "wdh" } ] },
+        { "block": "abschluss", "titel": "Abschluss", "min": 3, "uebungen": [...] }
+      ]
+    }, { "tag": "So", "name": "Ruhe", "minuten": 0, "hinweis": "..." }]
+  }]
+}
+```
+- Übung im Paar: optional `tempo` (Text) und `hantelKg`.
+- **Ablauf in der App (Regel 1):** Paar = A, Pause, B, Pause, so oft wie `runden`. Immer nur **eine** Übung zeigen.
+- **Zeit:** 3 Sek pro Wiederholung, 6 mit Tempo, Pause 35 Sek, 30 Sek Wechsel pro Paar. Passt ein Tag nicht in 60 Min,
+  kürzt der Generator: erst 4→3 Runden, dann letztes Paar auf 2 Runden, dann letztes Paar weg (mindestens 3 Paare).
+- **Deload** (jede 5. Woche): 2 Runden, Ziel 80 %. **Test**: Paar 1 wird durch 2 Messungen ersetzt, Rest 2 Runden.
+- Die Zahlen sind ein Plan. Die Fortschritts-Engine (A) passt sie an echte Ergebnisse an.
+
+## Werkzeuge
+`node tools/gen-exercises.js exercises.json` · `node tools/gen-program.js exercises.json program.json` · `node tools/check-exercises.js`
 
 ## nutrition.json
 Folgt.
