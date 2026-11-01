@@ -37,60 +37,60 @@ const TEST = w => [13, 26, 39, 52].includes(w);
 
 // ---- Tage ----
 const TAGE = [
-  ["Mo", "Oberkörper A", "Rücken, Brust, Arme"],
-  ["Di", "Unterkörper A", "Beine, Po, Waden, Schultern seitlich"],
-  ["Mi", "Oberkörper B", "Schultern, Rücken, Arme"],
-  ["Do", "Unterkörper B", "Beine, Po, Unterarme, Bauch seitlich"],
-  ["Fr", "Oberkörper C mit Skills", "Handstand, Planche, Rücken, Schultern"],
+  ["Mo", "Oberkörper A", "Brust, Schulter vorne, Trizeps + Handstand und Planche"],
+  ["Di", "Unterkörper A", "Oberschenkel vorne, Waden, Bauch"],
+  ["Mi", "Oberkörper B", "Rücken (Klimmzüge), Schulter seitlich und hinten, Bizeps, Unterarme"],
+  ["Do", "Unterkörper B", "Po, Oberschenkel hinten, Schienbein, Füsse, Bauch"],
+  ["Fr", "Oberkörper C mit Skills", "Skills lang (Handstand, Planche) + Brust und Rücken"],
   ["Sa", "Ganzkörper mit Sprungkraft", "Sprünge, ganzer Körper"],
   ["So", "Ruhe", ""]
 ];
 const WARM = { o: "wrist scap circles", u: "legswing squat catcow", g: "wrist legswing squat" };
-const COOL = { o: "chintuck wallangel", u: "hipflex calfstretch", g: "hipflex calfstretch" };
+const COOL = { o: "chintuck wallangel", u: "hipflex calfstretch", g: "hipflex calfstretch", Do: "foot hipflex calfstretch" };
 const ART = { Mo: "o", Di: "u", Mi: "o", Do: "u", Fr: "o", Sa: "g" };
 
 // Vorlage: "id:start>ende[:t][:r4]"  t = Tempo aus exercises.json, r4 = 4 Runden; Hanteln bekommen kg aus der Phase
 // Paar: "a | b"
 const V = {
   F: { r: 3,
-    Mo: { sk: "hswall:15>35 pllean:8>20", p: ["pullup:3>6 | deeppu:6>12", "row:10>14 | triext:8>12", "curl:12>16:t | benchdips:8>15", "hollowt:20>40 | reary:10>15"] },
-    Di: { sk: "tuckl:8>20 crow:10>25", p: ["bss:8>12 | lat:12>16:t", "thrust1:10>15 | rfly:12>16:t", "calf2:15>25 | kneeraise:10>15", "tib:15>25 | sideplank:20>40"] },
-    Mi: { sk: "hskick:4>6 crow:10>25", p: ["negpu:3>5 | pike:3>8", "assistpu:5>10 | pu:8>15", "curl:10>14:t | ohe:10>14:t", "reary:10>15 | pikecomp:8>15"] },
-    Do: { sk: "tuckl:8>20 hswall:15>35", p: ["revlunge:8>12 | lat:12>16:t", "sldl:8>12 | wristcurl:15>20:t", "boxpistol:5>10 | legraise:6>10", "calf1:10>15 | twist:10>16"] },
-    Fr: { sk: "hskick:4>6 tuckpl:1>5", p: ["pullup:3>6 | pike:3>8", "hang:20>40 | pikelift:3>6", "row:10>14 | deeppu:6>12", "rfly:12>16:t | lat:12>16:t"] },
-    Sa: { sk: "hsfree:5>12 crow:10>25", p: ["jumpsq:5>8 | assistpu:5>10", "broadjump:3>5 | pu:8>15", "goblet:10>15 | dbpress:8>12:t", "hollowrock:8>15 | calf2:15>25"] }
+    Mo: { sk: "hswall:15>35 pllean:8>20", p: ["deeppu:6>12 | reary:10>15", "pike:3>8 | row:10>14", "benchdips:8>15 | rfly:10>12:t", "triext:8>12 | hollowt:20>40"] },
+    Di: { sk: "tuckl:8>20 crow:10>25", p: ["bss:8>12 | lat:10>12:t", "goblet:10>15 | dbpress:8>12:t", "calf2:15>25 | kneeraise:10>15", "boxpistol:5>10 | hollowt:20>40"] },
+    Mi: { sk: "hskick:4>6 crow:10>25", p: ["pullup:3>6 | pu:8>15", "negpu:3>5 | lat:10>12:t", "curl:10>12:t | ohe:10>12:t", "rfly:10>12:t | pikecomp:8>15"] },
+    Do: { sk: "tuckl:8>20 hswall:15>35", p: ["thrust1:10>15 | curl:10>12:t", "sldl:8>12 | wristcurl:12>15:t", "revlunge:8>12 | legraise:6>10", "tib:15>25 | sideplank:20>40"] },
+    Fr: { skMin: 15, sk: "hskick:4>6 tuckpl:1>5 crow:10>25", p: ["pullup:3>6 | deeppu:6>12", "row:10>14 | pike:3>8", "pikelift:3>6 | hang:20>40"] },
+    Sa: { sk: "hsfree:5>12 crow:10>25", p: ["jumpsq:5>8 | assistpu:5>10", "broadjump:3>5 | pu:8>15", "bss:8>12 | dbpress:8>12:t", "sldl:8>12 | hollowrock:8>15"] }
   },
   A: { r: 3,
-    Mo: { sk: "hswall:30>60 tuckpl:2>8", p: ["pullup:5>8:r4 | deeppu:10>15:r4", "row:10>14:r4 | dip:4>10:r4", "curl:10>14:t | triext:10>15", "hollow:20>40 | reary:12>15"] },
-    Di: { sk: "onel:8>15 crow:20>40", p: ["bssdb:8>12:r4 | lat:14>20:t:r4", "thrustb:10>15:r4 | rfly:12>16:t:r4", "calf1:12>20 | legraise:8>12", "tib:20>30 | sideplank:30>50"] },
-    Mi: { sk: "hskick:6>8 hsfree:5>15", p: ["pullup:4>7:t:r4 | pikeel:4>10:r4", "rfly:12>16:t:r4 | declpu:8>14:r4", "curl:10>14:t | ohe:10>14:t", "hangknee:6>12 | ftplank:15>30"] },
-    Do: { sk: "onel:8>15 hswall:30>60", p: ["revlunge:10>14:r4 | lat:14>20:t:r4", "sldl:10>14:r4 | wristcurl:15>25:t:r4", "boxpistol:8>12 | legraise:8>12", "calf1db:10>15 | twist:16>24"] },
-    Fr: { sk: "hsfree:5>15 tuckpl:2>8", p: ["pullup:5>8:r4 | pikeel:4>10:r4", "hang:30>60 | pikelift:5>8", "row:10>14 | pppu:5>10", "rfly:12>16:t | lat:12>16:t"] },
-    Sa: { sk: "hsfree:5>15 crowhs:3>5", p: ["jumpsq:6>10:r4 | pullup:3>6:r4", "broadjump:4>6 | declpu:8>14", "goblet:12>20 | dbpress:8>12:t", "hollowrock:12>20 | calf2:20>30"] }
+    Mo: { sk: "hswall:30>60 tuckpl:2>8", p: ["deeppu:10>15:r4 | reary:12>15:r4", "pikeel:4>10:r4 | row:10>14:r4", "dip:4>10 | rfly:10>12:t", "triext:10>15 | hollow:20>40"] },
+    Di: { sk: "onel:8>15 crow:20>40", p: ["bssdb:8>12:r4 | lat:10>12:t:r4", "goblet:12>20 | dbpress:8>12:t", "calf1:12>20 | legraise:8>12", "boxpistol:8>12 | hollow:20>40"] },
+    Mi: { sk: "hskick:6>8 hsfree:5>15", p: ["pullup:5>8:r4 | declpu:8>14:r4", "negpu:4>6:r4 | lat:10>12:t:r4", "curl:10>12:t | ohe:10>12:t", "rfly:10>12:t | hangknee:6>12"] },
+    Do: { sk: "onel:8>15 hswall:30>60", p: ["thrustb:10>15:r4 | curl:10>12:t:r4", "sldl:10>14:r4 | wristcurl:15>20:t", "revlunge:10>14 | legraise:8>12", "tib:20>30 | sideplank:30>50"] },
+    Fr: { skMin: 15, sk: "hsfree:5>15 tuckpl:2>8 crowhs:3>5", p: ["pullup:5>8:r4 | deeppu:10>15:r4", "row:10>14 | pppu:5>10", "pikelift:5>8 | hang:30>60"] },
+    Sa: { sk: "hsfree:5>15 crowhs:3>5", p: ["jumpsq:6>10:r4 | pullup:3>6:r4", "broadjump:4>6 | declpu:8>14", "bss:10>14 | dbpress:8>12:t", "thrust1:10>15 | hollowrock:12>20"] }
   },
   K: { r: 3,
-    Mo: { sk: "hsfree:10>25 tuckpl:5>12", p: ["pullup:5>8:t:r4 | dip:8>14:r4", "row:10>14:r4 | pppu:6>10:r4", "curl:8>12:t | triext:12>18", "hollow:30>50 | reary:12>15"] },
-    Di: { sk: "lsit:5>15 crowhs:3>5", p: ["pistol:2>6:r4 | lat:12>16:t:r4", "nordic:2>5:r4 | rfly:12>16:t:r4", "thrustb:12>18 | legraise:10>15", "calf1db:12>18 | sideplank:30>50"] },
-    Mi: { sk: "hsfree:10>25 hsshape:3>6", p: ["pullup:5>8:t:r4 | hspu:1>4:r4", "row:10>14:r4 | pikeel:8>12:r4", "curl:8>12:t | ohe:8>12:t", "hangknee:10>15 | ftplank:20>40"] },
-    Do: { sk: "lsit:5>15 hswall:40>60", p: ["bssdb:8>12:r4 | lat:12>16:t:r4", "sldl:10>14:r4 | wristcurl:15>25:t:r4", "cossack:6>10 | twist:16>24", "calf1db:12>18 | tib:20>30"] },
-    Fr: { sk: "advtuck:3>8 hsfree:10>25", p: ["pullup:5>8:t:r4 | pppu:6>10:r4", "hang:40>60 | crowhs:3>5", "row:10>14 | deeppu:12>18", "rfly:12>16:t | lat:12>16:t"] },
-    Sa: { sk: "hsfree:10>25 tuckpress:3>5", p: ["broadjump:5>6:r4 | pullup:4>7:r4", "jumpsq:8>10 | dip:8>14", "bssdb:8>12 | dbpress:8>12:t", "hollowrock:15>20 | calf2:20>30"] }
+    Mo: { sk: "hsfree:10>25 tuckpl:5>12", p: ["dip:8>14:r4 | reary:12>15:r4", "pppu:6>10:r4 | row:10>14:r4", "hspu:1>4 | rfly:10>12:t", "triext:12>18 | hollow:30>50"] },
+    Di: { sk: "lsit:5>15 crowhs:3>5", p: ["pistol:2>6:r4 | lat:10>12:t:r4", "bssdb:8>12:r4 | dbpress:8>12:t:r4", "calf1db:12>18 | legraise:10>15", "cossack:6>10 | hollow:30>50"] },
+    Mi: { sk: "hsfree:10>25 hsshape:3>6", p: ["pullup:5>8:t:r4 | pikeel:8>12:r4", "negpu:4>6:r4 | lat:10>12:t:r4", "curl:8>12:t | ohe:8>12:t", "rfly:10>12:t | hangknee:10>15"] },
+    Do: { sk: "lsit:5>15 hswall:40>60", p: ["nordic:2>5:r4 | curl:10>12:t:r4", "thrustb:12>18:r4 | wristcurl:15>20:t", "sldl:10>14 | twist:16>24", "tib:20>30 | sideplank:30>50"] },
+    Fr: { skMin: 15, sk: "advtuck:3>8 hsfree:10>25 tuckpress:3>5", p: ["pullup:5>8:t:r4 | pppu:6>10:r4", "row:10>14 | deeppu:12>18", "crowhs:3>5 | hang:40>60"] },
+    Sa: { sk: "hsfree:10>25 tuckpress:3>5", p: ["broadjump:5>6:r4 | pullup:4>7:r4", "jumpsq:8>10 | dip:8>14", "bssdb:8>12 | dbpress:8>12:t", "sldl:10>14 | hollowrock:15>20"] }
   },
   P: { r: 3,
-    Mo: { sk: "hsfree:20>40 advtuck:3>10", p: ["pullup:8>12:r4 | dip:12>18:r4", "row:12>15:r4 | pppu:8>12:r4", "curl:10>14:t | triext:15>20", "dragon:2>5 | reary:15>20"] },
-    Di: { sk: "lsit:10>20 crowhs:4>6", p: ["pistol:5>8:r4 | lat:14>18:t:r4", "nordic:3>6:r4 | rfly:14>18:t:r4", "thrustb:15>20 | legraise:12>15", "calf1db:15>20 | sideplank:40>60"] },
-    Mi: { sk: "hsshape:4>8 hsfree:20>40", p: ["pullup:6>10:t:r4 | hspu:2>5:r4", "row:12>15:r4 | declpu:15>20:r4", "curl:10>14:t | ohe:10>14:t", "hangknee:12>15 | ftplank:30>45"] },
-    Do: { sk: "lsit:10>20 hswall:45>60", p: ["bssdb:10>14:r4 | lat:14>18:t:r4", "sldl:12>15:r4 | wristcurl:20>25:t:r4", "cossack:8>12 | twist:20>30", "calf1db:15>20 | tib:25>30"] },
-    Fr: { sk: "advtuck:3>10 tuckpress:3>6", p: ["pullup:8>12:r4 | pppu:8>12:r4", "hang:45>60 | pikeel:10>15", "row:12>15 | deeppu:15>20", "rfly:14>18:t | lat:14>18:t"] },
-    Sa: { sk: "hsfree:20>40 crowhs:4>6", p: ["broadjump:5>6:r4 | pullup:6>10:r4", "jumpsq:8>10 | dip:12>18", "bssdb:10>14 | dbpress:10>14:t", "hollowrock:15>25 | calf1:15>20"] }
+    Mo: { sk: "hsfree:20>40 advtuck:3>10", p: ["dip:12>18:r4 | reary:15>20:r4", "pppu:8>12:r4 | row:12>15:r4", "hspu:2>5 | rfly:10>12:t", "triext:15>20 | dragon:2>5"] },
+    Di: { sk: "lsit:10>20 crowhs:4>6", p: ["pistol:5>8:r4 | lat:10>12:t:r4", "bssdb:10>14:r4 | dbpress:10>12:t:r4", "calf1db:15>20 | legraise:12>15", "cossack:8>12 | hollowrock:15>25"] },
+    Mi: { sk: "hsshape:4>8 hsfree:20>40", p: ["pullup:6>10:t:r4 | declpu:15>20:r4", "negpu:5>6:r4 | lat:10>12:t:r4", "curl:10>12:t | ohe:10>12:t", "rfly:10>12:t | hangknee:12>15"] },
+    Do: { sk: "lsit:10>20 hswall:45>60", p: ["nordic:3>6:r4 | curl:10>12:t:r4", "thrustb:15>20:r4 | wristcurl:15>20:t", "sldl:12>15 | twist:20>30", "tib:25>30 | sideplank:40>60"] },
+    Fr: { skMin: 15, sk: "advtuck:3>10 hsfree:20>40 tuckpress:3>6", p: ["pullup:8>12:r4 | pppu:8>12:r4", "row:12>15 | deeppu:15>20", "pikeel:10>15 | hang:45>60"] },
+    Sa: { sk: "hsfree:20>40 crowhs:4>6", p: ["broadjump:5>6:r4 | pullup:6>10:r4", "jumpsq:8>10 | dip:12>18", "bssdb:10>14 | dbpress:10>12:t", "thrust1:12>15 | hollowrock:15>25"] }
   }
 };
 
 // Tests (Testwochen 13/26/39/52): eine Messung pro Tag, statt Paar 1. Ergebnis = neuer Startwert.
 const TESTS = {
-  Mo: [["pullup", "So viele saubere Klimmzüge wie möglich, 1 Satz."], ["deeppu", "So viele tiefe Liegestütze wie möglich, 1 Satz."]],
+  Mo: [["deeppu", "So viele tiefe Liegestütze wie möglich, 1 Satz."], ["hswall", "Handstand an der Wand: so lange wie möglich."]],
   Di: [["bss", "Bulgarische Kniebeuge: so viele wie möglich, schwächeres Bein zählt."], ["calf1", "Einbeiniges Wadenheben: so viele wie möglich."]],
-  Mi: [["pike", "Pike-Liegestütze: so viele wie möglich."], ["hang", "Hängen: so lange wie möglich."]],
+  Mi: [["pullup", "So viele saubere Klimmzüge wie möglich, 1 Satz."], ["hang", "Hängen: so lange wie möglich."]],
   Do: [["hollow", "Hohlkörper: so lange wie möglich."], ["sideplank", "Seitstütz: so lange wie möglich, schwächere Seite zählt."]],
   Fr: [["hsfree", "Freier Handstand: bester von 5 Versuchen."], ["tuckpl", "Tuck-Planche (oder höchste Stufe, die du kannst): bester von 3 Versuchen."]],
   Sa: [["broadjump", "Weitsprung: bester von 3 Sprüngen, in Zentimetern messen."], ["lsit", "L-Sitz (oder Tuck-L-Sitz): bester von 3 Versuchen."]]
@@ -142,7 +142,7 @@ for (const ph of PHASEN){
       const plan = [];
       plan.push({ block: "aufwaermen", titel: "Aufwärmen", min: MIN_WARM, uebungen: WARM[art].split(" ").map(id => ({ id, ziel: EX.get(id).einheit.startsWith("sek") ? 30 : 10, einheit: EX.get(id).einheit })) });
       const skills = vt.sk.split(" ").map(parseSlot);
-      plan.push({ block: "skills", titel: "Skills", min: MIN_SKILL, runden: 4, pauseSek: 45,
+      plan.push({ block: "skills", titel: "Skills", min: vt.skMin || MIN_SKILL, runden: skills.length > 2 ? 3 : 4, pauseSek: 45,
         hinweis: "Abwechselnd, ganz frisch und sauber. Geht eine Stufe nicht: leichtere Stufe nehmen.",
         uebungen: skills.map(s => item(s, k, ph, false)) });
       let paare = vt.p.map(s => s.split("|").map(parseSlot));
@@ -173,7 +173,7 @@ for (const ph of PHASEN){
         break;
       }
       pb.forEach((q, i) => plan.push({ block: "paar", titel: `Paar ${i + 1}`, min: minPaar(q), runden: q.runden, pauseSek: PAUSE, uebungen: q.uebungen }));
-      plan.push({ block: "abschluss", titel: "Abschluss", min: MIN_COOL, uebungen: COOL[art].split(" ").map(id => ({ id, ziel: EX.get(id).einheit.startsWith("sek") ? 30 : 10, einheit: EX.get(id).einheit })) });
+      plan.push({ block: "abschluss", titel: "Abschluss", min: MIN_COOL, uebungen: (COOL[tag] || COOL[art]).split(" ").map(id => ({ id, ziel: EX.get(id).einheit.startsWith("sek") ? 30 : 10, einheit: EX.get(id).einheit })) });
       const minuten = plan.reduce((s, b) => s + b.min, 0);
       if (minuten > 60) zeitFehler.push(`W${w} ${tag}: ${minuten} Min`);
       const muskelSet = [...new Set(plan.filter(b => b.block === "paar").flatMap(b => b.uebungen.flatMap(u => EX.get(u.id).muskeln)))];
