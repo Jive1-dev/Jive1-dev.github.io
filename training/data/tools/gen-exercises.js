@@ -84,7 +84,7 @@ const meta = {
     "Negativ": "Nur den Rückweg machen, ganz langsam. Z. B. beim Klimmzug oben starten und langsam runter.",
     "Rumpf": "Bauch, Rücken und Seiten zusammen: die Mitte vom Körper."
   },
-  handgelenkTipp: "Handgelenke tun bei starkem Abknicken weh? Handtuch gefaltet unter die Handballen, oder auf die Parallettes bzw. das Liegestützbrett gehen. Vorher immer «Handgelenke aufwärmen».",
+  handgelenkTipp: "Handgelenke drücken? Handtuch unter die Handballen oder Parallettes nehmen.",
   stoppRegel: "Sofort aufhören nur bei: stechendem Schmerz im Gelenk, Schwindel, Schwarzwerden vor den Augen oder Schmerz in der Brust. Muskelbrennen und Müdigkeit sind normal und gewollt."
 };
 
