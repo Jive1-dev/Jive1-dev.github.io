@@ -23,19 +23,20 @@ saetze = {
             "Rekord. Merk dir das Gefühl."],
  "leichtereStufe": ["Leichtere Stufe ist kein Rückschritt. Sauber schlägt schwer.", "Gute Wahl. So bleibt die Technik sauber.",
                     "Auch die Spartaner haben mit den Grundlagen angefangen."],
- "verpassterTag": ["Kein Problem. Heute geht es weiter.", "Ein Tag fehlt, die Woche läuft weiter. Antreten.",
+ "pause": ["Atmen. Gleich wieder.", "Kurz durchatmen.", "Ruhig atmen, Schultern locker."],
+ "verpasst": ["Kein Problem. Heute geht es weiter.", "Ein Tag fehlt, die Woche läuft weiter. Antreten.",
                    "Wichtig ist nicht der verpasste Tag, sondern der nächste."],
  "deload": ["Leichte Woche: Jetzt wird der Körper stärker. Nicht mehr machen als geplant.",
             "Erholung gehört zum Training. Diese Woche ist Teil des Plans."],
  "testwoche": ["Testwoche: Zeig, was du in 13 Wochen gebaut hast.", "Heute misst du deinen Fortschritt. Volle Kraft, saubere Technik."]
 }
 raenge = [
- {"abWochen": 0,  "name": "Rekrut",    "text": "Du hast angefangen. Das schaffen viele nicht."},
- {"abWochen": 4,  "name": "Agoge",     "text": "Agoge hiess die Ausbildung der Spartaner. Du bist mitten drin."},
- {"abWochen": 13, "name": "Hoplit",    "text": "Hopliten waren die Fusssoldaten mit Schild und Speer. Phase I geschafft."},
- {"abWochen": 26, "name": "Spartiat",  "text": "Spartiaten waren die voll ausgebildeten Bürger von Sparta. Halbes Jahr geschafft."},
- {"abWochen": 39, "name": "Lochagos",  "text": "Ein Lochagos führte eine Einheit an. Drei Phasen geschafft."},
- {"abWochen": 52, "name": "Polemarch", "text": "Der Polemarch führte das Heer. Ein ganzes Jahr Disziplin."}
+ {"ab": 0,  "name": "Rekrut",    "text": "Du hast angefangen. Das schaffen viele nicht."},
+ {"ab": 4,  "name": "Agoge",     "text": "Agoge hiess die Ausbildung der Spartaner. Du bist mitten drin."},
+ {"ab": 13, "name": "Hoplit",    "text": "Hopliten waren die Fusssoldaten mit Schild und Speer. Phase I geschafft."},
+ {"ab": 26, "name": "Spartiat",  "text": "Spartiaten waren die voll ausgebildeten Bürger von Sparta. Halbes Jahr geschafft."},
+ {"ab": 39, "name": "Lochagos",  "text": "Ein Lochagos führte eine Einheit an. Drei Phasen geschafft."},
+ {"ab": 52, "name": "Polemarch", "text": "Der Polemarch führte das Heer. Ein ganzes Jahr Disziplin."}
 ]
 bibel = [
  {"stelle": "1. Korinther 9,24–27", "sinngemaess": "Lauft so, dass ihr den Preis gewinnt. Jeder Wettkämpfer übt Disziplin in allem."},
@@ -53,7 +54,7 @@ out = {"_meta": {"version": 1, "stand": "2026-11-01", "autor": "Claude B",
   "regeln": "Höchstens 2 Sätze pro Training (Start und Ende), nie im Pausen-Knopf (Regel 1). Nie derselbe Satz zweimal in einer Woche. Kein Satz rät zum Aufhören (Regel 6).",
   "zitate": "Übersetzungen von Claude B, sinngemäss nah am englischen Babbitt/Perrin-Text bzw. Herodot. Stellen per Web-Suche geprüft (Perseus/Thayer). Plutarch schrieb Jahrhunderte später; die Sprüche sind Überlieferung, keine Tonaufnahme.",
   "bibel": "Stellen korrekt, Text bewusst nur sinngemäss in einfachem Deutsch (kein Bibelzitat im Wortlaut). Die App kann den Originaltext verlinken, z. B. in seiner eigenen Bibel nachlesen.",
-  "raenge": "Eine Woche zählt, wenn mindestens 4 von 6 Trainingstagen gemacht sind (auch Minimalversion)."},
+  "raenge": "Feld `ab` = volle Wochen. Eine Woche zählt, wenn mindestens 4 von 6 Trainingstagen gemacht sind (auch Minimalversion)."},
  "zitate": zitate, "saetze": saetze, "raenge": raenge, "bibel": bibel}
 json.dump(out, open("motivation.json", "w"), ensure_ascii=False, indent=1)
 print(len(zitate), "Zitate,", sum(len(v) for v in saetze.values()), "Sätze,", len(raenge), "Ränge,", len(bibel), "Bibelstellen")
