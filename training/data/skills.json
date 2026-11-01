@@ -1,0 +1,393 @@
+{
+  "_meta": {
+    "version": 1,
+    "stand": "2026-11-01",
+    "autor": "Claude B",
+    "regel": "Eine Stufe gilt als geschafft, wenn der Test sauber erreicht ist (Technik vor Zahl). Dann schaltet die App die nächste Stufe frei. Kein Rückstufen als Strafe: geht eine Stufe an einem Tag nicht, wird nur für diesen Satz die leichtere genommen (Regel 7).",
+    "einheiten": {
+      "sek": "Sekunden",
+      "wdh": "Wiederholungen",
+      "wdh_seite": "Wiederholungen pro Seite",
+      "sek_seite": "Sekunden pro Seite",
+      "von5": "von 5 Versuchen"
+    },
+    "startStand": {
+      "quelle": "TRAINING-APP.md Abschnitt 2",
+      "geschafft": [
+        "frog",
+        "crow",
+        "pllean"
+      ],
+      "werte": {
+        "hsfree": 5,
+        "pullup": 3,
+        "pike": 3,
+        "tuckpl": 0
+      }
+    }
+  },
+  "leitern": [
+    {
+      "id": "handstand",
+      "name": "Handstand",
+      "startUebung": "hskick",
+      "stufen": [
+        {
+          "nr": 1,
+          "uebung": "pikeel",
+          "name": "Pike-Liegestütz mit Füssen auf dem Stuhl",
+          "test": {
+            "wert": 30,
+            "einheit": "sek",
+            "text": "Pike-Position mit Füssen auf dem Stuhl 30 Sek halten, Hüfte über den Händen."
+          }
+        },
+        {
+          "nr": 2,
+          "uebung": "hswall",
+          "name": "Handstand an der Wand",
+          "test": {
+            "wert": 30,
+            "einheit": "sek",
+            "text": "30 Sek an der Wand, Arme gestreckt, Körper gerade."
+          }
+        },
+        {
+          "nr": 3,
+          "uebung": "hskick",
+          "name": "Handstand aufschwingen",
+          "test": {
+            "wert": 4,
+            "einheit": "von5",
+            "text": "4 von 5 Aufschwüngen ohne Überkippen. Rausfallen mit Rad sitzt."
+          }
+        },
+        {
+          "nr": 4,
+          "uebung": "hsfree",
+          "name": "Freier Handstand",
+          "test": {
+            "wert": 10,
+            "einheit": "sek",
+            "text": "10 Sek frei, bester von 5 Versuchen."
+          }
+        },
+        {
+          "nr": 5,
+          "uebung": "hsfree",
+          "name": "Freier Handstand",
+          "test": {
+            "wert": 30,
+            "einheit": "sek",
+            "text": "30 Sek frei, bester von 5 Versuchen."
+          }
+        },
+        {
+          "nr": 6,
+          "uebung": "hsshape",
+          "name": "Handstand-Formen",
+          "test": {
+            "wert": 3,
+            "einheit": "wdh",
+            "text": "3 Mal Knie anziehen und strecken, ohne abzusteigen."
+          }
+        },
+        {
+          "nr": 7,
+          "uebung": "hspu",
+          "name": "Handstand-Liegestütz an der Wand",
+          "test": {
+            "wert": 1,
+            "einheit": "wdh",
+            "text": "1 saubere Handstand-Liegestütz an der Wand, Kopf berührt nur das Kissen."
+          }
+        }
+      ]
+    },
+    {
+      "id": "planche",
+      "name": "Planche",
+      "startUebung": "tuckpl",
+      "stufen": [
+        {
+          "nr": 1,
+          "uebung": "frog",
+          "name": "Frosch-Stand",
+          "test": {
+            "wert": 30,
+            "einheit": "sek",
+            "text": "30 Sek Frosch-Stand."
+          }
+        },
+        {
+          "nr": 2,
+          "uebung": "crow",
+          "name": "Krähe",
+          "test": {
+            "wert": 30,
+            "einheit": "sek",
+            "text": "30 Sek Krähe."
+          }
+        },
+        {
+          "nr": 3,
+          "uebung": "pllean",
+          "name": "Planche-Lehne",
+          "test": {
+            "wert": 20,
+            "einheit": "sek",
+            "text": "20 Sek Planche-Lehne, Schultern deutlich vor den Händen."
+          }
+        },
+        {
+          "nr": 4,
+          "uebung": "tuckpl",
+          "name": "Tuck-Planche",
+          "test": {
+            "wert": 10,
+            "einheit": "sek",
+            "text": "10 Sek Tuck-Planche, Arme gestreckt."
+          }
+        },
+        {
+          "nr": 5,
+          "uebung": "advtuck",
+          "name": "Fortgeschrittene Tuck-Planche",
+          "test": {
+            "wert": 10,
+            "einheit": "sek",
+            "text": "10 Sek mit flachem Rücken."
+          }
+        },
+        {
+          "nr": 6,
+          "uebung": "straddle",
+          "name": "Grätsch-Planche",
+          "test": {
+            "wert": 5,
+            "einheit": "sek",
+            "text": "5 Sek Grätsch-Planche."
+          }
+        }
+      ]
+    },
+    {
+      "id": "lsit",
+      "name": "L-Sitz",
+      "startUebung": "tuckl",
+      "stufen": [
+        {
+          "nr": 1,
+          "uebung": "support",
+          "name": "Stütz auf den Parallettes",
+          "test": {
+            "wert": 30,
+            "einheit": "sek",
+            "text": "30 Sek Stütz, Schultern unten."
+          }
+        },
+        {
+          "nr": 2,
+          "uebung": "tuckl",
+          "name": "Tuck-L-Sitz",
+          "test": {
+            "wert": 20,
+            "einheit": "sek",
+            "text": "20 Sek mit angezogenen Knien."
+          }
+        },
+        {
+          "nr": 3,
+          "uebung": "onel",
+          "name": "L-Sitz mit einem Bein",
+          "test": {
+            "wert": 15,
+            "einheit": "sek_seite",
+            "text": "15 Sek pro Bein."
+          }
+        },
+        {
+          "nr": 4,
+          "uebung": "lsit",
+          "name": "L-Sitz",
+          "test": {
+            "wert": 10,
+            "einheit": "sek",
+            "text": "10 Sek L-Sitz, Knie gestreckt."
+          }
+        },
+        {
+          "nr": 5,
+          "uebung": "lsit",
+          "name": "L-Sitz",
+          "test": {
+            "wert": 20,
+            "einheit": "sek",
+            "text": "20 Sek L-Sitz."
+          }
+        },
+        {
+          "nr": 6,
+          "uebung": "vsit",
+          "name": "V-Sitz",
+          "test": {
+            "wert": 5,
+            "einheit": "sek",
+            "text": "5 Sek V-Sitz."
+          }
+        }
+      ]
+    },
+    {
+      "id": "press",
+      "name": "Press in den Handstand",
+      "startUebung": "pikecomp",
+      "stufen": [
+        {
+          "nr": 1,
+          "uebung": "pikecomp",
+          "name": "Bein-Heben im Sitzen",
+          "test": {
+            "wert": 15,
+            "einheit": "wdh",
+            "text": "15 Mal beide Beine gestreckt anheben."
+          }
+        },
+        {
+          "nr": 2,
+          "uebung": "pikelift",
+          "name": "Bein heben im Pike am Stuhl",
+          "test": {
+            "wert": 8,
+            "einheit": "wdh_seite",
+            "text": "8 Mal pro Bein, Hüfte über den Händen."
+          }
+        },
+        {
+          "nr": 3,
+          "uebung": "crowhs",
+          "name": "Von der Krähe in den Handstand",
+          "test": {
+            "wert": 1,
+            "einheit": "wdh",
+            "text": "1 Mal von der Krähe in den Handstand (an der Wand ok)."
+          }
+        },
+        {
+          "nr": 4,
+          "uebung": "tuckpress",
+          "name": "Tuck-Press",
+          "test": {
+            "wert": 3,
+            "einheit": "wdh",
+            "text": "3 Tuck-Press hintereinander."
+          }
+        },
+        {
+          "nr": 5,
+          "uebung": "strpress",
+          "name": "Grätsch-Press",
+          "test": {
+            "wert": 1,
+            "einheit": "wdh",
+            "text": "1 Grätsch-Press."
+          }
+        }
+      ]
+    },
+    {
+      "id": "klimmzug",
+      "name": "Klimmzug",
+      "startUebung": "pullup",
+      "stufen": [
+        {
+          "nr": 1,
+          "uebung": "hang",
+          "name": "Hängen an der Stange",
+          "test": {
+            "wert": 30,
+            "einheit": "sek",
+            "text": "30 Sek hängen."
+          }
+        },
+        {
+          "nr": 2,
+          "uebung": "negpu",
+          "name": "Negativ-Klimmzug",
+          "test": {
+            "wert": 5,
+            "einheit": "wdh",
+            "text": "5 Negativ-Klimmzüge à 5 Sek runter."
+          }
+        },
+        {
+          "nr": 3,
+          "uebung": "pullup",
+          "name": "Klimmzug",
+          "test": {
+            "wert": 5,
+            "einheit": "wdh",
+            "text": "5 saubere Klimmzüge am Stück."
+          }
+        },
+        {
+          "nr": 4,
+          "uebung": "pullup",
+          "name": "Klimmzug",
+          "test": {
+            "wert": 10,
+            "einheit": "wdh",
+            "text": "10 saubere Klimmzüge am Stück."
+          }
+        },
+        {
+          "nr": 5,
+          "uebung": "pullup",
+          "name": "Klimmzug",
+          "test": {
+            "wert": 8,
+            "einheit": "wdh",
+            "text": "8 Klimmzüge mit 3 Sek runter."
+          }
+        }
+      ]
+    },
+    {
+      "id": "pistol",
+      "name": "Pistol-Kniebeuge",
+      "startUebung": "boxpistol",
+      "stufen": [
+        {
+          "nr": 1,
+          "uebung": "boxpistol",
+          "name": "Einbeinig auf den Stuhl setzen",
+          "test": {
+            "wert": 8,
+            "einheit": "wdh_seite",
+            "text": "8 Mal pro Bein auf den Stuhl setzen und aufstehen."
+          }
+        },
+        {
+          "nr": 2,
+          "uebung": "pistol",
+          "name": "Pistol-Kniebeuge",
+          "test": {
+            "wert": 3,
+            "einheit": "wdh_seite",
+            "text": "3 ganze Pistols pro Bein, freies Bein in der Luft."
+          }
+        },
+        {
+          "nr": 3,
+          "uebung": "pistol",
+          "name": "Pistol-Kniebeuge",
+          "test": {
+            "wert": 8,
+            "einheit": "wdh_seite",
+            "text": "8 ganze Pistols pro Bein."
+          }
+        }
+      ]
+    }
+  ]
+}
