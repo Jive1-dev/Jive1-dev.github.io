@@ -85,4 +85,15 @@ Erzeugt von `tools/gen-program.js` (nicht von Hand ändern, sondern Vorlage im S
 `node tools/gen-exercises.js exercises.json` · `node tools/gen-program.js exercises.json program.json` · `node tools/check-exercises.js`
 
 ## nutrition.json
-Folgt.
+Erzeugt von `tools/gen-nutrition.js`. Teile:
+- `rechnung`: Formel (Mifflin-St Jeor × 1.7 + 350 kcal, Protein 1.9 g/kg), `js` zum Nachrechnen mit echtem Gewicht, `beispiel` (50 kg → 2850 kcal, mind. 95 g), `anpassen` (Regeln nach 2 Wochen Gewichtstrend).
+- `zielText` mit Platzhaltern `{kcal}`, `{protein}`.
+- `checkliste`: 9 Punkte `{id, text, tipp}` (Ersatz fürs Kalorienzählen).
+- `mahlzeiten`: ohne Kochen `{id, name, wann[], kcal, protein, preis, zutaten[], hinweis, optional?}`; `wann` passt zu `checkliste.id`.
+- `beispieltag`: `{teile[], summe}`.
+- `koffein`: Grenze 3 mg/kg (150 mg), nach 14 Uhr keins, Tabelle `getraenke[]`.
+- `einkauf`: `proWoche[]` `{was, menge, packung, anzahl, preis}`, `summeCHF`.
+- `nichtNehmen`: Liste für unter 18.
+Alle Preise und Nährwerte sind gerundete Schätzungen, keine Marken.
+
+`node tools/gen-nutrition.js nutrition.json`

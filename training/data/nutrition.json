@@ -1,0 +1,436 @@
+{
+  "_meta": {
+    "version": 1,
+    "stand": "2026-11-01",
+    "autor": "Claude B",
+    "hinweis": "Ohne Kalorienzählen: die App zeigt Ziel und Checkliste. Nährwerte und Preise sind gerundete Schätzungen (Eigenmarke, im Laden prüfen). Keine Markennamen, keine Versprechen.",
+    "datenschutz": "Gewicht ist besonders schützenswert: nur lokal auf dem Gerät speichern, nur mit Export/Löschen.",
+    "allergien": "Unbekannt. Bei Laktose- oder Nussproblemen: Milch durch laktosefreie Milch, Erdnussbutter durch Butter + Käse ersetzen."
+  },
+  "rechnung": {
+    "formel": "Mifflin-St Jeor (Standardformel für den Grundumsatz)",
+    "grundumsatz": "10 × Gewicht(kg) + 6.25 × Grösse(cm) − 5 × Alter + 5",
+    "aktivitaet": 1.7,
+    "aktivitaetText": "6 Trainings pro Woche + Alltag (Lehre, Schule, Velo)",
+    "plusZunehmen": 350,
+    "proteinProKg": 1.9,
+    "proteinBereichProKg": [
+      1.6,
+      2
+    ],
+    "runden": {
+      "kcal": 50,
+      "protein": 5
+    },
+    "js": "kcal = round50((10*kg + 6.25*cm - 5*alter + 5) * 1.7 + 350); protein = round5(1.9*kg)",
+    "beispiel": {
+      "kg": 50,
+      "cm": 165,
+      "alter": 16,
+      "grundumsatz": 1456,
+      "kcal": 2850,
+      "protein": 95
+    },
+    "anpassen": [
+      {
+        "wenn": "2 Wochen hintereinander weniger als +0.2 kg pro Woche",
+        "dann": "+250 kcal: täglich zusätzlich 1 Glas Milch und 1 Brot mit Erdnussbutter.",
+        "kcal": 250
+      },
+      {
+        "wenn": "2 Wochen hintereinander mehr als +0.6 kg pro Woche",
+        "dann": "−150 kcal: weniger Süsses, sonst gleich.",
+        "kcal": -150
+      }
+    ],
+    "zielProWoche": [
+      0.25,
+      0.5
+    ],
+    "wiegen": "Sonntag am Morgen, nach dem WC, vor dem Essen. Zählt nur der Trend über 2 Wochen, einzelne Tage schwanken."
+  },
+  "zielText": "Ca. {kcal} kcal und mindestens {protein} g Protein pro Tag. Nicht zählen: wenn die Checkliste voll ist, passt es meistens.",
+  "checkliste": [
+    {
+      "id": "zmorge",
+      "text": "Zmorge gegessen",
+      "tipp": "Haferflocken mit Milch und Banane"
+    },
+    {
+      "id": "znueni",
+      "text": "Znüni mit Protein",
+      "tipp": "Quark, Eier oder Brot mit Erdnussbutter"
+    },
+    {
+      "id": "zmittag",
+      "text": "Zmittag + 1 Glas Milch",
+      "tipp": "Normal essen, Teller voll"
+    },
+    {
+      "id": "nachTraining",
+      "text": "Nach dem Training etwas mit Protein",
+      "tipp": "Quark oder Milch mit Banane"
+    },
+    {
+      "id": "znacht",
+      "text": "Znacht: grosse Portion",
+      "tipp": "Halber Teller Beilage, ein Viertel Fleisch/Fisch/Eier/Tofu, ein Viertel Gemüse"
+    },
+    {
+      "id": "abend",
+      "text": "Vor dem Schlafen: Milch oder Quark",
+      "tipp": "Einfacher Zusatz, den man leicht vergisst"
+    },
+    {
+      "id": "wasser",
+      "text": "2 Liter Wasser",
+      "tipp": "Eine Flasche immer dabei"
+    },
+    {
+      "id": "koffein",
+      "text": "Koffein unter 150 mg, nach 14 Uhr keins",
+      "tipp": "Siehe Koffein-Tabelle"
+    },
+    {
+      "id": "schlaf",
+      "text": "Um 22:30 ins Bett (8+ Std Schlaf)",
+      "tipp": "Muskeln wachsen im Schlaf"
+    }
+  ],
+  "mahlzeiten": [
+    {
+      "id": "hafer",
+      "name": "Haferflocken mit Milch und Banane",
+      "wann": [
+        "zmorge",
+        "abend"
+      ],
+      "kcal": 600,
+      "protein": 22,
+      "preis": 1.2,
+      "zutaten": [
+        "80 g Haferflocken",
+        "3 dl Milch",
+        "1 Banane"
+      ],
+      "hinweis": "Abends vorbereiten, über Nacht im Kühlschrank: am Morgen fertig."
+    },
+    {
+      "id": "quark",
+      "name": "Magerquark mit Haferflocken und Konfi",
+      "wann": [
+        "znueni",
+        "nachTraining",
+        "abend"
+      ],
+      "kcal": 380,
+      "protein": 35,
+      "preis": 1.5,
+      "zutaten": [
+        "250 g Magerquark",
+        "40 g Haferflocken",
+        "1 EL Konfi oder Honig"
+      ],
+      "hinweis": "Bestes Verhältnis von Protein zu Preis."
+    },
+    {
+      "id": "brotEN",
+      "name": "Brot mit Erdnussbutter und ein Glas Milch",
+      "wann": [
+        "znueni",
+        "zvieri"
+      ],
+      "kcal": 700,
+      "protein": 30,
+      "preis": 1.3,
+      "zutaten": [
+        "3 Scheiben Vollkornbrot",
+        "2 EL Erdnussbutter",
+        "3 dl Milch"
+      ],
+      "hinweis": "Viel Energie, gut für Tage mit wenig Hunger."
+    },
+    {
+      "id": "thon",
+      "name": "Thon-Brot",
+      "wann": [
+        "zmittag",
+        "zvieri"
+      ],
+      "kcal": 500,
+      "protein": 35,
+      "preis": 2.2,
+      "zutaten": [
+        "1 Dose Thon (abgetropft)",
+        "2 Scheiben Brot",
+        "Mais aus der Dose, nach Lust"
+      ],
+      "hinweis": "Thon höchstens 2–3 Dosen pro Woche."
+    },
+    {
+      "id": "eier",
+      "name": "Gekochte Eier mit Brot",
+      "wann": [
+        "znueni",
+        "zvieri"
+      ],
+      "kcal": 400,
+      "protein": 20,
+      "preis": 1.6,
+      "zutaten": [
+        "2 gekochte Eier (fertig gekauft)",
+        "2 Scheiben Brot"
+      ],
+      "hinweis": "Gekochte Eier gibt es fertig im Laden."
+    },
+    {
+      "id": "huette",
+      "name": "Hüttenkäse mit Brot oder Früchten",
+      "wann": [
+        "zvieri",
+        "abend"
+      ],
+      "kcal": 350,
+      "protein": 26,
+      "preis": 1.8,
+      "zutaten": [
+        "200 g Hüttenkäse",
+        "2 Scheiben Brot oder 1 Apfel"
+      ],
+      "hinweis": ""
+    },
+    {
+      "id": "milch",
+      "name": "Grosses Glas Milch",
+      "wann": [
+        "zmittag",
+        "znacht",
+        "abend"
+      ],
+      "kcal": 320,
+      "protein": 17,
+      "preis": 0.7,
+      "zutaten": [
+        "5 dl Vollmilch"
+      ],
+      "hinweis": "Einfachster Zusatz zu jeder Mahlzeit."
+    },
+    {
+      "id": "bohnen",
+      "name": "Bohnen-Mais-Salat aus der Dose",
+      "wann": [
+        "zmittag"
+      ],
+      "kcal": 450,
+      "protein": 20,
+      "preis": 2,
+      "zutaten": [
+        "1 Dose Kidneybohnen",
+        "1/2 Dose Mais",
+        "1 EL Öl, Salz, Essig",
+        "2 Scheiben Brot"
+      ],
+      "hinweis": "Bohnen abspülen. Hält 2 Tage im Kühlschrank."
+    },
+    {
+      "id": "nuesse",
+      "name": "Nüsse und Trockenfrüchte",
+      "wann": [
+        "znueni",
+        "zvieri"
+      ],
+      "kcal": 300,
+      "protein": 8,
+      "preis": 0.8,
+      "zutaten": [
+        "50 g Studentenfutter"
+      ],
+      "hinweis": "Für unterwegs. Viel Energie in wenig Platz."
+    },
+    {
+      "id": "shake",
+      "name": "Protein-Shake mit Milch",
+      "wann": [
+        "nachTraining"
+      ],
+      "kcal": 300,
+      "protein": 40,
+      "preis": 1.2,
+      "optional": true,
+      "zutaten": [
+        "30 g Proteinpulver (günstigstes)",
+        "4 dl Milch"
+      ],
+      "hinweis": "Nicht nötig, nur bequem. Normales Essen reicht, wenn die Checkliste stimmt."
+    }
+  ],
+  "beispieltag": {
+    "teile": [
+      {
+        "zeit": "zmorge",
+        "mahlzeit": "hafer"
+      },
+      {
+        "zeit": "znueni",
+        "mahlzeit": "nuesse"
+      },
+      {
+        "zeit": "zmittag",
+        "mahlzeit": "milch",
+        "plus": "Normales Zmittag (ca. 650 kcal, 25 g Protein)",
+        "plusKcal": 650,
+        "plusProtein": 25
+      },
+      {
+        "zeit": "nachTraining",
+        "mahlzeit": "quark"
+      },
+      {
+        "zeit": "znacht",
+        "mahlzeit": null,
+        "plus": "Normales Znacht, grosse Portion (ca. 650 kcal, 25 g Protein)",
+        "plusKcal": 650,
+        "plusProtein": 25
+      }
+    ],
+    "summe": {
+      "kcal": 2900,
+      "protein": 132
+    }
+  },
+  "koffein": {
+    "maxMgProKg": 3,
+    "maxMg": 150,
+    "nachUhr": 14,
+    "text": "Max. 3 mg pro kg Körpergewicht pro Tag (bei 50 kg = 150 mg). Nach 14 Uhr keins, sonst schläfst du schlechter. Zu viel auf einmal macht Kopfweh und Herzklopfen.",
+    "getraenke": [
+      {
+        "name": "Espresso",
+        "menge": "1 Tasse",
+        "mg": 70
+      },
+      {
+        "name": "Latte oder Cappuccino",
+        "menge": "1 Becher (2 Shots)",
+        "mg": 130
+      },
+      {
+        "name": "Energy Drink",
+        "menge": "250 ml Dose",
+        "mg": 80
+      },
+      {
+        "name": "Energy Drink gross",
+        "menge": "500 ml Dose",
+        "mg": 160
+      },
+      {
+        "name": "Cola",
+        "menge": "330 ml",
+        "mg": 35
+      },
+      {
+        "name": "Schwarztee",
+        "menge": "1 Tasse",
+        "mg": 40
+      },
+      {
+        "name": "Grüntee",
+        "menge": "1 Tasse",
+        "mg": 30
+      },
+      {
+        "name": "Eistee",
+        "menge": "5 dl",
+        "mg": 25
+      }
+    ],
+    "hinweis": "Werte sind Durchschnitt, je nach Produkt anders. Steht auf der Packung, gilt die Packung."
+  },
+  "einkauf": {
+    "proWoche": [
+      {
+        "was": "Vollmilch",
+        "menge": "7 Liter",
+        "packung": "1 L",
+        "anzahl": 7,
+        "preis": 1.3
+      },
+      {
+        "was": "Haferflocken",
+        "menge": "1 kg",
+        "packung": "500 g",
+        "anzahl": 2,
+        "preis": 1.2
+      },
+      {
+        "was": "Magerquark",
+        "menge": "1.75 kg",
+        "packung": "500 g",
+        "anzahl": 4,
+        "preis": 2
+      },
+      {
+        "was": "Bananen",
+        "menge": "7 Stück",
+        "packung": "1 kg",
+        "anzahl": 1,
+        "preis": 2.5
+      },
+      {
+        "was": "Vollkornbrot",
+        "menge": "2 Brote",
+        "packung": "500 g",
+        "anzahl": 2,
+        "preis": 2.5
+      },
+      {
+        "was": "Erdnussbutter",
+        "menge": "1 Glas",
+        "packung": "350 g",
+        "anzahl": 1,
+        "preis": 3.5
+      },
+      {
+        "was": "Gekochte Eier",
+        "menge": "6 Stück",
+        "packung": "6 Stück",
+        "anzahl": 1,
+        "preis": 3.5
+      },
+      {
+        "was": "Thon",
+        "menge": "2 Dosen",
+        "packung": "Dose",
+        "anzahl": 2,
+        "preis": 1.5
+      },
+      {
+        "was": "Konfi oder Honig",
+        "menge": "1 Glas",
+        "packung": "Glas",
+        "anzahl": 1,
+        "preis": 2.5,
+        "nichtJedeWoche": true
+      },
+      {
+        "was": "Studentenfutter",
+        "menge": "200 g",
+        "packung": "200 g",
+        "anzahl": 1,
+        "preis": 3
+      }
+    ],
+    "summeCHF": 43,
+    "text": "Ca. 43 Fr. pro Woche für Zmorge, Znüni und Snacks. Zmittag und Znacht kommen von zuhause bzw. der Kantine."
+  },
+  "nichtNehmen": {
+    "text": "Unter 18 nicht nehmen: Fatburner, Testo-Booster, Pre-Workout mit viel Koffein, Kreatin nur nach Rücksprache mit dem Arzt. Normales Essen bringt mehr.",
+    "liste": [
+      "Fatburner",
+      "Testo-Booster",
+      "Pre-Workout-Pulver",
+      "Energy Drinks als Ersatz für Essen"
+    ]
+  }
+}

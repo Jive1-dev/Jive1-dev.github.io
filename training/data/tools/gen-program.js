@@ -214,8 +214,14 @@ const out = {
     },
     vorDemTraining: {
       frage: "Was hast du heute schon gemacht?",
-      antworten: ["Nichts", "Sport in der Schule", "Velo / viel gelaufen", "Schon trainiert"],
-      regel: "Bei Sport in der Schule oder schon trainiert: Paare mit denselben Muskeln 1 Runde weniger. Beine schon müde: Sprünge weglassen."
+      mehrfach: true,
+      antworten: [
+        { text: "Nichts", gruppen: [], regel: "Plan wie geplant." },
+        { text: "Klimmzüge", gruppen: ["ziehen"], regel: "Übungen aus «Ziehen»: 1 Runde weniger." },
+        { text: "Liegestütze", gruppen: ["druecken"], regel: "Übungen aus «Drücken»: 1 Runde weniger." },
+        { text: "Beine", gruppen: ["beine"], regel: "Bein-Übungen: 1 Runde weniger, Sprünge weglassen." }
+      ],
+      hinweis: "Nie ganz streichen, mindestens 1 Runde bleibt (Regel 6). Gruppen = exercises.json `gruppe`."
     },
     wochentage: TAGE.map(([tag, name, muskelText]) => ({ tag, name, muskelText }))
   },
