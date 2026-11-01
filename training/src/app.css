@@ -68,7 +68,7 @@ body.agoge .app{padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
 button.chip{min-height:38px}
 button.chip[aria-pressed="true"]{background:var(--bronze);border-color:var(--bronze);color:var(--bg);font-weight:600}
 .mchip{font-size:12px;padding:2px 8px;border-radius:3px;border:1px solid var(--crimson-2);color:var(--bone)}
-.btn{min-height:52px;border-radius:6px;border:1px solid var(--line);background:var(--raise);padding:0 16px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn{text-decoration:none;color:inherit;min-height:52px;border-radius:6px;border:1px solid var(--line);background:var(--raise);padding:0 16px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px}
 .btn.primary{background:var(--crimson);border-color:var(--crimson);color:var(--on-crimson);font-family:var(--display);font-size:20px;letter-spacing:.05em;text-transform:uppercase;font-weight:700;min-height:60px;width:100%}
 .btn.primary:active{background:var(--crimson-2)}
 .btn.wide{width:100%}

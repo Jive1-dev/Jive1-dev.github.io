@@ -190,11 +190,26 @@ const MUSCLE_SEG = {
   trizeps:["ua"], bizeps:["ua"], unterarm:["fa"], handgelenk:["fa"], finger:["fa"],
   po:["hip","th"], bein_vorne:["th"], bein_hinten:["th"], bein_innen:["th"], wade:["sh"], schienbein:["sh"], fuss:["ft"]
 };
+// Rahmen pro Figur aus allen Posen berechnen, damit nichts am Rand abgeschnitten wird
+const FIG_BOX = new Map();
+function figBox(id){
+  if (FIG_BOX.has(id)) return FIG_BOX.get(id);
+  const f = FIGS[id], xs = [], ys = [];
+  figKeys(id).forEach(K => { const S = solve(K); [S.n, S.h, S.p, ...S.arms.flat(), ...S.legs.flat().filter(Boolean)].forEach(p => { xs.push(p[0]); ys.push(p[1]); }); });
+  (f.props || []).forEach(([k, x]) => { xs.push(x - 12, x + (k.startsWith("chair") ? 34 : k === "stair" ? 40 : 12)); });
+  const minX = Math.min(...xs) - 14, maxX = Math.max(...xs) + 14, minY = Math.min(...ys) - 14;
+  let w = Math.max(150, maxX - minX), h = w * 0.72;
+  if (116 - h > minY){ h = 116 - minY; w = Math.max(w, h / 0.72); } // zu hoch: Rahmen grösser
+  const cx = (minX + maxX) / 2, box = [cx - w / 2, 116 - h, w, h].map(v => +v.toFixed(1));
+  FIG_BOX.set(id, box); return box;
+}
 function figSVG(id, muscles = [], cls = ""){
-  const f = FIGS[id] || FIGS.squat;
+  if (!FIGS[id]) id = "squat";
+  const f = FIGS[id];
   const props = (f.props || []).map(([k, x]) => PROP[k](x)).join("");
-  return `<svg class="fig ${cls}" viewBox="14 -16 172 130" data-fig="${id}" data-mu="${muscles.join(" ")}" aria-hidden="true">
-    <path class="ground" d="M14 111 H186"/>${props}<g class="ghost"></g><g class="live"></g></svg>`;
+  const [bx, by, bw, bh] = figBox(id);
+  return `<svg class="fig ${cls}" viewBox="${bx} ${by} ${bw} ${bh}" data-fig="${id}" data-mu="${muscles.join(" ")}" aria-hidden="true">
+    <path class="ground" d="M${bx} 111 H${bx + bw}"/>${props}<g class="ghost"></g><g class="live"></g></svg>`;
 }
 function segEls(k){ return `<line class="ol" data-s="${k}"/><line class="sk" data-s="${k}"/><line class="mu" data-s="${k}"/>`; }
 function figBody(id){
