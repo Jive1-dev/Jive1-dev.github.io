@@ -48,7 +48,8 @@ const leitern = L.map(l => ({ id: l.id, name: l.name, startUebung: l.start, stuf
   return { nr: i + 1, uebung: id, name: EX.get(id).name, test: { wert, einheit, text } };
 }) }));
 const out = { _meta: { version: 1, stand: "2026-11-01", autor: "Claude B",
-  regel: "Eine Stufe gilt als geschafft, wenn der Test sauber erreicht ist (Technik vor Zahl). Dann schaltet die App die nächste Stufe frei. Kein Rückstufen als Strafe: geht eine Stufe an einem Tag nicht, wird nur für diesen Satz die leichtere genommen (Regel 7).",
+  regel: "Schaffst du den Test sauber, wird die nächste Stufe frei. Klappt eine Stufe an einem Tag nicht, nimm für diesen Satz die leichtere. Das ist kein Rückschritt.",
+  regelIntern: "Für die App: Freischalten nur über bestandenen Test (Technik vor Zahl). Nie zurückstufen als Strafe; Regel 7 gilt nur pro Satz.",
   einheiten: { sek: "Sekunden", wdh: "Wiederholungen", wdh_seite: "Wiederholungen pro Seite", sek_seite: "Sekunden pro Seite", von5: "von 5 Versuchen" },
   startStand: stand }, leitern };
 fs.writeFileSync(process.argv[3], JSON.stringify(out, null, 2) + "\n");
