@@ -97,3 +97,9 @@ Erzeugt von `tools/gen-nutrition.js`. Teile:
 Alle Preise und Nährwerte sind gerundete Schätzungen, keine Marken.
 
 `node tools/gen-nutrition.js nutrition.json`
+
+## skills.json
+Erzeugt von `tools/gen-skills.js`. 6 Leitern (Handstand, Planche, L-Sitz, Press, Klimmzug, Pistol):
+`leitern[] = {id, name, startUebung, stufen[] = {nr, uebung (exercises-ID), name, test: {wert, einheit, text}}}`.
+`_meta.startStand`: was Benaja laut Abschnitt 2 schon kann. Freischalten nur über bestandenen Test, nie Rückstufen als Strafe.
+`node tools/gen-skills.js exercises.json skills.json`
