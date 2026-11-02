@@ -298,13 +298,20 @@ function viewHeute(){
     const mins = log.short ? Math.min(25, day.minuten) : log.light ? Math.round(day.minuten * .8) : day.minuten;
     const goals = [...new Map(steps.filter(s => s.block === "paar" || s.block === "skills").map(s => [s.id, s])).values()].slice(0, 3);
     const preQ = PROG._meta.vorDemTraining;
+    // Schlauer Heute-Screen (B): Start oben, Claude-Tipp, verpasster Tag freundlich, Ziele statt doppelter Fortschrittszeile
+    const lastCoach = Object.entries(S.coachLog || {}).filter(([d]) => d < k).sort((a, b) => a[0] < b[0] ? 1 : -1)[0];
+    const coachTip = lastCoach && lastCoach[1].res?.naechstesMal ? lastCoach[1].res.naechstesMal : "";
+    let yd = addDays(k, -1); if (dayIdx(yd) === 6) yd = addDays(yd, -1);
+    const missed = !log.started && yd >= S.settings.start && !S.logs[yd]?.done && progDay(yd).day.plan;
+    const goBtn = `<button class="btn primary hero-go" id="go">${ICON.play}${log.started && !log.done && (log.pos || log.pauseAt) ? `Weiter · Übung ${(log.pos || 0) + 1} von ${steps.length}` : `Training starten · ${mins} Min`}</button>`;
     main = `<div class="card hero">
         <div class="split"><span class="eyebrow">${longDate(k)}</span><span class="eyebrow">${pre ? "Start" : `Woche ${w} · Phase ${ROMAN[PROG._meta.phasen.indexOf(ph)] || ""}`}</span></div>
         <h1 class="title-xl" style="margin-top:8px">${esc(day.name)}</h1>
-        <p class="muted" style="margin-top:4px">${esc(day.muskelText || "")}</p>
-        <div class="chips" style="margin-top:10px">${(day.muskeln || []).slice(0, 5).map(m => `<span class="mchip">${esc(muscleShort(m))}</span>`).join("")}</div>
+        <div class="chips" style="margin-top:8px">${(day.muskeln || []).slice(0, 4).map(m => `<span class="mchip">${esc(muscleShort(m))}</span>`).join("")}</div>
         ${week.typ !== "normal" ? `<p class="hint" style="margin-top:10px">${esc(week.typ === "deload" ? (line("deload") || "Leichte Woche: weniger Runden. Sehnen und Gelenke holen auf.") : (line("testwoche") || "Testwoche: Zeig, was du gewonnen hast."))}</p>` : ""}
-        ${day.fortschritt ? `<p class="hint" style="margin-top:10px">${esc(day.fortschritt)}</p>` : ""}
+        ${missed ? `<p class="hint" style="margin-top:10px">${esc(line("verpasst"))}</p>` : ""}
+        ${coachTip && !log.done ? `<p class="hint coach-hint" style="margin-top:10px">Claude-Coach: ${esc(coachTip)}</p>` : ""}
+        ${log.done ? "" : `<div style="margin-top:14px">${goBtn}</div>`}
       </div>
       ${log.done ? `<div class="card"><div class="kicker">Erledigt</div><h3>Agoge bestanden ✓</h3><p class="muted" style="margin-top:6px">${esc(line("ende"))}</p>
         <div class="row" style="margin-top:12px"><a class="btn sm" href="#bericht">Kampfbericht</a><button class="btn sm" id="again">Nochmal öffnen</button></div></div>` : `
@@ -315,12 +322,11 @@ function viewHeute(){
       <div class="card"><div class="kicker">${esc(preQ?.frage || "Was hast du heute schon gemacht?")}</div>
         <div class="chips" id="pre">${(preQ?.antworten || []).map(a => `<button class="chip" data-pre="${esc(a.text)}" aria-pressed="${a.text === "Nichts" ? !log.pre.length : log.pre.includes(a.text)}">${esc(a.text)}</button>`).join("")}</div>
         <p class="small" style="margin-top:8px">Bereits Trainiertes bekommt 1 Runde weniger, nie ganz gestrichen.</p></div>
-      <button class="btn primary" id="go">${ICON.play}${log.started && !log.done && (log.pos || log.pauseAt) ? `Weiter · Übung ${(log.pos || 0) + 1} von ${steps.length}` : `Training starten · ${mins} Min`}</button>
-      <div class="card"><div class="kicker">Ablauf</div><div class="timeline">${timeline(day, log)}</div></div>
       <div class="row wrap">
         <button class="btn ghost sm grow" id="light" aria-pressed="${log.light}">${log.light ? "✓ Leichte Version" : "Muskelkater? Leichte Version"}</button>
         <button class="btn ghost sm grow" id="short" aria-pressed="${!!log.short}">${log.short ? "✓ Nur 25 Min" : "Wenig Zeit? Nur 25 Min"}</button>
-      </div>`}`;
+      </div>
+      <details class="card"><summary class="kicker" style="margin:0;cursor:pointer">Ablauf · ${mins} Min</summary><div class="timeline" style="margin-top:10px">${timeline(day, log)}</div></details>      </div>`}`;
   }
   const yearDone = w > 52 ? `<div class="card hero"><div class="kicker">${S.year ? `Jahr ${S.year}` : "52 Wochen"} geschafft</div><h2>Ein Jahr Disziplin</h2><p class="muted" style="margin-top:6px">Schau unter «Körper», was aus deinen Startwerten geworden ist. Ein neues Jahr beginnt wieder mit Phase I, auf deinem neuen Niveau.</p>
       <button class="btn wide" id="newYear" style="margin-top:10px">Neues Jahr ab nächstem Montag</button></div>` : "";
@@ -335,13 +341,15 @@ function viewHeute(){
   $("#view").innerHTML = `<div class="stack">
     ${welcome}
     ${yearDone}
-    ${q ? `<div class="quote"><p>«${esc(q.text)}»</p><small>${esc([q.wer, q.quelle || q.stelle].filter(Boolean).join(" · "))}</small></div>` : ""}
     ${main}
     <div class="card"><div class="split"><span class="kicker" style="margin:0">Wochenschild</span><span class="small num">${weekCount(k)} von 6 diese Woche</span></div>
       <div style="margin-top:10px">${weekShields(k)}</div>
       <p class="small" style="margin-top:8px">Rang: <b>${esc(r.name)}</b>${r.text ? ` · ${esc(r.text)}` : ""}${r.next ? ` · «${esc(r.next.name)}» nach ${r.next.ab ?? r.next.wochen} Wochen mit mindestens 4 Trainings` : ""}</p></div>
+    ${q ? `<div class="quote"><p>«${esc(q.text)}»</p><small>${esc([q.wer, q.quelle || q.stelle].filter(Boolean).join(" · "))}</small></div>` : ""}
+    <details class="card more-card"><summary class="kicker" style="margin:0;cursor:pointer">Mehr: Vers der Woche, selbst eintragen</summary><div style="margin-top:10px">
     ${(() => { const v = (MOT.bibel || [])[(weekOf(k) % Math.max(1, (MOT.bibel || []).length) + (MOT.bibel || []).length) % Math.max(1, (MOT.bibel || []).length)]; return v ? `<div class="card"><div class="kicker">Vers der Woche</div><p>${esc(v.sinngemaess || v.text || "")}</p><p class="small" style="margin-top:6px">${esc(v.stelle)} (sinngemäss)</p></div>` : ""; })()}
     <div class="card"><div class="kicker">Selbst eintragen</div><p class="small">Extra trainiert? Trag es ein, es zählt für Rekorde.</p>${extraForm()}</div>
+    </div></details>
   </div>`;
   $("#oGo")?.addEventListener("click", () => {
     S.profile.name = $("#oName").value.trim(); S.profile.cm = Number($("#oCm").value) || S.profile.cm; S.profile.alter = Number($("#oAlter").value) || S.profile.alter;

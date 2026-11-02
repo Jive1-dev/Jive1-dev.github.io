@@ -254,3 +254,10 @@ canvas.fig3d{max-height:38vh;object-fit:contain}
 
 /* «✓ gespeichert» oben rechts unter der Kopfzeile, nie über Knöpfen (B, Kritik 7) */
 #saved,body.agoge #saved{left:auto;right:12px;top:calc(env(safe-area-inset-top,0px) + 70px);bottom:auto}
+
+/* Heute (B): Start in der Tageskarte */
+.hero-go{width:100%}
+.more-card .card{margin-top:10px}
+details.card > summary{list-style:none}
+details.card > summary::after{content:" ▾";color:var(--bone-2)}
+details.card[open] > summary::after{content:" ▴"}
