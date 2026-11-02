@@ -219,3 +219,12 @@ details.more summary{font-family:var(--display);letter-spacing:.06em;text-transf
 .rec b{font-family:var(--display);color:var(--bronze);font-weight:500}
 
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+/* Nacht 2: Speicher-Anzeige, Werte korrigieren */
+#saved{position:fixed;left:12px;bottom:calc(var(--tab-h) + 12px + env(safe-area-inset-bottom,0px));z-index:55;font-size:12px;font-weight:600;padding:4px 9px;border-radius:4px;background:var(--raise);border:1px solid var(--line);color:var(--bone-2);opacity:0;transition:opacity .25s;pointer-events:none}
+#saved.on{opacity:1}
+#saved.warn{color:var(--bronze)}
+body.agoge #saved{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+.erow{display:grid;grid-template-columns:1fr 44px 44px 44px;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--line)}
+.erow b{text-align:center;font-size:18px}
+.erow .chip{min-height:40px;padding:0;font-size:18px}
+#editCard summary{cursor:pointer;min-height:40px;display:flex;align-items:center}

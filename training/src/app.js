@@ -1,6 +1,6 @@
 // ---------- Winter Arc Training: App ----------
 // Daten kommen von Claude B (training/data/*.json) und werden beim Bauen als WA_DATA eingesetzt.
-// Gespeichert wird nur im Browser (localStorage). Export/Import als JSON.
+// Gespeichert im Browser (localStorage) und, im Claude-Artefakt, zusätzlich im Cloud-Speicher (db, pro Nutzer). Export/Import als JSON.
 
 const D = WA_DATA;
 const EX = Object.fromEntries(D.ex.uebungen.map(u => [u.id, u]));
@@ -37,7 +37,9 @@ let SNAP = parts(); const DIRTY = new Set(); let CLOUD = null, pushT = null, BOO
 const save = () => {
   S._st ||= {}; const p = parts(), now = Date.now();
   if (!BOOT){
-    for (const id in p) if (p[id] !== SNAP[id]){ S._st[id] = now; DIRTY.add(id); }
+    let ch = false;
+    for (const id in p) if (p[id] !== SNAP[id]){ S._st[id] = now; DIRTY.add(id); ch = true; }
+    if (ch && !CLOUD) flashSaved("✓ gespeichert");
     for (const id in SNAP) if (p[id] == null) DIRTY.add(id); // gelöscht (z. B. «Alles löschen»)
     SNAP = p;
   }
@@ -48,8 +50,9 @@ let pushing = false;
 async function push(){
   if (!CLOUD || pushing) return; pushing = true;
   try { for (const id of [...DIRTY]){ DIRTY.delete(id);
-    try { if (SNAP[id] == null) await CLOUD.doc(id).delete(); else await CLOUD.doc(id).set({ json: SNAP[id], t: S._st[id] || Date.now() }); } catch(e){ DIRTY.add(id); throw e; } } }
-  catch(e) {} finally { pushing = false; }
+    try { if (SNAP[id] == null) await CLOUD.doc(id).delete(); else await CLOUD.doc(id).set({ json: SNAP[id], t: S._st[id] || Date.now() }); } catch(e){ DIRTY.add(id); throw e; } }
+    flashSaved("✓ gesichert"); }
+  catch(e) { flashSaved("Nur auf dem Gerät gespeichert", true); } finally { pushing = false; }
 }
 // Beim Öffnen: Stand aus der Cloud holen (falls der Browser-Speicher leer ist oder älter), danach automatisch mitspeichern
 async function cloudInit(){
@@ -74,6 +77,14 @@ async function cloudInit(){
     if (changed){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} applyTheme(); route(); toast("Stand geladen"); }
     push();
   } catch(e) {} finally { if (BOOT){ BOOT = false; SNAP = parts(); } }
+}
+// kleine Anzeige unten links: Benaja sieht, dass nichts verloren geht
+let svT = null;
+function flashSaved(text, warn = false){
+  let el = document.getElementById("saved");
+  if (!el){ el = document.createElement("div"); el.id = "saved"; el.setAttribute("role", "status"); document.body.appendChild(el); }
+  el.textContent = text; el.className = warn ? "warn on" : "on";
+  clearTimeout(svT); svT = setTimeout(() => el.classList.remove("on"), 1800);
 }
 addEventListener("pagehide", () => push());
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") push(); });
@@ -454,7 +465,8 @@ function renderStep(steps, log, k){
     </div>
     <div class="ag-card">
       ${i === 0 ? `<p class="hint">Agoge: so hiess die Ausbildung der Spartaner. Hier immer nur eine Übung, dann die nächste.</p>` : ""}
-      <div class="eyebrow">${esc(s.block === "paar" ? "Supersatz" : s.title)}${s.rounds > 1 ? ` · ${s.rounds - s.r === 0 ? "letztes Mal" : `noch ${s.rounds - s.r + 1} Mal`}` : ""}</div>
+      <div class="eyebrow">${esc(s.block === "paar" ? "Supersatz" : s.title)}${s.rounds > 1 ? ` · Runde ${s.r} von ${s.rounds}` : ""}</div>
+      ${s.block === "skills" && s.r === 1 && s.ui === 0 ? `<p class="hint">Skills: ${s.rounds} kurze Runden, die Übungen abwechselnd. Kurz, frisch und sauber lernt man Skills am schnellsten.</p>` : ""}
       ${u.handgelenk && s.block !== "aufwaermen" && log.wrist == null ? `<div class="card"><div class="kicker">Handgelenke heute?</div><div class="row"><button class="chip grow" data-wr="ok">Gut</button><button class="chip grow" data-wr="zwickt">Zwickt</button></div></div>` : ""}
       ${figSVG(s.id, u.muskeln || [])}
       <h2 class="ag-name">${esc(u.name)}</h2>
@@ -571,8 +583,31 @@ function finish(log, k, steps){
 }
 
 // ---------- KAMPFBERICHT ----------
+// Werte eines Tages ansehen, nachtragen, korrigieren (−/+ pro Satz, sofort gespeichert)
+function editCard(k, open){
+  const { day } = progDay(k); if (!day.plan) return "";
+  const log = logOf(k), steps = buildSteps(day, log).filter(s => s.block !== "aufwaermen" && s.block !== "abschluss");
+  let lastT = null;
+  const rows = steps.map(s => { const v = log.sets[s.key]?.v; const head = s.title !== lastT ? `<div class="eyebrow" style="margin-top:10px">${esc(s.block === "paar" ? s.title.replace("Paar", "Supersatz") : s.title)}</div>` : ""; lastT = s.title;
+    return `${head}<div class="erow"><span>${esc(exName(s.id))}${s.rounds > 1 ? ` <small class="muted">Runde ${s.r}</small>` : ""}</span>
+      <button class="chip" data-em="${s.key}" aria-label="weniger">−</button><b class="num" data-ev="${s.key}">${v ?? "–"}</b><button class="chip" data-ep="${s.key}" aria-label="mehr">+</button></div>`; }).join("");
+  return `<details class="card" id="editCard" style="width:100%;text-align:left" ${open ? "open" : ""}><summary><b>Werte ansehen und korrigieren</b></summary>
+    <p class="small" style="margin-top:6px">Tippe −/+ pro Satz. Wird sofort gespeichert. «–» heisst: nicht eingetragen.</p>${rows}
+    ${!log.done ? `<button class="btn wide" id="markDone" style="margin-top:12px">Training als gemacht zählen</button>` : ""}</details>`;
+}
+function bindEdit(k){
+  const { day } = progDay(k), log = logOf(k), steps = buildSteps(day, log), by = Object.fromEntries(steps.map(s => [s.key, s]));
+  const ch = (key, d) => { const s = by[key]; if (!s) return; const cur = log.sets[key];
+    const v = cur ? Math.max(0, cur.v + d) : Math.max(0, (s.ziel || 0) + (d < 0 ? -1 : 0));
+    log.sets[key] = { ...(cur || { id: s.id, kg: null, block: s.block }), id: s.id, v, t: Date.now(), block: s.block }; save();
+    const el = $(`[data-ev="${key}"]`); if (el) el.textContent = v; };
+  $$("[data-em]").forEach(b => b.onclick = () => ch(b.dataset.em, -1));
+  $$("[data-ep]").forEach(b => b.onclick = () => ch(b.dataset.ep, 1));
+  $("#markDone")?.addEventListener("click", () => { log.done = true; log.finished ||= Date.now(); save(); toast("Gezählt ✓"); route(); });
+}
 function viewBericht(){
-  const k = today(), log = logOf(k), { day } = progDay(k);
+  const hk = (location.hash.match(/^#bericht-(\d{4}-\d\d-\d\d)$/) || [])[1];
+  const k = hk || today(), log = logOf(k), { day } = progDay(k);
   const dur = log.finished && log.started ? (log.finished - log.started - (log.pauseMs || 0)) / 1000 : 0;
   const ids = [...new Set(Object.values(log.sets).map(s => s.id))];
   const recs = ids.map(id => { const h = history(id, k); const best = Math.max(...Object.values(log.sets).filter(s => s.id === id).map(s => s.v)); return {id, best, prev: h.best}; }).filter(r => r.prev != null && r.best > r.prev);
@@ -588,8 +623,11 @@ function viewBericht(){
     <div class="card" style="width:100%;text-align:left"><div class="kicker">Heute trainiert</div>${muscleMapSVG(muscleLoad([k]))}</div>
     ${(() => { let nk = addDays(k, 1); if (dayIdx(nk) === 6) nk = addDays(nk, 1); const nd = progDay(nk).day;
       return `<div class="card" style="width:100%;text-align:left"><div class="kicker">${dayIdx(addDays(k, 1)) === 6 ? "Morgen Ruhetag, dann" : "Morgen"}</div><h3>${esc(nd.name)}</h3><p class="muted" style="margin-top:4px">${esc(nd.muskelText || "")} · ${nd.minuten} Min</p></div>`; })()}
-    <a class="btn primary" href="#heute">Zurück</a>
+    ${editCard(k, !!hk)}
+    <a class="btn primary" href="${hk ? "#plan" : "#heute"}">Zurück</a>
   </div>`;
+  bindEdit(k);
+  if (hk) setTimeout(() => $("#editCard")?.scrollIntoView({ block: "start" }), 50);
 }
 // Ein Satz zählt als hart, wenn er aus Skills, Supersatz oder Test kommt (nicht Aufwärmen/Abschluss)
 const isHard = x => x.block ? ["skills","paar","test"].includes(x.block) : !["aufwaermen","dehnen","haltung"].includes(EX[x.id]?.gruppe);
@@ -630,7 +668,9 @@ function viewPlan(){
   $$(".dayrow").forEach(b => b.onclick = () => {
     const t = wk.tage[Number(b.dataset.day)];
     if (!t.plan){ $("#dayDetail").innerHTML = `<div class="card"><h3>Ruhetag</h3><p class="muted">${esc(t.hinweis || "")}</p></div>`; return; }
-    $("#dayDetail").innerHTML = `<div class="card"><div class="kicker">${DAYS_LONG[Number(b.dataset.day)]} · ${t.minuten} Min</div><h3>${esc(t.name)}</h3><div class="list" style="margin-top:10px">
+    const dk = addDays(mon, Number(b.dataset.day));
+    $("#dayDetail").innerHTML = `<div class="card"><div class="kicker">${DAYS_LONG[Number(b.dataset.day)]} · ${t.minuten} Min</div><h3>${esc(t.name)}</h3>
+      ${dk <= today() ? `<a class="btn wide" style="margin-top:10px" href="#bericht-${dk}">${S.logs[dk]?.done ? "Werte ansehen und korrigieren" : "Werte nachtragen"}</a>` : ""}<div class="list" style="margin-top:10px">
       ${t.plan.map(bl => `<div><div class="eyebrow">${esc(bl.block === "paar" ? bl.titel.replace("Paar", "Supersatz") : bl.titel)}${bl.runden > 1 ? ` · ${bl.runden} Mal` : ""}</div>${bl.uebungen.map(u => `<div class="pline">${figSVG(u.id, EX[u.id]?.muskeln || [], "fig-thumb")}<span>${esc(exName(u.id))}</span><b class="num">${u.bereich ? `${u.bereich[0]}–${u.bereich[1]}` : (u.ziel ?? "")} ${isSec(u.einheit) ? "Sek" : ""}</b></div>`).join("")}</div>`).join("")}
     </div></div>`;
     mountFigs($("#dayDetail"));
