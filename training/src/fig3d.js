@@ -27,6 +27,7 @@ const F3D = (() => {
     floor: new THREE.MeshStandardMaterial({ color: 0x0f0c0a, roughness: 1, metalness: 0, envMapIntensity: 0.15 }),
     metal: new THREE.MeshStandardMaterial({ color: C.metal, roughness: 0.32, metalness: 0.75 }),
     wall: new THREE.MeshStandardMaterial({ color: 0x2a241d, roughness: 0.9 }),
+    glass: new THREE.MeshStandardMaterial({ color: 0x3a332c, roughness: 0.4, metalness: 0.3, transparent: true, opacity: 0.38, depthWrite: false }),
     towel: new THREE.MeshStandardMaterial({ color: 0x6d5a3e, roughness: 0.95 }),
     ball: new THREE.MeshStandardMaterial({ color: 0x3b3430, roughness: 0.7 }),
     shadow: new THREE.ShadowMaterial({ opacity: 0.38 })
@@ -79,8 +80,8 @@ const F3D = (() => {
       const add = (o) => { group.add(o); return o; };
       if ((k === "chair" || k === "chairL") && f === FIGS.dip){
         [-1, 1].forEach(sd => {
-          const z = sd * 24, seat = add(mesh(BOX, mat.wood)); seat.scale.set(30, 3, 26); seat.position.set(100, 26.5, z);
-          [[87, z - 11], [113, z - 11], [87, z + 11], [113, z + 11]].forEach(([lx, lz]) => { const l = add(mesh(CYL, mat.wood)); l.scale.set(1.3, 25, 1.3); l.position.set(lx, 12.5, lz); });
+          const z = sd * 26, seat = add(mesh(BOX, mat.glass)); seat.scale.set(30, 3, 22); seat.position.set(100, 26.5, z); seat.castShadow = false;
+          [[87, z - 9], [113, z - 9], [87, z + 9], [113, z + 9]].forEach(([lx, lz]) => { const l = add(mesh(CYL, mat.glass)); l.scale.set(1.3, 25, 1.3); l.position.set(lx, 12.5, lz); });
         });
       } else if (k === "chair" || k === "chairL"){
         const seat = add(mesh(BOX, mat.wood)); seat.scale.set(32, 3, 30); seat.position.set(x + 16, 28 - 1.5, 0);
