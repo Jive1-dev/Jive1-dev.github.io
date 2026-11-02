@@ -694,16 +694,19 @@ function buildSteps(day, log){
   const steps = [];
   const pre = PROG._meta.vorDemTraining?.antworten || [];
   const preGroups = new Set(pre.filter(a => log.pre.includes(a.text)).flatMap(a => a.gruppen));
-  let pairs = 0;
-  const cut = yearCut(day);
+  let pairs = 0, after = 0;
+  const cut = yearCut(day), tr = log.trim; // tr: mitten im Training gekürzt ab Block tr.bi (Nacht 2, A3)
   (day.plan || []).forEach((b, bi) => {
     if (b.block === "paar") pairs++;
     if (log.short && ((b.block === "paar" && pairs > 2) || b.block === "abschluss")) return; // «Nur 25 Min» (Idee B6)
+    if (tr && bi > tr.bi){ if (b.block === "abschluss" || b.block === "skills") return; if (b.block === "paar" && ++after > 2) return; }
     const once = b.block === "aufwaermen" || b.block === "abschluss" || b.block === "test";
     let rounds = once ? 1 : (b.runden || 1);
     if (!once && log.light) rounds = Math.max(1, rounds - 1);
     if (b.block === "paar" && preGroups.size && b.uebungen.some(u => preGroups.has(EX[log.swaps[`${bi}.${b.uebungen.indexOf(u)}`] || u.id]?.gruppe))) rounds = Math.max(1, rounds - 1);
     if (cut[bi] != null) rounds = Math.min(rounds, cut[bi]);
+    if (tr && bi > tr.bi && b.block === "paar") rounds = Math.min(rounds, 2);
+    if (tr && bi === tr.bi && !once) rounds = Math.min(rounds, Math.max(tr.r, 2));
     for (let r = 1; r <= rounds; r++) b.uebungen.forEach((u, ui) => {
       const adj = (S.yearAdj || {})[u.id];
       const id = log.swaps[`${bi}.${ui}`] || adj?.stufe || u.id;
@@ -1038,7 +1041,8 @@ function renderStep(steps, log, k){
   const h = history(s.id, k), next = steps[i + 1];
   const started = log.started || Date.now(); log.started = started;
   const planMin = log.short ? Math.min(25, progDay(k).day.minuten) : progDay(k).day.minuten;
-  const remainMin = planMin * (1 - i / steps.length);
+  const fullLen = log.trim ? buildSteps(progDay(k).day, { ...log, trim: null }).length : steps.length;
+  const perStep = planMin * 60 / fullLen, remainMin = (steps.length - i) * perStep / 60;
   const endAt = new Date(Date.now() + remainMin * 6e4);
   const prev = log.sets[s.key]?.v;
   const startVal = prev ?? (h.last != null ? h.last : (s.ziel || 0));
@@ -1084,6 +1088,7 @@ function renderStep(steps, log, k){
         <button class="btn ghost sm" id="skip">Überspringen</button>
       </div>
       ${next ? `<p class="next">Danach: ${esc(exName(next.id))}</p>` : ""}
+      ${!log.trim && !log.short && steps.length - i > 8 && s.block !== "aufwaermen" ? `<button class="btn ghost sm wide" id="trim">Wenig Zeit? Rest kürzen</button>` : log.trim ? `<p class="small" style="text-align:center">Gekürzt: nur noch das Wichtigste.</p>` : ""}
     </div>`;
   if (u.handgelenk && !log.wristTip){ log.wristTip = s.key; save(); }
   const clock = () => { const el = $("#clock"); if (el) el.textContent = fmt((Date.now() - started - (log.pauseMs || 0)) / 1000); };
@@ -1113,6 +1118,18 @@ function renderStep(steps, log, k){
   });
   const go = d => { clearInterval(clockIv); log.pos = Math.max(0, Math.min(steps.length - 1, i + d)); save(); renderStep(steps, log, k); mountFigs($("#view")); window.scrollTo(0, 0); };
   $("#prev").onclick = () => go(-1);
+  $("#trim")?.addEventListener("click", () => {
+    const t = { bi: s.bi, r: s.r }, ns = buildSteps(progDay(k).day, { ...log, trim: t }), ni = ns.findIndex(x => x.key === s.key);
+    const hhmm = m => { const d = new Date(Date.now() + m * 6e4); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; };
+    const nowEnd = hhmm(remainMin), newEnd = hhmm((ns.length - ni) * perStep / 60);
+    const dropped = (progDay(k).day.plan || []).filter((b, bi) => bi > s.bi && b.block === "paar").length - 2;
+    $("#panel").innerHTML = `<div class="card"><div class="kicker">Rest kürzen</div>
+      <p style="margin-top:6px">Fertig ca. <b class="num">${newEnd}</b> statt ${nowEnd}. Noch <b class="num">${ns.length - ni}</b> statt ${steps.length - i} Übungen.</p>
+      <p class="small" style="margin-top:4px">Die nächsten 2 Supersätze bleiben, je 2 Runden${dropped > 0 ? `, ${dropped} Supersatz fällt weg` : ""}${(progDay(k).day.plan || []).some(b => b.block === "abschluss") ? ", Abschluss fällt weg" : ""}. Was du schon gemacht hast, bleibt gespeichert.</p>
+      <button class="btn primary wide" id="trimGo" style="margin-top:10px">Kürzen</button></div>`;
+    $("#trimGo").onclick = () => { log.trim = t; log.pos = ni; save(); toast(`Gekürzt. Fertig ca. ${newEnd}.`); clearInterval(clockIv); renderStep(ns, log, k); mountFigs($("#view")); window.scrollTo(0, 0); };
+    $("#panel").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
   $("#pause").onclick = () => { clearInterval(clockIv); log.pauseAt = Date.now(); save(); pauseView(steps, log, k); window.scrollTo(0, 0); };
   $("#note").onclick = () => {
     const cur = log.notes?.[s.id] || "";
