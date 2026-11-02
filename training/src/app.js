@@ -264,6 +264,9 @@ function route(){
   $$(".tabs a").forEach(a => a.setAttribute("aria-current", a.getAttribute("href") === "#" + v ? "page" : "false"));
   if (v !== "agoge") stopTimers();
   VIEWS[v]();
+  // Einblenden nur beim Seitenwechsel, nicht bei jedem Neuzeichnen innerhalb der Seite
+  const vw = $("#view"); vw.classList.remove("enter"); void vw.offsetWidth; vw.classList.add("enter");
+  clearTimeout(route.t); route.t = setTimeout(() => vw.classList.remove("enter"), 900);
   setRank();
   mountFigs($("#view"));
   window.scrollTo(0, 0);
