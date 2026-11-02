@@ -1038,7 +1038,12 @@ Antworte NUR mit diesem JSON:
     }
   }
   // Anpassung für eine Übung (für buildSteps und Anzeige)
-  const adj = id => (S.coachAdj || {})[id] || null;
+  // Eine Anpassung gilt bis zum nächsten Phasenwechsel; dort gibt es neue Testwerte (abgesprochen mit A, 22:45)
+  const adj = id => {
+    const a = (S.coachAdj || {})[id]; if (!a) return null;
+    if (a.seit){ const from = phaseOf(Math.max(1, weekOf(a.seit))), now = phaseOf(Math.max(1, weekOf(today()))); if (from !== now) return null; }
+    return a;
+  };
   // Wochenbericht am Sonntag: Schlüssel "W" + Datum des Sonntags
   const weekCard = k => card("W" + k), weekBind = k => bind("W" + k);
   return { card, bind, report, reportWeek, prompt, adj, apply, undo, clean, parseText, weekCard, weekBind };
