@@ -245,6 +245,24 @@ body.agoge #saved{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 .coach-list{display:grid;gap:8px;margin-top:6px}
 .coach-row{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--raise)}
 .coach-row input{width:18px;height:18px;margin-top:2px;accent-color:var(--crimson)}
+
+/* Übungs-Screen: feste Leiste unten in der Daumenzone (B, Kritik 1–4, 10, 11) */
+.ag-dock{position:sticky;bottom:0;z-index:5;display:grid;gap:8px;margin:12px -16px 0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line)}
+.ag-dock .stepper{margin:0}
+.ag-dock .ag-tools{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0}
+.ag-dock .ag-tools .btn{min-height:44px;font-size:14px}
+.ag-more{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ag-more .wide{grid-column:1/-1}
+#done{display:flex;align-items:center;justify-content:center;gap:10px;white-space:nowrap;overflow:hidden}
+#done .nx{opacity:.8;font-weight:500;overflow:hidden;text-overflow:ellipsis}
+[data-feel][aria-pressed="true"]{background:var(--crimson);border-color:var(--crimson);color:var(--on-crimson,#fff)}
+.howto summary{font-weight:600;cursor:pointer}
+.coach-hint{border-left-color:var(--crimson)}
+canvas.fig3d{max-height:38vh;object-fit:contain}
+@media (min-width:900px){canvas.fig3d{max-height:46vh}}
+
+/* «✓ gespeichert» oben rechts unter der Kopfzeile, nie über Knöpfen (B, Kritik 7) */
+#saved,body.agoge #saved{left:auto;right:12px;top:calc(env(safe-area-inset-top,0px) + 70px);bottom:auto}
 </style>
 <div id="root"></div>
 <noscript>Diese App braucht JavaScript.</noscript>
@@ -1507,26 +1525,30 @@ function renderStep(steps, log, k){
       ${s.tempo ? `<p class="hint">Tempo: ${esc(s.tempo)}</p>` : ""}
       ${u.handgelenk && (log.wrist === "zwickt" || !log.wristTip || log.wristTip === s.key) ? `<p class="hint">${log.wrist === "zwickt" ? "Heute zwicken die Handgelenke: auf die Parallettes oder auf die Fäuste, Handtuch unter die Handballen, weniger weit lehnen. Sticht es: «Schmerz?» tippen." : esc(META.handgelenkTipp)}</p>` : ""}
       ${(() => { const f = feelHist(s.id, k); return f.length >= 2 && f.every(x => x === "leicht") && u.schwerer && EX[u.schwerer] ? `<div class="beat"><span>Zweimal «leicht». Bereit für <b>${esc(EX[u.schwerer].name)}</b>?</span><button class="chip" id="harder">Ja</button></div>` : ""; })()}
-      <ol class="steps">${(u.schritte || []).map(t => `<li>${glossify(t)}</li>`).join("")}</ol>
+      ${(() => { const ca = typeof COACH !== "undefined" ? COACH.adj(s.id) : null; return ca?.grund ? `<p class="hint coach-hint">Claude-Coach hat das angepasst: ${esc(ca.grund)}</p>` : ""; })()}
+      <details class="more howto" ${h.last == null ? "open" : ""}><summary>So geht's</summary><ol class="steps">${(u.schritte || []).map(t => `<li>${glossify(t)}</li>`).join("")}</ol></details>
       <details class="more"><summary>Fehler vermeiden</summary><ul class="steps" style="margin-top:6px">${(u.fehler || []).map(t => `<li>${esc(t)}</li>`).join("")}</ul>${u.sicherheit ? `<p class="small" style="margin-top:6px">${esc(u.sicherheit)}</p>` : ""}</details>
       ${vid && (S.videoOk || {})[s.id] !== false ? `<div id="vidSlot"><button class="btn wide" id="vid">${ICON.play}Video ansehen${vid.kanal ? ` · ${esc(vid.kanal)}` : ""}</button>${(S.videoOk || {})[s.id] ? "" : `<p class="small" style="margin-top:4px">Aus einer Suche, von uns noch nicht angeschaut (englisch).</p>`}</div>` : ""}
-      ${isSec(s.einheit) ? `<button class="watch" id="watch">Stoppuhr starten</button>` : ""}
-      <div class="stepper"><button id="minus" aria-label="weniger">−</button><input id="val" class="num" type="number" inputmode="numeric" min="0" value="${startVal}" aria-label="${isSec(s.einheit) ? "Sekunden" : "Wiederholungen"}"><button id="plus" aria-label="mehr">+</button></div>
       ${showKg ? `<div class="row small"><span>Hanteln</span><button class="chip" id="kgm">−</button><b class="num" id="kgv">${S.settings.hantelKg} kg</b><button class="chip" id="kgp">+</button></div>` : ""}
-      <button class="btn primary" id="done">${next ? "Fertig ✓" : "Agoge beenden ✓"}</button>
-      <div class="ag-tools">
-        <button class="btn" id="easier">${u.leichter ? "Zu schwer?" : "Leichter?"}</button>
-        <button class="btn" id="swap">Tauschen</button>
-        <button class="btn" id="pain">Schmerz?</button>
-      </div>
-      <div id="panel"></div>
-      <div class="row" style="justify-content:space-between">
-        <button class="btn ghost sm" id="prev" ${i === 0 ? "disabled" : ""}>Zurück</button>
-        <button class="btn ghost sm" id="note">Notiz</button>
-        <button class="btn ghost sm" id="skip">Überspringen</button>
-      </div>
       ${next ? `<p class="next">Danach: ${esc(exName(next.id))}</p>` : ""}
-      ${!log.trim && !log.short && steps.length - i > 8 && s.block !== "aufwaermen" ? `<button class="btn ghost sm wide" id="trim">Wenig Zeit? Rest kürzen</button>` : log.trim ? `<p class="small" style="text-align:center">Gekürzt: nur noch das Wichtigste.</p>` : ""}
+      <div id="panel"></div>
+      <div class="ag-dock">
+        ${isSec(s.einheit) ? `<button class="watch" id="watch">▶ Halten starten</button>` : ""}
+        <div class="stepper"><button id="minus" aria-label="weniger">−</button><input id="val" class="num" type="number" inputmode="numeric" min="0" value="${startVal}" aria-label="${isSec(s.einheit) ? "Sekunden" : "Wiederholungen"}"><button id="plus" aria-label="mehr">+</button></div>
+        <button class="btn primary" id="done">${next ? "Fertig ✓" : "Agoge beenden ✓"}</button>
+        <div class="ag-tools">
+          <button class="btn" id="easier">${u.leichter ? "Zu schwer?" : "Leichter?"}</button>
+          <button class="btn" id="pain">Schmerz?</button>
+          <button class="btn" id="moreBtn" aria-expanded="false">⋯ Mehr</button>
+        </div>
+        <div class="ag-more" id="morePanel" hidden>
+          <button class="btn" id="swap">Übung tauschen</button>
+          <button class="btn" id="note">Notiz schreiben</button>
+          <button class="btn" id="prev" ${i === 0 ? "disabled" : ""}>Eine zurück</button>
+          <button class="btn" id="skip">Überspringen</button>
+          ${!log.trim && !log.short && steps.length - i > 8 && s.block !== "aufwaermen" ? `<button class="btn wide" id="trim">Wenig Zeit? Rest kürzen</button>` : log.trim ? `<p class="small" style="grid-column:1/-1;text-align:center">Gekürzt: nur noch das Wichtigste.</p>` : ""}
+        </div>
+      </div>
     </div>`;
   if (u.handgelenk && !log.wristTip){ log.wristTip = s.key; save(); }
   const clock = () => { const el = $("#clock"); if (el) el.textContent = fmt((Date.now() - started - (log.pauseMs || 0)) / 1000); };
@@ -1546,12 +1568,12 @@ function renderStep(steps, log, k){
   // Stoppuhr im Knopf: 3 Sek Vorlauf, dann zählt sie hoch, tippen = Stopp
   $("#watch")?.addEventListener("click", () => {
     const b = $("#watch");
-    if (T && T.kind === "watch"){ const sec = T.start ? Math.round((Date.now() - T.start) / 1000) : 0; stopTimers(); lockScreen(); b.classList.remove("run"); b.textContent = "Stoppuhr starten"; if (sec) val.value = sec; return; }
+    if (T && T.kind === "watch"){ const sec = T.start ? Math.round((Date.now() - T.start) / 1000) : 0; stopTimers(); lockScreen(); b.classList.remove("run"); b.textContent = "▶ Halten starten"; if (sec){ val.value = sec; $("#done").click(); } return; }
     stopTimers(); lockScreen(); b.classList.add("run");
     T = {kind:"watch", start:0, prep: Date.now() + 3000, last:4};
     T.iv = setInterval(() => {
       if (!T.start){ const left = Math.ceil((T.prep - Date.now()) / 1000); if (left <= 0){ T.start = Date.now(); beep(); } else if (left !== T.last){ T.last = left; beep(620, .06); b.textContent = `Bereit … ${left}`; } }
-      else b.textContent = `${fmt((Date.now() - T.start) / 1000)} · Stopp`;
+      else b.textContent = `${fmt((Date.now() - T.start) / 1000)} · Stopp = fertig`;
     }, 200);
   });
   const go = d => { clearInterval(clockIv); log.pos = Math.max(0, Math.min(steps.length - 1, i + d)); save(); renderStep(steps, log, k); mountFigs($("#view")); window.scrollTo(0, 0); };
@@ -1568,6 +1590,7 @@ function renderStep(steps, log, k){
     $("#trimGo").onclick = () => { log.trim = t; log.pos = ni; save(); toast(`Gekürzt. Fertig ca. ${newEnd}.`); clearInterval(clockIv); renderStep(ns, log, k); mountFigs($("#view")); window.scrollTo(0, 0); };
     $("#panel").scrollIntoView({ behavior: "smooth", block: "nearest" });
   });
+  $("#moreBtn").onclick = () => { const m = $("#morePanel"), b = $("#moreBtn"); m.hidden = !m.hidden; b.setAttribute("aria-expanded", String(!m.hidden)); if (!m.hidden) m.scrollIntoView({ behavior: "smooth", block: "nearest" }); };
   $("#pause").onclick = () => { clearInterval(clockIv); log.pauseAt = Date.now(); save(); pauseView(steps, log, k); window.scrollTo(0, 0); };
   $("#note").onclick = () => {
     const cur = log.notes?.[s.id] || "";
@@ -1596,7 +1619,8 @@ function renderStep(steps, log, k){
       $$("[data-feel]").forEach(c => c.onclick = () => { log.sets[s.key].feel = c.dataset.feel; save(); $$("[data-feel]").forEach(x => x.setAttribute("aria-pressed", x === c)); });
     }
     let left = s.pause; b.classList.add("rest");
-    const paint = () => { b.innerHTML = `Pause <b class="num">${fmt(left)}</b> · dann ${esc(exName(next.id))}`; };
+    const nn = exName(next.id), short = nn.length > 22 ? nn.slice(0, 21) + "…" : nn;
+    const paint = () => { b.innerHTML = `<span>Pause <b class="num">${fmt(left)}</b></span><span class="nx">→ ${esc(short)}</span>`; };
     paint();
     T = {kind:"rest"}; T.iv = setInterval(() => { left--; if (left > 0 && left <= 3) beep(620, .06); if (left <= 0){ beep(880, .4); stopTimers(); go(1); return; } paint(); }, 1000);
   };
