@@ -7,7 +7,9 @@ const data = { ex: opt("data/exercises.json"), prog: opt("data/program.json"), s
   nut: opt("data/nutrition.json"), videos: opt("data/videos.json"), motiv: opt("data/motivation.json") };
 // videos.json darf ein _meta haben; die App erwartet { id: {url, kanal, titel} }
 if (data.videos){ const src = data.videos.videos || data.videos, v = {}; Object.entries(src).forEach(([k, x]) => { if (k !== "_meta" && x && x.url) v[k] = x; }); data.videos = v; }
-const js = `const WA_DATA = ${JSON.stringify(data)};\n${rd("src/figures.js")}\n${rd("src/art.js")}\n${rd("src/app.js")}`;
+// 3D-Figuren (Claude B): three.js (MIT, src/vendor) + fig3d.js hängen sich an mountFigs; ohne WebGL bleibt die 2D-Figur
+const opt3 = f => fs.existsSync(path.join(dir, f)) ? rd(f) : "";
+const js = `const WA_DATA = ${JSON.stringify(data)};\n${rd("src/figures.js")}\n${opt3("src/vendor/three.min.js")}\n${opt3("src/fig3d.js")}\n${rd("src/art.js")}\n${rd("src/app.js")}`;
 const body = `<title>Winter Arc Training</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
