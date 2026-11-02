@@ -762,7 +762,7 @@ function viewKoerper(){
   const M = S.body.m[S.body.m.length - 1] || {};
   $("#view").innerHTML = `<div class="stack">
     <div><div class="eyebrow">Fortschritt</div><h1 class="title-xl" style="margin-top:6px">Dein Körper</h1></div>
-    <div class="tiles"><div class="tile"><b class="num">${latestKg()}</b><span>kg aktuell</span></div><div class="tile"><b class="num">${gain >= 0 ? "+" : ""}${gain.toFixed(1)}</b><span>kg seit Start</span></div></div>
+    <div class="tiles"><div class="tile"><b class="num">${latestKg()}<small>kg</small></b><span>aktuell</span></div><div class="tile"><b class="num">${gain >= 0 ? "+" : ""}${gain.toFixed(1)}<small>kg</small></b><span>seit Start</span></div></div>
     <div class="card"><div class="kicker">Gewicht</div>${weightQuick()}<div style="margin-top:12px">${weightChart()}</div></div>
     <div class="card"><div class="kicker">Diese Woche trainiert</div>${muscleMapSVG(muscleLoad(weekDays, true))}<p class="small" style="margin-top:6px">Harte Sätze pro Muskel diese Woche: hellrot unter 6, mittel 6–10, voll ab 10. Graue Muskeln kommen zu kurz.</p></div>
     ${beforeAfter()}
@@ -782,7 +782,7 @@ function viewKoerper(){
 function beforeAfter(){
   const sw = PROG._meta.startwerte || {}, k = today();
   const rows = Object.entries(sw).filter(([id, v]) => EX[id] && typeof v === "number").map(([id, v]) => {
-    const h = history(id, addDays(k, 1)); return `<div class="line"><span>${esc(exName(id))}</span><b class="num">${v} → ${h.best ?? "?"}${isSec(EX[id].einheit) ? " Sek" : ""}</b></div>`; });
+    const h = history(id, addDays(k, 1)); return `<div class="line"><span>${esc(exName(id))}</span><b class="num">${v} → ${h.best ?? `<span class="tbd">offen</span>`}${h.best != null && isSec(EX[id].einheit) ? " Sek" : ""}</b></div>`; });
   return rows.length ? `<div class="card"><div class="kicker">Start gegen jetzt</div><div class="list">${rows.join("")}</div><p class="small" style="margin-top:6px">Startwerte vom 1. November. In jeder Testwoche (13, 26, 39, 52) misst du neu.</p></div>` : "";
 }
 
@@ -797,7 +797,7 @@ function viewEssen(){
   const mg = f.koffein.reduce((a, x) => a + x, 0), max = Math.round((N.koffein.maxMgProKg || 3) * t.kg), late = new Date().getHours() >= (N.koffein.nachUhr || 14);
   $("#view").innerHTML = `<div class="stack">
     <div><div class="eyebrow">Ohne Kalorienzählen</div><h1 class="title-xl" style="margin-top:6px">Essen</h1></div>
-    <div class="tiles"><div class="tile"><b class="num">${t.kcal}</b><span>kcal pro Tag</span></div><div class="tile"><b class="num">${t.protein} g</b><span>Protein pro Tag</span></div></div>
+    <div class="tiles"><div class="tile"><b class="num">${t.protein}<small>g</small></b><span>Protein pro Tag</span></div><div class="tile"><b class="num">≈${t.kcal}</b><span>kcal, nur Richtwert</span></div></div>
     <p class="small">Aus ${t.kg} kg, ${S.profile.cm} cm, ${S.profile.alter} Jahren. Ziel: +0.25 bis +0.5 kg pro Woche.</p>
     <div class="card"><div class="kicker">Protein dabei?</div><div class="tiles" style="grid-template-columns:repeat(3,1fr)">${["Morgen","Mittag","Abend"].map(m => `<button class="chip" data-p="${m}" aria-pressed="${(f.prot || []).includes(m)}" style="min-height:56px">${(f.prot || []).includes(m) ? "✓ " : ""}${m}</button>`).join("")}</div>
       <p class="small" style="margin-top:8px">Drei Tipps am Tag reichen. Milch, Quark, Eier, Thon, Poulet, Linsen zählen.</p>
@@ -807,7 +807,7 @@ function viewEssen(){
       <div class="meter ${mg > max ? "over" : ""}" style="margin-top:8px"><i style="width:${Math.min(100, mg / max * 100)}%"></i></div>
       <p class="small" style="margin-top:6px">${mg > max ? "Über der Grenze. Kein Koffein mehr heute, viel Wasser trinken." : late ? `Nach ${N.koffein.nachUhr} Uhr: kein Koffein mehr, sonst schläfst du schlecht.` : esc(N.koffein.text)}</p>
       <div class="chips" style="margin-top:8px">${N.koffein.getraenke.map((g, i) => `<button class="chip" data-k="${i}">+ ${esc(g.name)} (${g.mg})</button>`).join("")}${f.koffein.length ? `<button class="chip" id="kUndo">Rückgängig</button>` : ""}</div></div>
-    <div class="card"><div class="kicker">Mahlzeiten ohne Kochen</div><div class="list">${N.mahlzeiten.map(m => `<details class="more"><summary class="plain">${esc(m.name)} · ${m.kcal} kcal · ${m.protein} g Protein</summary><p class="small" style="margin-top:4px">${esc((m.zutaten || []).join(", "))}${m.hinweis ? ` · ${esc(m.hinweis)}` : ""}${m.preis ? ` · ca. ${m.preis.toFixed(2)} Fr.` : ""}</p></details>`).join("")}</div></div>
+    <div class="card"><div class="kicker">Mahlzeiten ohne Kochen</div><div class="list">${N.mahlzeiten.map(m => `<details class="more"><summary class="plain meal"><span>${esc(m.name)}</span><small>${m.protein} g Protein · ${m.kcal} kcal</small></summary><p class="small" style="margin-top:4px">${esc((m.zutaten || []).join(", "))}${m.hinweis ? ` · ${esc(m.hinweis)}` : ""}${m.preis ? ` · ca. ${m.preis.toFixed(2)} Fr.` : ""}</p></details>`).join("")}</div></div>
     <div class="card"><div class="kicker">Einkauf pro Woche</div><div class="list">${N.einkauf.proWoche.map(e => `<div class="line"><span>${esc(e.was)}</span><b class="num">${esc(e.menge)}</b></div>`).join("")}</div>${N.einkauf.summeCHF ? `<p class="small" style="margin-top:6px">Ca. ${N.einkauf.summeCHF} Fr. pro Woche (Schätzung).</p>` : ""}</div>
     ${N.nichtNehmen ? `<div class="card"><details class="more"><summary>Nicht nehmen (unter 18)</summary><ul class="steps" style="margin-top:6px">${(Array.isArray(N.nichtNehmen) ? N.nichtNehmen : N.nichtNehmen.liste || []).map(x => `<li>${esc(typeof x === "string" ? x : (x.was || x.text || ""))}${x.warum ? `: ${esc(x.warum)}` : ""}</li>`).join("")}</ul></details></div>` : ""}
   </div>`;
@@ -830,12 +830,12 @@ function viewSettings(){
       <label class="lbl">Start des Plans<input class="field" id="sStart" type="date" value="${S.settings.start}"></label>
       <label class="lbl">Aussehen<select class="field" id="sTheme"><option value="">wie das Gerät</option><option value="dark" ${S.settings.theme === "dark" ? "selected" : ""}>Dunkel</option><option value="light" ${S.settings.theme === "light" ? "selected" : ""}>Hell</option></select></label>
     </div><button class="btn wide" id="sSave" style="margin-top:12px">Speichern</button></div>
-    <div class="card"><div class="kicker">Daten sichern</div><p class="small">Alles bleibt in diesem Browser. Sichere ab und zu eine Kopie.</p>
+    <div class="card"><div class="kicker">Daten sichern</div><p class="small">${CLOUD ? "Gesichert in deinem Claude-Konto und in diesem Browser. Eine Kopie als Datei schadet trotzdem nicht." : "Alles bleibt in diesem Browser. Sichere ab und zu eine Kopie."}</p>
       <div class="row wrap" style="margin-top:10px"><button class="btn sm" id="exp">Als Datei sichern</button><button class="btn sm" id="copy">Kopieren</button><label class="btn sm">Datei laden<input type="file" id="imp" accept="application/json" hidden></label></div>
       <textarea class="field" id="io" rows="3" placeholder="Oder hier eine Kopie einfügen und «Einfügen» tippen" style="margin-top:10px"></textarea>
       <button class="btn sm" id="paste" style="margin-top:8px">Einfügen</button></div>
     ${Object.entries(S.videoOk || {}).filter(([, ok]) => ok === false).length ? `<div class="card"><div class="kicker">Ausgeblendete Videos</div><div class="list">${Object.entries(S.videoOk).filter(([, ok]) => ok === false).map(([id]) => `<div class="line"><span>${esc(exName(id))}</span><button class="chip" data-vshow="${id}">Wieder zeigen</button></div>`).join("")}</div></div>` : ""}
-    <div class="card"><div class="kicker">Neu anfangen</div><button class="btn sm" id="reset">Alles löschen</button></div>
+    <div class="card"><div class="kicker">Neu anfangen</div><button class="btn sm danger" id="reset">Alles löschen</button></div>
     <p class="small">Winter Arc Training · Inhalte von Claude A (App, Figuren) und Claude B (Übungen, Programm, Essen). Keine Medizin: bei Schmerzen oder Unsicherheit Arzt fragen.</p>
     <p class="small">Logo: «Spartan helmet» von Delapouite, <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>, Lizenz CC BY 3.0 (eingefärbt). Fotos: free-exercise-db, Public Domain.</p>
   </div>`;

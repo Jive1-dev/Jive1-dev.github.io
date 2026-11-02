@@ -415,3 +415,28 @@ figure.photo.thumb::before{display:none}
 .rank-wrap #saved,body.agoge .rank-wrap #saved{position:absolute;left:auto;right:0;top:50%;bottom:auto;transform:translateY(-50%) scale(.96);white-space:nowrap;border-radius:999px;padding:5px 11px;font-size:12px;background:var(--card-a);border:1px solid color-mix(in srgb,var(--good) 55%,transparent);color:var(--good);box-shadow:var(--sh);transition:opacity .25s var(--ease),transform .25s var(--ease)}
 .rank-wrap #saved.on{transform:translateY(-50%) scale(1)}
 .rank-wrap #saved.warn{border-color:var(--bronze);color:var(--bronze)}
+
+/* Runde 2: Einheiten an Zahlen, Muskelkarte lesbar, kein Wasserzeichen hinter Formularen */
+.tile b small{font-size:.5em;margin-left:3px;color:var(--bone-2);font-weight:500;letter-spacing:.04em}
+.card.hero:has(input,select)::after{display:none}
+.mmap .mm-body *{fill:color-mix(in srgb,var(--bone) 7%,transparent);stroke:color-mix(in srgb,var(--bone) 16%,transparent)}
+.mmap .mm-r{fill:color-mix(in srgb,var(--bone) 16%,transparent);stroke:color-mix(in srgb,var(--bg) 70%,transparent)}
+.mmap .mm-r.s1{fill:color-mix(in srgb,var(--crimson) 45%,color-mix(in srgb,var(--bone) 16%,transparent))}
+.mmap .mm-r.s3{fill:var(--crimson);filter:drop-shadow(0 0 3px color-mix(in srgb,var(--crimson) 70%,transparent))}
+.btn.danger{color:var(--crimson);border-color:color-mix(in srgb,var(--crimson) 45%,transparent)}
+.tbd{font:500 12px var(--body);letter-spacing:.06em;color:var(--bone-3);text-transform:uppercase}
+summary.meal{display:grid!important;gap:2px;padding:6px 0}
+summary.meal small{font-size:12.5px;color:var(--bone-3);font-weight:500}
+.stack a:not(.btn):not(.icon-btn),.small a{color:var(--bronze);text-decoration-color:color-mix(in srgb,var(--bronze) 40%,transparent);text-underline-offset:3px}
+/* Laptop: Tabs als Leiste oben in der Kopfzeile statt unten über dem Inhalt */
+@media (min-width:1024px){
+  .tabs{top:calc(env(safe-area-inset-top,0px) + 9px);bottom:auto;width:auto;padding:4px;border-radius:14px;box-shadow:0 6px 18px -10px rgba(0,0,0,.5),0 1px 0 var(--hair) inset}
+  .tabs .in{display:flex;gap:2px;max-width:none}
+  .tabs a{height:40px;grid-auto-flow:column;gap:8px;padding:0 14px;font-size:12px;border-radius:10px}
+  .tabs a svg{width:18px;height:18px}
+  .tabs a::before{top:0;left:0;width:100%;height:100%;transform:none;border-radius:10px}
+  .tabs a[aria-current="page"]::before{transform:none}
+  .app{padding-bottom:48px}
+  .toast{bottom:28px}
+  body.agoge .tabs{display:none}
+}
