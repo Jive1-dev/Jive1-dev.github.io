@@ -609,7 +609,53 @@ const fresh = () => ({ v:1, profile:{name:"", kg:50, cm:165, alter:16}, settings
   logs:{}, body:{w:[], m:[], photos:[]}, skills:{}, food:{}, custom:[] });
 let S = fresh();
 try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(fresh(), JSON.parse(raw)); } catch(e) {}
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} };
+S._st ||= {};
+// Teile für die Cloud-Sicherung: «core» (alles ausser Trainings) + ein Teil pro Trainingstag (je < 256 KB)
+const parts = () => { const { logs, _st, ...core } = S, p = { core: JSON.stringify(core) }; for (const k in logs) p["log-" + k] = JSON.stringify(logs[k]); return p; };
+let SNAP = parts(); const DIRTY = new Set(); let CLOUD = null, pushT = null, BOOT = true; // BOOT: Cloud-Stand noch nicht geladen, nichts als «neuer» markieren
+const save = () => {
+  S._st ||= {}; const p = parts(), now = Date.now();
+  if (!BOOT){
+    for (const id in p) if (p[id] !== SNAP[id]){ S._st[id] = now; DIRTY.add(id); }
+    for (const id in SNAP) if (p[id] == null) DIRTY.add(id); // gelöscht (z. B. «Alles löschen»)
+    SNAP = p;
+  }
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {}
+  if (CLOUD){ clearTimeout(pushT); pushT = setTimeout(push, 1200); }
+};
+let pushing = false;
+async function push(){
+  if (!CLOUD || pushing) return; pushing = true;
+  try { for (const id of [...DIRTY]){ DIRTY.delete(id);
+    try { if (SNAP[id] == null) await CLOUD.doc(id).delete(); else await CLOUD.doc(id).set({ json: SNAP[id], t: S._st[id] || Date.now() }); } catch(e){ DIRTY.add(id); throw e; } } }
+  catch(e) {} finally { pushing = false; }
+}
+// Beim Öffnen: Stand aus der Cloud holen (falls der Browser-Speicher leer ist oder älter), danach automatisch mitspeichern
+async function cloudInit(){
+  try {
+    if (!window.claude?.use) return;
+    const [db, user] = await Promise.all([claude.use("db"), claude.use("user")]);
+    if (!db || !user) return;
+    const uid = await user.id(); if (!uid) return;
+    const col = db.collection("data/users/" + uid);
+    const snap = await Promise.race([col.get(), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 10000))]);
+    let changed = false; const seen = new Set();
+    snap.docs.forEach(d => { const x = d.data() || {}; seen.add(d.id); if (typeof x.json !== "string") return;
+      if ((x.t || 0) > (S._st[d.id] || 0)){
+        try { const v = JSON.parse(x.json);
+          if (d.id === "core") S = Object.assign(fresh(), v, { logs: S.logs, _st: S._st });
+          else if (d.id.startsWith("log-")) S.logs[d.id.slice(4)] = v;
+          S._st[d.id] = x.t; changed = true; } catch(e) {}
+      } else if ((S._st[d.id] || 0) > (x.t || 0)) DIRTY.add(d.id);
+    });
+    SNAP = parts(); Object.keys(SNAP).forEach(id => { if (!seen.has(id)) DIRTY.add(id); });
+    CLOUD = col;
+    if (changed){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} applyTheme(); route(); toast("Stand geladen"); }
+    push();
+  } catch(e) {} finally { if (BOOT){ BOOT = false; SNAP = parts(); } }
+}
+addEventListener("pagehide", () => push());
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") push(); });
 const logOf = k => (S.logs[k] ||= {done:false, light:false, pre:[], swaps:{}, sets:{}, extra:[]});
 
 // ---------- Programm ----------
@@ -754,7 +800,8 @@ const ICON = {
   essen:'<svg viewBox="0 0 24 24"><path d="M7 3v8a2 2 0 0 0 4 0V3M9 11v10M17 3c-2 2-3 5-3 8h3v10"/></svg>',
   gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   play:'<svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z" fill="currentColor" stroke="none"/></svg>',
-  back:'<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>'
+  back:'<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+  pause:'<svg viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></svg>'
 };
 
 // ---------- Rahmen ----------
@@ -833,7 +880,7 @@ function viewHeute(){
       <div class="card"><div class="kicker">${esc(preQ?.frage || "Was hast du heute schon gemacht?")}</div>
         <div class="chips" id="pre">${(preQ?.antworten || []).map(a => `<button class="chip" data-pre="${esc(a.text)}" aria-pressed="${a.text === "Nichts" ? !log.pre.length : log.pre.includes(a.text)}">${esc(a.text)}</button>`).join("")}</div>
         <p class="small" style="margin-top:8px">Bereits Trainiertes bekommt 1 Runde weniger, nie ganz gestrichen.</p></div>
-      <button class="btn primary" id="go">${ICON.play}Training starten · ${mins} Min</button>
+      <button class="btn primary" id="go">${ICON.play}${log.started && !log.done && (log.pos || log.pauseAt) ? `Weiter · Übung ${(log.pos || 0) + 1} von ${steps.length}` : `Training starten · ${mins} Min`}</button>
       <div class="card"><div class="kicker">Ablauf</div><div class="timeline">${timeline(day, log)}</div></div>
       <div class="row wrap">
         <button class="btn ghost sm grow" id="light" aria-pressed="${log.light}">${log.light ? "✓ Leichte Version" : "Muskelkater? Leichte Version"}</button>
@@ -946,8 +993,24 @@ function viewAgoge(){
   if (!day.plan){ location.hash = "#heute"; return; }
   const steps = buildSteps(day, log);
   log.pos = Math.min(log.pos || 0, steps.length - 1); save();
+  if (log.pauseAt){ pauseView(steps, log, k); return; }
   lockScreen();
   renderStep(steps, log, k);
+}
+// Pause (z. B. Essen): Zeit läuft nicht weiter, Platz bleibt gespeichert
+function pauseView(steps, log, k){
+  stopTimers();
+  const s = steps[log.pos];
+  $("#view").innerHTML = `<div class="stack"><div class="card hero"><div class="kicker">Pause</div>
+    <h2 style="margin-top:6px">Training pausiert</h2>
+    <p class="muted" style="margin-top:6px">Dein Platz ist gespeichert: Übung ${log.pos + 1} von ${steps.length}, ${esc(exName(s.id))}. Die Trainingszeit läuft nicht weiter. Du kannst die App ruhig schliessen.</p>
+    <button class="btn primary wide" id="resume" style="margin-top:12px">${ICON.play}Weiter</button></div>
+    <a class="btn ghost wide" href="#heute">Zu Heute</a></div>`;
+  $("#resume").onclick = () => { log.pauseMs = (log.pauseMs || 0) + (Date.now() - log.pauseAt); delete log.pauseAt; save(); lockScreen(); renderStep(steps, log, k); mountFigs($("#view")); window.scrollTo(0, 0); };
+}
+function lastNote(id, k){
+  const d = Object.keys(S.logs).sort().reverse().find(d => d < k && S.logs[d].notes?.[id]);
+  return d ? { d, t: S.logs[d].notes[id] } : null;
 }
 function renderStep(steps, log, k){
   stopTimers(); lockScreen();
@@ -965,7 +1028,7 @@ function renderStep(steps, log, k){
   $("#view").innerHTML = `
     <div class="ag-top">
       <div class="row"><a class="icon-btn" href="#heute" aria-label="Zurück zu Heute">${ICON.back}</a>
-        <div class="grow ag-meta"><span class="num">Übung ${i + 1} von ${steps.length}</span><span class="num" id="clock">0:00</span><span class="num">fertig ca. ${String(endAt.getHours()).padStart(2,"0")}:${String(endAt.getMinutes()).padStart(2,"0")}</span></div></div>
+        <button class="icon-btn" id="pause" aria-label="Pause" title="Pause">${ICON.pause}</button><div class="grow ag-meta"><span class="num">Übung ${i + 1} von ${steps.length}</span><span class="num" id="clock">0:00</span><span class="num">fertig ca. ${String(endAt.getHours()).padStart(2,"0")}:${String(endAt.getMinutes()).padStart(2,"0")}</span></div></div>
       <div class="ag-prog"><i style="width:${(i / steps.length) * 100}%"></i></div>
     </div>
     <div class="ag-card">
@@ -977,6 +1040,7 @@ function renderStep(steps, log, k){
       <div class="chips">${(u.muskeln || []).slice(0, 4).map(m => `<span class="mchip">${esc(muscleShort(m))}</span>`).join("")}</div>
       <div class="goal"><b class="num">${esc(goal)}</b><span>${esc(s.test ? (s.text || "") : unitText(s.einheit))}${s.kg ? ` · ${S.settings.hantelKg} kg` : ""}</span></div>
       ${h.last != null ? `<div class="beat"><span>Letztes Mal <b class="num">${h.last}</b></span><span>Heute? <b class="num">${h.last + 1}</b></span><span>Rekord <b class="num">${h.best}</b></span></div>` : ""}
+      ${(() => { const n = log.notes?.[s.id] ? { d: k, t: log.notes[s.id] } : lastNote(s.id, k); return n ? `<p class="hint">${n.d === k ? "Deine Notiz heute" : `Deine Notiz vom ${DAYS[dayIdx(n.d)]} ${parse(n.d).getDate()}.${parse(n.d).getMonth() + 1}.`}: ${esc(n.t)}</p>` : ""; })()}
       ${s.tempo ? `<p class="hint">Tempo: ${esc(s.tempo)}</p>` : ""}
       ${u.handgelenk && (log.wrist === "zwickt" || !log.wristTip || log.wristTip === s.key) ? `<p class="hint">${log.wrist === "zwickt" ? "Heute zwicken die Handgelenke: auf die Parallettes oder auf die Fäuste, Handtuch unter die Handballen, weniger weit lehnen. Sticht es: «Schmerz?» tippen." : esc(META.handgelenkTipp)}</p>` : ""}
       ${(() => { const f = feelHist(s.id, k); return f.length >= 2 && f.every(x => x === "leicht") && u.schwerer && EX[u.schwerer] ? `<div class="beat"><span>Zweimal «leicht». Bereit für <b>${esc(EX[u.schwerer].name)}</b>?</span><button class="chip" id="harder">Ja</button></div>` : ""; })()}
@@ -995,12 +1059,13 @@ function renderStep(steps, log, k){
       <div id="panel"></div>
       <div class="row" style="justify-content:space-between">
         <button class="btn ghost sm" id="prev" ${i === 0 ? "disabled" : ""}>Zurück</button>
+        <button class="btn ghost sm" id="note">Notiz</button>
         <button class="btn ghost sm" id="skip">Überspringen</button>
       </div>
       ${next ? `<p class="next">Danach: ${esc(exName(next.id))}</p>` : ""}
     </div>`;
   if (u.handgelenk && !log.wristTip){ log.wristTip = s.key; save(); }
-  const clock = () => { const el = $("#clock"); if (el) el.textContent = fmt((Date.now() - started) / 1000); };
+  const clock = () => { const el = $("#clock"); if (el) el.textContent = fmt((Date.now() - started - (log.pauseMs || 0)) / 1000); };
   clock(); const clockIv = setInterval(clock, 1000);
   const val = $("#val");
   $("#minus").onclick = () => { val.value = Math.max(0, (Number(val.value) || 0) - 1); };
@@ -1027,6 +1092,18 @@ function renderStep(steps, log, k){
   });
   const go = d => { clearInterval(clockIv); log.pos = Math.max(0, Math.min(steps.length - 1, i + d)); save(); renderStep(steps, log, k); mountFigs($("#view")); window.scrollTo(0, 0); };
   $("#prev").onclick = () => go(-1);
+  $("#pause").onclick = () => { clearInterval(clockIv); log.pauseAt = Date.now(); save(); pauseView(steps, log, k); window.scrollTo(0, 0); };
+  $("#note").onclick = () => {
+    const cur = log.notes?.[s.id] || "";
+    $("#panel").innerHTML = `<div class="card"><div class="kicker">Notiz zu ${esc(u.name)}</div>
+      <div class="chips" style="margin-top:6px">${["Zu schwer","Zu leicht","Technik unklar","Tat weh","Gut gegangen"].map(t => `<button class="chip" data-nt="${t}">${t}</button>`).join("")}</div>
+      <input class="field" id="noteTxt" style="margin-top:8px" placeholder="Oder selbst schreiben" value="${esc(cur)}">
+      <button class="btn wide" id="noteSave" style="margin-top:8px">Speichern</button>
+      <p class="small" style="margin-top:6px">Erscheint beim nächsten Mal bei dieser Übung.</p></div>`;
+    $$("[data-nt]").forEach(c => c.onclick = () => { const f = $("#noteTxt"); f.value = f.value ? `${f.value}, ${c.dataset.nt.toLowerCase()}` : c.dataset.nt; });
+    $("#noteSave").onclick = () => { const t = $("#noteTxt").value.trim(); log.notes ||= {}; if (t) log.notes[s.id] = t; else delete log.notes[s.id]; save(); toast(t ? "Notiz gespeichert" : "Notiz gelöscht"); $("#panel").innerHTML = ""; };
+    $("#panel").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  };
   $("#skip").onclick = () => { if (!next){ finish(log, k, steps); return; } go(1); };
   // Fertig: Wert speichern, dann zählt der Knopf selbst die Pause runter (Regel 2)
   $("#done").onclick = () => {
@@ -1068,14 +1145,14 @@ function renderStep(steps, log, k){
 }
 function finish(log, k, steps){
   stopTimers();
-  log.done = true; log.finished = Date.now(); log.pos = 0; save();
+  log.done = true; log.finished = Date.now(); log.pos = 0; delete log.pauseAt; save();
   location.hash = "#bericht";
 }
 
 // ---------- KAMPFBERICHT ----------
 function viewBericht(){
   const k = today(), log = logOf(k), { day } = progDay(k);
-  const dur = log.finished && log.started ? (log.finished - log.started) / 1000 : 0;
+  const dur = log.finished && log.started ? (log.finished - log.started - (log.pauseMs || 0)) / 1000 : 0;
   const ids = [...new Set(Object.values(log.sets).map(s => s.id))];
   const recs = ids.map(id => { const h = history(id, k); const best = Math.max(...Object.values(log.sets).filter(s => s.id === id).map(s => s.v)); return {id, best, prev: h.best}; }).filter(r => r.prev != null && r.best > r.prev);
   const q = dayPick(quotes(), 7);
@@ -1287,6 +1364,7 @@ function applyTheme(){ const t = S.settings.theme; if (t) document.documentEleme
 applyTheme();
 shell();
 route();
+cloudInit();
 if ("serviceWorker" in navigator && location.protocol === "https:" && document.querySelector('link[rel="manifest"]')){
   addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
 }
