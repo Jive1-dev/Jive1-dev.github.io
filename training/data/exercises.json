@@ -182,7 +182,8 @@
       ],
       "sicherheit": "Kein Risiko. Langsam starten.",
       "leichter": null,
-      "schwerer": null
+      "schwerer": null,
+      "leichterTipp": "Kleinere Kreise, langsamer."
     },
     {
       "id": "legswing",
@@ -211,7 +212,8 @@
       ],
       "sicherheit": "Klein anfangen, jede Runde etwas höher.",
       "leichter": null,
-      "schwerer": null
+      "schwerer": null,
+      "leichterTipp": "Kleiner schwingen, mit beiden Händen festhalten."
     },
     {
       "id": "catcow",
@@ -240,6 +242,7 @@
       "sicherheit": "Langsam bewegen. Fäuste statt flache Hände, wenn die Handgelenke drücken.",
       "leichter": null,
       "schwerer": null,
+      "leichterTipp": "Kleinere Bewegung, nur so weit es angenehm ist.",
       "handgelenk": true
     },
     {
@@ -322,7 +325,8 @@
       ],
       "sicherheit": "Kein Risiko. Sanft, nicht drücken.",
       "leichter": null,
-      "schwerer": null
+      "schwerer": null,
+      "leichterTipp": "Im Liegen machen, Hinterkopf auf dem Boden."
     },
     {
       "id": "wallangel",
@@ -379,7 +383,8 @@
       ],
       "sicherheit": "Nur bis zum Ziehen, nie bis es sticht.",
       "leichter": null,
-      "schwerer": null
+      "schwerer": null,
+      "leichterTipp": "Weniger weit nach vorne schieben."
     },
     {
       "id": "calfstretch",
@@ -405,7 +410,8 @@
       ],
       "sicherheit": "Nur bis zum Ziehen.",
       "leichter": null,
-      "schwerer": null
+      "schwerer": null,
+      "leichterTipp": "Hinteren Fuss näher zur Wand."
     },
     {
       "id": "hswall",
@@ -1257,6 +1263,7 @@
       "sicherheit": "Handtuch unter die Knie.",
       "leichter": null,
       "schwerer": "incpu",
+      "leichterTipp": "Hände auf einen Stuhl oder an die Wand.",
       "handgelenk": true
     },
     {
@@ -1377,6 +1384,7 @@
       "sicherheit": "Nur bis die Oberarme waagrecht sind, nicht tiefer. Stuhl an die Wand.",
       "leichter": null,
       "schwerer": "benchdips",
+      "leichterTipp": "Füsse näher zum Stuhl, weniger tief.",
       "handgelenk": true
     },
     {
@@ -1520,6 +1528,7 @@
       "sicherheit": "Hantel gut festhalten. Langsam, damit sie nicht an den Kopf schlägt.",
       "leichter": null,
       "schwerer": null,
+      "leichterTipp": "Leichtere Hantel oder im Sitzen.",
       "tempo": "4 Sek runter, 1 Sek Pause oben, dann wieder hoch",
       "schwererTipp": "Einarmig oder schwerere Hantel."
     },
@@ -1580,6 +1589,7 @@
       "sicherheit": "Rücken gerade halten.",
       "leichter": null,
       "schwerer": null,
+      "leichterTipp": "Leichtere Hantel, Knie auf den Stuhl stützen.",
       "tempo": "4 Sek runter, 1 Sek Pause oben, dann wieder hoch",
       "schwererTipp": "Schwerere Hantel oder oben 2 Sek halten."
     },
@@ -1640,6 +1650,7 @@
       "sicherheit": "Leichtes Gewicht, langsam. Kein Stechen im Handgelenk.",
       "leichter": null,
       "schwerer": null,
+      "leichterTipp": "Leichtere Hantel oder ohne Gewicht.",
       "tempo": "4 Sek runter, 1 Sek Pause oben, dann wieder hoch"
     },
     {
@@ -1727,7 +1738,8 @@
       ],
       "sicherheit": "Stange vorher fest prüfen. Langsam loslassen, nicht abspringen.",
       "leichter": null,
-      "schwerer": "assistpu"
+      "schwerer": "assistpu",
+      "leichterTipp": "Füsse leicht auf einem Stuhl lassen."
     },
     {
       "id": "pullup",
@@ -1894,6 +1906,7 @@
       "sicherheit": "Kein Risiko.",
       "leichter": null,
       "schwerer": "rfly",
+      "leichterTipp": "Arme mit gebeugten Ellbogen (wie ein «W»).",
       "schwererTipp": "Kleine Wasserflaschen in die Hände."
     },
     {
@@ -2038,7 +2051,8 @@
       ],
       "sicherheit": "Kein Risiko.",
       "leichter": null,
-      "schwerer": "thrust1"
+      "schwerer": "thrust1",
+      "leichterTipp": "Weniger hoch, oben nicht halten."
     },
     {
       "id": "thrust1",
@@ -2151,6 +2165,7 @@
       "sicherheit": "Gut festhalten.",
       "leichter": null,
       "schwerer": "calf1",
+      "leichterTipp": "Auf dem flachen Boden statt auf der Stufe.",
       "tempo": "2 Sek hoch, 1 Sek oben, 3 Sek runter"
     },
     {
@@ -2234,6 +2249,7 @@
       "sicherheit": "Kein Risiko. Brennt schnell, das ist normal.",
       "leichter": null,
       "schwerer": null,
+      "leichterTipp": "Füsse näher zur Wand.",
       "schwererTipp": "Füsse weiter weg von der Wand."
     },
     {
@@ -2261,7 +2277,8 @@
       ],
       "sicherheit": "Kein Risiko.",
       "leichter": null,
-      "schwerer": null
+      "schwerer": null,
+      "leichterTipp": "Kleineres Handtuch, langsam."
     },
     {
       "id": "cossack",
@@ -2345,7 +2362,8 @@
       ],
       "sicherheit": "Kein Risiko.",
       "leichter": null,
-      "schwerer": "hollowt"
+      "schwerer": "hollowt",
+      "leichterTipp": "Hände neben dem Körper, nur den Kopf heben."
     },
     {
       "id": "hollowt",
@@ -2453,7 +2471,8 @@
       ],
       "sicherheit": "Kein Risiko.",
       "leichter": null,
-      "schwerer": "legraise"
+      "schwerer": "legraise",
+      "leichterTipp": "Nur ein Knie nach dem anderen."
     },
     {
       "id": "legraise",

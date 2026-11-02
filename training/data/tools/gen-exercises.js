@@ -128,19 +128,19 @@ x("circles", "Armkreisen", "aufwaermen", ["schulter_vorne", "schulter_seite", "s
   "Macht die Schultern warm.",
   ["Steh gerade, Arme seitlich gestreckt.", "Mach grosse Kreise nach vorne.", "Nach der Hälfte die Richtung wechseln."],
   ["Nur kleine Kreise: mach sie so gross, wie es angenehm geht.", "Schultern zu den Ohren ziehen: locker lassen."],
-  "Kein Risiko. Langsam starten.", null, null);
+  "Kein Risiko. Langsam starten.", null, null, { leichterTipp: "Kleinere Kreise, langsamer." });
 
 x("legswing", "Beinschwingen", "aufwaermen", ["hueftbeuger", "bein_hinten", "po"], "wdh_seite", ["boden", "wand"],
   "Macht die Hüfte locker für Kniebeugen und Sprünge.",
   ["Steh seitlich zur Wand und halte dich mit einer Hand.", "Schwing ein Bein locker vor und zurück.", "Oberkörper bleibt aufrecht.", "Dann das andere Bein."],
   ["Mit Schwung bis zum Ziehen reissen: locker schwingen.", "Rücken krumm machen: Oberkörper bleibt gerade."],
-  "Klein anfangen, jede Runde etwas höher.", null, null);
+  "Klein anfangen, jede Runde etwas höher.", null, null, { leichterTipp: "Kleiner schwingen, mit beiden Händen festhalten." });
 
 x("catcow", "Katze-Kuh", "aufwaermen", ["ruecken_unten", "ruecken_oben", "bauch"], "wdh", ["boden"],
   "Bewegt die Wirbelsäule. Gut gegen steifen Rücken vom Sitzen.",
   ["Geh auf Hände und Knie.", "Rücken rund machen wie eine Katze, Kinn zur Brust.", "Dann Rücken nach unten sinken lassen, Blick nach vorne.", "Langsam mit dem Atem wechseln."],
   ["Zu schnell.", "Nur den Kopf bewegen statt den ganzen Rücken."],
-  "Langsam bewegen. Fäuste statt flache Hände, wenn die Handgelenke drücken.", null, null, HG);
+  "Langsam bewegen. Fäuste statt flache Hände, wenn die Handgelenke drücken.", null, null, { leichterTipp: "Kleinere Bewegung, nur so weit es angenehm ist.", ...HG });
 
 x("squat", "Kniebeuge", "beine", ["bein_vorne", "po"], "wdh", ["boden"],
   "Grundübung für starke Beine. Auch gutes Aufwärmen.",
@@ -160,7 +160,7 @@ x("chintuck", "Kinn zurückziehen", "haltung", ["nacken"], "wdh", ["boden"],
   "Gegen den nach vorne geschobenen Kopf vom Handy. Bessere Haltung.",
   ["Steh oder sitz gerade, Blick geradeaus.", "Schieb das Kinn gerade nach hinten, als ob du ein Doppelkinn machst.", "2 Sek halten, dann locker lassen."],
   ["Kopf nach unten nicken statt nach hinten schieben.", "Schultern hochziehen."],
-  "Kein Risiko. Sanft, nicht drücken.", null, null);
+  "Kein Risiko. Sanft, nicht drücken.", null, null, { leichterTipp: "Im Liegen machen, Hinterkopf auf dem Boden." });
 
 x("wallangel", "Wandengel", "haltung", ["ruecken_oben", "schulter_hinten", "nacken"], "wdh", ["wand"],
   "Öffnet die Brust und stärkt den oberen Rücken. Gute Haltung.",
@@ -173,13 +173,13 @@ x("hipflex", "Hüftbeuger dehnen", "dehnen", ["hueftbeuger", "bein_vorne"], "sek
   "Löst die vorne enge Hüfte vom vielen Sitzen.",
   ["Knie dich hin, ein Fuss vorne auf dem Boden (wie beim Heiratsantrag).", "Handtuch unter das hintere Knie.", "Po anspannen und die Hüfte langsam nach vorne schieben.", "Halten und ruhig atmen. Dann Seite wechseln."],
   ["Ins Hohlkreuz fallen: Po fest, Bauch leicht an.", "Vorderes Knie fällt nach innen."],
-  "Nur bis zum Ziehen, nie bis es sticht.", null, null);
+  "Nur bis zum Ziehen, nie bis es sticht.", null, null, { leichterTipp: "Weniger weit nach vorne schieben." });
 
 x("calfstretch", "Waden dehnen", "dehnen", ["wade"], "sek_seite", ["wand"],
   "Lockert die Waden nach Wadenheben und Sprüngen.",
   ["Hände an die Wand.", "Ein Bein weit nach hinten, Ferse bleibt am Boden.", "Hinteres Bein gestreckt, Hüfte nach vorne zur Wand.", "Halten, dann Seite wechseln."],
   ["Ferse hebt sich.", "Hinterer Fuss zeigt nach aussen: Zehen nach vorne."],
-  "Nur bis zum Ziehen.", null, null);
+  "Nur bis zum Ziehen.", null, null, { leichterTipp: "Hinteren Fuss näher zur Wand." });
 
 /* ---------- Handstand ---------- */
 x("hswall", "Handstand an der Wand", "handstand", ["schulter_vorne", "trizeps", "bauch", "handgelenk"], "sek", ["wand", "boden", "handtuch"],
@@ -364,7 +364,7 @@ x("kneepu", "Knie-Liegestütz", "druecken", ["brust", "trizeps", "schulter_vorne
   "Leichteste Liegestütz-Stufe. Gut für die letzten Sätze, wenn nichts mehr geht.",
   ["Knie auf dem Handtuch, Hände etwas breiter als die Schultern.", "Von den Knien bis zum Kopf eine gerade Linie.", "Brust zum Boden senken.", "Hochdrücken."],
   ["Po in die Luft gestreckt.", "Nur halb runter."],
-  "Handtuch unter die Knie.", null, "incpu", HG);
+  "Handtuch unter die Knie.", null, "incpu", { leichterTipp: "Hände auf einen Stuhl oder an die Wand.", ...HG });
 
 x("pppu", "Planche-Liegestütz", "druecken", ["schulter_vorne", "brust", "trizeps", "bauch"], "wdh", ["parallettes", "boden"],
   "Liegestütz mit Händen weiter hinten bei der Hüfte. Baut Kraft für die Planche.",
@@ -389,7 +389,7 @@ x("benchdip", "Stuhl-Dips mit gebeugten Knien", "druecken", ["trizeps", "brust",
   "Leichte Dips für den Trizeps.",
   ["Setz dich vor den Stuhl, Hände hinter dir auf die Sitzkante.", "Po vom Stuhl weg, Knie gebeugt, Füsse flach.", "Langsam runter, bis die Oberarme fast waagrecht sind.", "Hochdrücken."],
   ["Zu tief runter: Schulter zieht vorne.", "Schultern zu den Ohren."],
-  "Nur bis die Oberarme waagrecht sind, nicht tiefer. Stuhl an die Wand.", null, "benchdips", HG);
+  "Nur bis die Oberarme waagrecht sind, nicht tiefer. Stuhl an die Wand.", null, "benchdips", { leichterTipp: "Füsse näher zum Stuhl, weniger tief.", ...HG });
 
 x("benchdips", "Stuhl-Dips mit gestreckten Beinen", "druecken", ["trizeps", "brust", "schulter_vorne"], "wdh", ["stuhl"],
   "Schwerere Stuhl-Dips.",
@@ -424,7 +424,7 @@ x("ohe", "Trizeps über Kopf", "arme", ["trizeps"], "wdh", ["hanteln"],
   ["Hantel mit beiden Händen über dem Kopf.", "Ellbogen zeigen nach vorne oben, nahe am Kopf.", "Hantel langsam hinter den Kopf senken.", "Arme strecken."],
   ["Ellbogen gehen weit auseinander.", "Hohlkreuz: Bauch fest."],
   "Hantel gut festhalten. Langsam, damit sie nicht an den Kopf schlägt.", null, null,
-  { tempo: TEMPO_KLEIN, schwererTipp: "Einarmig oder schwerere Hantel." });
+  { leichterTipp: "Leichtere Hantel oder im Sitzen.", tempo: TEMPO_KLEIN, schwererTipp: "Einarmig oder schwerere Hantel."});
 
 x("lat", "Seitheben", "arme", ["schulter_seite"], "wdh", ["hanteln"],
   "Breite Schultern.",
@@ -438,7 +438,7 @@ x("row", "Hantel-Rudern mit Stuhl", "ziehen", ["ruecken_breit", "ruecken_oben", 
   ["Eine Hand auf die Stuhl-Sitzfläche, Rücken gerade, fast waagrecht.", "Hantel in der anderen Hand, Arm hängt gestreckt.", "Hantel zur Hüfte ziehen, Ellbogen nahe am Körper.", "Oben Schulterblatt nach hinten drücken, langsam runter."],
   ["Rücken rund.", "Oberkörper dreht mit."],
   "Rücken gerade halten.", null, null,
-  { tempo: TEMPO_KLEIN, schwererTipp: "Schwerere Hantel oder oben 2 Sek halten." });
+  { leichterTipp: "Leichtere Hantel, Knie auf den Stuhl stützen.", tempo: TEMPO_KLEIN, schwererTipp: "Schwerere Hantel oder oben 2 Sek halten."});
 
 x("rfly", "Vorgebeugtes Seitheben", "arme", ["schulter_hinten", "ruecken_oben"], "wdh", ["hanteln"],
   "Hintere Schulter für gute Haltung und gesunde Schultern.",
@@ -452,7 +452,7 @@ x("wristcurl", "Handgelenk-Curl", "arme", ["unterarm", "handgelenk"], "wdh", ["h
   ["Setz dich, Unterarm auf dem Oberschenkel, Handfläche nach oben.", "Hand hängt über das Knie.", "Hantel nur mit dem Handgelenk hochrollen.", "Langsam runter."],
   ["Unterarm hebt sich mit.", "Zu schwer und ruckartig."],
   "Leichtes Gewicht, langsam. Kein Stechen im Handgelenk.", null, null,
-  { tempo: TEMPO_KLEIN });
+  { leichterTipp: "Leichtere Hantel oder ohne Gewicht.", tempo: TEMPO_KLEIN});
 
 x("revlunge", "Ausfallschritt rückwärts", "beine", ["bein_vorne", "po"], "wdh_seite", ["hanteln", "boden"],
   "Starke Beine, ein Bein nach dem anderen.",
@@ -473,7 +473,7 @@ x("hang", "Hängen an der Stange", "ziehen", ["unterarm", "ruecken_breit", "schu
   "Starker Griff und gesunde Schultern.",
   ["Greif die Stange schulterbreit, Handflächen von dir weg.", "Hänge mit gestreckten Armen.", "Schultern leicht nach unten ziehen, weg von den Ohren.", "Halten."],
   ["Ganz schlaff hängen.", "Mit den Beinen schwingen."],
-  "Stange vorher fest prüfen. Langsam loslassen, nicht abspringen.", null, "assistpu");
+  "Stange vorher fest prüfen. Langsam loslassen, nicht abspringen.", null, "assistpu", { leichterTipp: "Füsse leicht auf einem Stuhl lassen." });
 
 x("pullup", "Klimmzug", "ziehen", ["ruecken_breit", "bizeps", "unterarm", "ruecken_oben"], "wdh", ["stange"],
   "Die beste Übung für einen breiten Rücken.",
@@ -509,7 +509,7 @@ x("reary", "Y-Heben in Bauchlage", "ziehen", ["ruecken_oben", "schulter_hinten"]
   ["Lieg auf dem Bauch, Arme schräg nach vorne wie ein «Y».", "Daumen zeigen nach oben.", "Arme vom Boden heben, Schulterblätter nach unten hinten.", "2 Sek halten, langsam ab."],
   ["Kopf in den Nacken: Blick bleibt zum Boden.", "Mit Schwung."],
   "Kein Risiko.", null, "rfly",
-  { schwererTipp: "Kleine Wasserflaschen in die Hände." });
+  { leichterTipp: "Arme mit gebeugten Ellbogen (wie ein «W»).", schwererTipp: "Kleine Wasserflaschen in die Hände."});
 
 /* ---------- Beine ---------- */
 x("bss", "Bulgarische Kniebeuge", "beine", ["bein_vorne", "po", "bein_innen"], "wdh_seite", ["stuhl", "boden"],
@@ -543,7 +543,7 @@ x("bridge", "Po-Brücke", "beine", ["po", "bein_hinten"], "wdh", ["boden"],
   "Starker Po, schützt den unteren Rücken.",
   ["Lieg auf dem Rücken, Knie gebeugt, Füsse flach.", "Po fest anspannen.", "Hüfte hoch, bis Knie, Hüfte und Schultern eine Linie sind.", "Oben 2 Sek halten, langsam ab."],
   ["Hohlkreuz statt Po anspannen.", "Mit den Füssen weit weg vom Po."],
-  "Kein Risiko.", null, "thrust1");
+  "Kein Risiko.", null, "thrust1", { leichterTipp: "Weniger hoch, oben nicht halten." });
 
 x("thrust1", "Einbeinige Po-Brücke", "beine", ["po", "bein_hinten"], "wdh_seite", ["boden"],
   "Doppelt so schwer wie die normale Po-Brücke.",
@@ -570,7 +570,7 @@ x("calf2", "Wadenheben auf der Treppe", "beine", ["wade"], "wdh", ["treppe", "wa
   ["Fussballen auf die Treppenkante, Fersen hängen frei.", "Mit einer Hand an der Wand halten.", "Ganz hoch auf die Zehen.", "Oben 1 Sek halten, langsam tief runter."],
   ["Zu schnell und federnd.", "Nur halbe Bewegung."],
   "Gut festhalten.", null, "calf1",
-  { tempo: "2 Sek hoch, 1 Sek oben, 3 Sek runter" });
+  { leichterTipp: "Auf dem flachen Boden statt auf der Stufe.", tempo: "2 Sek hoch, 1 Sek oben, 3 Sek runter"});
 
 x("calf1", "Einbeiniges Wadenheben", "beine", ["wade"], "wdh_seite", ["treppe", "wand"],
   "Doppelt so schwer wie beidbeinig.",
@@ -591,13 +591,13 @@ x("tib", "Schienbein-Heben an der Wand", "beine", ["schienbein"], "wdh", ["wand"
   ["Rücken an die Wand, Füsse einen Schritt davor.", "Fersen bleiben am Boden.", "Zehen so hoch wie möglich ziehen.", "Langsam ab."],
   ["Fersen heben sich.", "Zu nahe an der Wand: dann ist es zu leicht."],
   "Kein Risiko. Brennt schnell, das ist normal.", null, null,
-  { schwererTipp: "Füsse weiter weg von der Wand." });
+  { leichterTipp: "Füsse näher zur Wand.", schwererTipp: "Füsse weiter weg von der Wand."});
 
 x("foot", "Handtuch mit den Zehen ziehen", "beine", ["fuss"], "wdh", ["stuhl", "handtuch"],
   "Starke Füsse für Sprünge und Gleichgewicht.",
   ["Sitz auf dem Stuhl, Handtuch flach vor deinem Fuss.", "Ferse bleibt am Boden.", "Mit den Zehen das Handtuch zu dir ziehen.", "Seite wechseln."],
   ["Ferse hebt sich.", "Nur die grosse Zehe arbeitet."],
-  "Kein Risiko.", null, null);
+  "Kein Risiko.", null, null, { leichterTipp: "Kleineres Handtuch, langsam." });
 
 x("cossack", "Seitliche Kniebeuge", "beine", ["bein_vorne", "bein_innen", "po"], "wdh_seite", ["boden"],
   "Beweglichkeit und Kraft für die Hüfte.",
@@ -618,7 +618,7 @@ x("crunch", "Crunch", "bauch", ["bauch"], "wdh", ["boden"],
   "Einfachste Bauchübung.",
   ["Lieg auf dem Rücken, Knie gebeugt, Füsse flach.", "Hände an die Schläfen, nicht am Hinterkopf ziehen.", "Schultern vom Boden heben, Rippen zur Hüfte.", "Langsam ab."],
   ["Am Kopf ziehen.", "Ganz hochsitzen: nur die Schultern heben."],
-  "Kein Risiko.", null, "hollowt");
+  "Kein Risiko.", null, "hollowt", { leichterTipp: "Hände neben dem Körper, nur den Kopf heben." });
 
 x("hollowt", "Hohlkörper mit angezogenen Knien", "bauch", ["bauch"], "sek", ["boden"],
   "Leichtere Form vom Hohlkörper.",
@@ -643,7 +643,7 @@ x("kneeraise", "Knieheben im Liegen", "bauch", ["bauch", "hueftbeuger"], "wdh", 
   "Unterer Bauch.",
   ["Lieg auf dem Rücken, Hände neben dem Po.", "Knie gebeugt anheben zur Brust.", "Po leicht vom Boden heben.", "Langsam ab, Füsse knapp über dem Boden."],
   ["Mit Schwung.", "Unterer Rücken hebt sich beim Absenken."],
-  "Kein Risiko.", null, "legraise");
+  "Kein Risiko.", null, "legraise", { leichterTipp: "Nur ein Knie nach dem anderen." });
 
 x("legraise", "Beinheben im Liegen", "bauch", ["bauch", "hueftbeuger"], "wdh", ["boden"],
   "Unterer Bauch, schwerer als Knieheben.",
