@@ -228,3 +228,11 @@ body.agoge #saved{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 .erow b{text-align:center;font-size:18px}
 .erow .chip{min-height:40px;padding:0;font-size:18px}
 #editCard summary{cursor:pointer;min-height:40px;display:flex;align-items:center}
+
+/* Claude-Coach (B) */
+.coach .coach-think{margin-top:8px;color:var(--bone-2);animation:coPulse 1.6s ease-in-out infinite}
+@keyframes coPulse{50%{opacity:.45}}
+.coach-gut{margin:8px 0 0;padding-left:18px;font-size:14px;color:var(--bone-2)}
+.coach-list{display:grid;gap:8px;margin-top:6px}
+.coach-row{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--raise)}
+.coach-row input{width:18px;height:18px;margin-top:2px;accent-color:var(--crimson)}

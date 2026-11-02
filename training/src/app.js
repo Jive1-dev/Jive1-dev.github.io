@@ -120,9 +120,9 @@ function buildSteps(day, log){
     if (tr && bi > tr.bi && b.block === "paar") rounds = Math.min(rounds, 2);
     if (tr && bi === tr.bi && !once) rounds = Math.min(rounds, Math.max(tr.r, 2));
     for (let r = 1; r <= rounds; r++) b.uebungen.forEach((u, ui) => {
-      const adj = (S.yearAdj || {})[u.id];
-      const id = log.swaps[`${bi}.${ui}`] || adj?.stufe || u.id;
-      const yf = adj?.f || 1;
+      const adj = (S.yearAdj || {})[u.id], ca = typeof COACH !== "undefined" ? COACH.adj(u.id) : null; // ca: Anpassung vom Claude-Coach (B)
+      const id = log.swaps[`${bi}.${ui}`] || ca?.stufe || adj?.stufe || u.id;
+      const yf = (adj?.f || 1) * (ca?.f || 1);
       let ziel = u.ziel ? Math.round(u.ziel * yf) : u.ziel; if (log.light && ziel) ziel = Math.max(1, Math.round(ziel * .8));
       const bereich = u.bereich ? u.bereich.map(x => Math.round(x * yf)) : u.bereich;
       steps.push({ key:`${bi}.${ui}.${r}`, bi, ui, r, rounds, block:b.block, title:b.titel, id, ziel, bereich, einheit:u.einheit || EX[id]?.einheit || "wdh",
@@ -636,6 +636,7 @@ function viewBericht(){
     <div class="tiles" style="width:100%"><div class="tile"><b class="num">${dur ? fmt(dur) : "–"}</b><span>Minuten</span></div><div class="tile"><b class="num">${Object.values(log.sets).filter(isHard).length}</b><span>harte Sätze</span></div>
       <div class="tile"><b class="num">${weekCount(k)}/6</b><span>Diese Woche</span></div><div class="tile"><b class="num">${recs.length}</b><span>Rekorde</span></div></div>
     ${recs.length ? `<div class="recs">${recs.map(r => `<div class="rec"><span>${esc(exName(r.id))}</span><b class="num">${r.prev} → ${r.best}</b></div>`).join("")}</div>` : `<p class="muted">${esc(line("ende"))}</p>`}
+    ${typeof COACH !== "undefined" ? COACH.card(k) : ""}
     ${q ? `<div class="quote" style="text-align:left"><p>«${esc(q.text)}»</p><small>${esc([q.wer, q.quelle].filter(Boolean).join(" · "))}</small></div>` : ""}
     <div class="card" style="width:100%;text-align:left"><div class="kicker">Heute trainiert</div>${muscleMapSVG(muscleLoad([k]))}</div>
     ${(() => { let nk = addDays(k, 1); if (dayIdx(nk) === 6) nk = addDays(nk, 1); const nd = progDay(nk).day;
@@ -644,6 +645,7 @@ function viewBericht(){
     <a class="btn primary" href="${hk ? "#plan" : "#heute"}">Zurück</a>
   </div>`;
   bindEdit(k);
+  if (typeof COACH !== "undefined") COACH.bind(k);
   if (hk) setTimeout(() => $("#editCard")?.scrollIntoView({ block: "start" }), 50);
 }
 // Ein Satz zählt als hart, wenn er aus Skills, Supersatz oder Test kommt (nicht Aufwärmen/Abschluss)
