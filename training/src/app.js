@@ -58,9 +58,12 @@ function buildSteps(day, log){
     if (!once && log.light) rounds = Math.max(1, rounds - 1);
     if (b.block === "paar" && preGroups.size && b.uebungen.some(u => preGroups.has(EX[log.swaps[`${bi}.${b.uebungen.indexOf(u)}`] || u.id]?.gruppe))) rounds = Math.max(1, rounds - 1);
     for (let r = 1; r <= rounds; r++) b.uebungen.forEach((u, ui) => {
-      const id = log.swaps[`${bi}.${ui}`] || u.id;
-      let ziel = u.ziel; if (log.light && ziel) ziel = Math.max(1, Math.round(ziel * .8));
-      steps.push({ key:`${bi}.${ui}.${r}`, bi, ui, r, rounds, block:b.block, title:b.titel, id, ziel, bereich:u.bereich, einheit:u.einheit || EX[id]?.einheit || "wdh",
+      const adj = (S.yearAdj || {})[u.id];
+      const id = log.swaps[`${bi}.${ui}`] || adj?.stufe || u.id;
+      const yf = adj?.f || 1;
+      let ziel = u.ziel ? Math.round(u.ziel * yf) : u.ziel; if (log.light && ziel) ziel = Math.max(1, Math.round(ziel * .8));
+      const bereich = u.bereich ? u.bereich.map(x => Math.round(x * yf)) : u.bereich;
+      steps.push({ key:`${bi}.${ui}.${r}`, bi, ui, r, rounds, block:b.block, title:b.titel, id, ziel, bereich, einheit:u.einheit || EX[id]?.einheit || "wdh",
         tempo:u.tempo || null, kg:u.hantelKg || null, text:u.text || null, test: b.block === "test",
         pause: once ? (b.block === "test" ? 90 : 10) : (b.pauseSek || 35) });
     });
@@ -237,7 +240,7 @@ function viewHeute(){
         <button class="btn ghost sm grow" id="short" aria-pressed="${!!log.short}">${log.short ? "✓ Nur 25 Min" : "Wenig Zeit? Nur 25 Min"}</button>
       </div>`}`;
   }
-  const yearDone = w > 52 ? `<div class="card hero"><div class="kicker">52 Wochen geschafft</div><h2>Ein Jahr Disziplin</h2><p class="muted" style="margin-top:6px">Schau unter «Körper», was aus deinen Startwerten geworden ist. Ein neues Jahr beginnt wieder mit Phase I, auf deinem neuen Niveau.</p>
+  const yearDone = w > 52 ? `<div class="card hero"><div class="kicker">${S.year ? `Jahr ${S.year}` : "52 Wochen"} geschafft</div><h2>Ein Jahr Disziplin</h2><p class="muted" style="margin-top:6px">Schau unter «Körper», was aus deinen Startwerten geworden ist. Ein neues Jahr beginnt wieder mit Phase I, auf deinem neuen Niveau.</p>
       <button class="btn wide" id="newYear" style="margin-top:10px">Neues Jahr ab nächstem Montag</button></div>` : "";
   const welcome = !S.onboarded ? `<div class="card hero"><div class="kicker">Willkommen</div><h2>Deine Werte, 30 Sekunden</h2>
       <p class="muted" style="margin-top:6px">Daraus rechnet die App Essen und Ziele. Alles bleibt auf deinem Gerät.</p>
@@ -263,7 +266,19 @@ function viewHeute(){
     const kg = parseFloat(String($("#oKg").value).replace(",", ".")); if (kg > 25 && kg < 200){ S.profile.kg = kg; if (!S.body.w.length) S.body.w.push({d: k, kg}); }
     S.onboarded = true; save(); toast(S.profile.name ? `Willkommen in der Agoge, ${S.profile.name}.` : "Willkommen in der Agoge."); route();
   });
-  $("#newYear")?.addEventListener("click", () => { S.settings.start = addDays(k, 7 - dayIdx(k)); save(); toast(`Neues Jahr startet ${longDate(S.settings.start)}`); route(); });
+  $("#newYear")?.addEventListener("click", () => {
+    const f = {}, firstWeek = PROG.wochen[0].tage, lastWeek = PROG.wochen[50].tage;
+    firstWeek.forEach((t, di) => (t.plan || []).forEach(b => b.uebungen.forEach(u => {
+      if (!u.ziel || f[u.id]) return;
+      const best = history(u.id, addDays(k, 1)).best; if (best == null) return;
+      const fac = Math.min(2.5, Math.max(1, best / u.ziel));
+      const z51 = (lastWeek[di].plan || []).flatMap(x => x.uebungen).find(x => x.id === u.id)?.ziel || Infinity;
+      const tooBig = Math.round(u.ziel * fac) > z51 || (isSec(u.einheit) && Math.round(u.ziel * fac) > 60);
+      f[u.id] = tooBig && EX[u.id]?.schwerer ? {stufe: EX[u.id].schwerer, f: 1} : {f: tooBig ? 1 : fac};
+    })));
+    S.year = (S.year || 1) + 1; S.yearAdj = f; S.settings.start = addDays(k, 7 - dayIdx(k)); save();
+    toast(`Jahr ${S.year} startet ${longDate(S.settings.start)}, mit deinen Werten als Start.`); route();
+  });
   $("#go")?.addEventListener("click", () => { log.started ||= Date.now(); save(); location.hash = "#agoge"; });
   $("#again")?.addEventListener("click", () => { log.pos = 0; save(); location.hash = "#agoge"; });
   $("#light")?.addEventListener("click", () => { log.light = !log.light; save(); viewHeute(); mountFigs($("#view")); });
