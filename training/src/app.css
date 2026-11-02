@@ -177,6 +177,12 @@ details.more summary{font-family:var(--display);letter-spacing:.06em;text-transf
 .dayrow b{font-family:var(--display);font-size:18px}
 .dayrow .ok{color:var(--good);font-weight:700}
 
+/* Plan-Vorschau mit Figuren */
+.pline{display:grid;grid-template-columns:72px 1fr auto;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.pline:last-child{border-bottom:0}
+.pline b{font-family:var(--display);font-weight:500}
+.fig-thumb{width:72px;border-radius:6px}
+
 /* Skills */
 .ladder{display:grid;gap:6px}
 .lstep{display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:center;padding:8px;border-radius:6px;border:1px solid transparent}

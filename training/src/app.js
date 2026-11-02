@@ -239,7 +239,16 @@ function viewHeute(){
   }
   const yearDone = w > 52 ? `<div class="card hero"><div class="kicker">52 Wochen geschafft</div><h2>Ein Jahr Disziplin</h2><p class="muted" style="margin-top:6px">Schau unter «Körper», was aus deinen Startwerten geworden ist. Ein neues Jahr beginnt wieder mit Phase I, auf deinem neuen Niveau.</p>
       <button class="btn wide" id="newYear" style="margin-top:10px">Neues Jahr ab nächstem Montag</button></div>` : "";
+  const welcome = !S.onboarded ? `<div class="card hero"><div class="kicker">Willkommen</div><h2>Deine Werte, 30 Sekunden</h2>
+      <p class="muted" style="margin-top:6px">Daraus rechnet die App Essen und Ziele. Alles bleibt auf deinem Gerät.</p>
+      <div class="tiles" style="margin-top:10px">
+        <label class="lbl">Name<input class="field" id="oName" value="${esc(S.profile.name)}" placeholder="Jive"></label>
+        <label class="lbl">Gewicht (kg)<input class="field" id="oKg" type="number" step="0.1" inputmode="decimal" value="${latestKg()}"></label>
+        <label class="lbl">Grösse (cm)<input class="field" id="oCm" type="number" inputmode="numeric" value="${S.profile.cm}"></label>
+        <label class="lbl">Alter<input class="field" id="oAlter" type="number" inputmode="numeric" value="${S.profile.alter}"></label>
+      </div><button class="btn wide" id="oGo" style="margin-top:10px">Passt so</button></div>` : "";
   $("#view").innerHTML = `<div class="stack">
+    ${welcome}
     ${yearDone}
     ${q ? `<div class="quote"><p>«${esc(q.text)}»</p><small>${esc([q.wer, q.quelle || q.stelle].filter(Boolean).join(" · "))}</small></div>` : ""}
     ${main}
@@ -249,6 +258,11 @@ function viewHeute(){
     ${(() => { const v = (MOT.bibel || [])[(weekOf(k) % Math.max(1, (MOT.bibel || []).length) + (MOT.bibel || []).length) % Math.max(1, (MOT.bibel || []).length)]; return v ? `<div class="card"><div class="kicker">Vers der Woche</div><p>${esc(v.sinngemaess || v.text || "")}</p><p class="small" style="margin-top:6px">${esc(v.stelle)} (sinngemäss)</p></div>` : ""; })()}
     <div class="card"><div class="kicker">Selbst eintragen</div><p class="small">Extra trainiert? Trag es ein, es zählt für Rekorde.</p>${extraForm()}</div>
   </div>`;
+  $("#oGo")?.addEventListener("click", () => {
+    S.profile.name = $("#oName").value.trim(); S.profile.cm = Number($("#oCm").value) || S.profile.cm; S.profile.alter = Number($("#oAlter").value) || S.profile.alter;
+    const kg = parseFloat(String($("#oKg").value).replace(",", ".")); if (kg > 25 && kg < 200){ S.profile.kg = kg; if (!S.body.w.length) S.body.w.push({d: k, kg}); }
+    S.onboarded = true; save(); toast(S.profile.name ? `Willkommen in der Agoge, ${S.profile.name}.` : "Willkommen in der Agoge."); route();
+  });
   $("#newYear")?.addEventListener("click", () => { S.settings.start = addDays(k, 7 - dayIdx(k)); save(); toast(`Neues Jahr startet ${longDate(S.settings.start)}`); route(); });
   $("#go")?.addEventListener("click", () => { log.started ||= Date.now(); save(); location.hash = "#agoge"; });
   $("#again")?.addEventListener("click", () => { log.pos = 0; save(); location.hash = "#agoge"; });
@@ -502,8 +516,9 @@ function viewPlan(){
     const t = wk.tage[Number(b.dataset.day)];
     if (!t.plan){ $("#dayDetail").innerHTML = `<div class="card"><h3>Ruhetag</h3><p class="muted">${esc(t.hinweis || "")}</p></div>`; return; }
     $("#dayDetail").innerHTML = `<div class="card"><div class="kicker">${DAYS_LONG[Number(b.dataset.day)]} · ${t.minuten} Min</div><h3>${esc(t.name)}</h3><div class="list" style="margin-top:10px">
-      ${t.plan.map(bl => `<div><div class="eyebrow">${esc(bl.titel)}${bl.runden > 1 ? ` · ${bl.runden} Mal` : ""}</div>${bl.uebungen.map(u => `<div class="line"><span>${esc(exName(u.id))}</span><b class="num">${u.bereich ? `${u.bereich[0]}–${u.bereich[1]}` : (u.ziel ?? "")} ${isSec(u.einheit) ? "Sek" : ""}</b></div>`).join("")}</div>`).join("")}
+      ${t.plan.map(bl => `<div><div class="eyebrow">${esc(bl.block === "paar" ? bl.titel.replace("Paar", "Supersatz") : bl.titel)}${bl.runden > 1 ? ` · ${bl.runden} Mal` : ""}</div>${bl.uebungen.map(u => `<div class="pline">${figSVG(u.id, EX[u.id]?.muskeln || [], "fig-thumb")}<span>${esc(exName(u.id))}</span><b class="num">${u.bereich ? `${u.bereich[0]}–${u.bereich[1]}` : (u.ziel ?? "")} ${isSec(u.einheit) ? "Sek" : ""}</b></div>`).join("")}</div>`).join("")}
     </div></div>`;
+    mountFigs($("#dayDetail"));
     $("#dayDetail").scrollIntoView({behavior:"smooth", block:"start"});
   });
 }
