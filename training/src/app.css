@@ -261,3 +261,14 @@ canvas.fig3d{max-height:38vh;object-fit:contain}
 details.card > summary{list-style:none}
 details.card > summary::after{content:" ▾";color:var(--bone-2)}
 details.card[open] > summary::after{content:" ▴"}
+
+/* Laptop (B, Kritik 12): mehr Übersicht statt schmalem Streifen */
+@media (min-width:1024px){
+  .app,.tabs .in{max-width:1180px}
+  .stack{grid-template-columns:1fr 1fr;align-items:start;column-gap:18px}
+  .stack > .hero,.stack > .quote,.stack > .more-card,.stack > .row,.stack > .btn{grid-column:1/-1}
+  .ag-card{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);column-gap:32px;align-items:start}
+  .ag-card > *{grid-column:2}
+  .ag-card > .fig{grid-column:1;grid-row:1 / span 40;position:sticky;top:16px;max-height:none!important;border-radius:14px}
+  .ag-card .ag-dock{margin:12px 0 0;border:1px solid var(--line);border-radius:12px}
+}
