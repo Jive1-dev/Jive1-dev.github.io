@@ -5,7 +5,7 @@ const EX = new Map(JSON.parse(fs.readFileSync(process.argv[2], "utf8")).uebungen
 // ---- Zeitmodell (Sekunden) ----
 const PAUSE = 35;             // Pause nach jeder Übung im Supersatz (Regel 5: 30–45)
 const WECHSEL = 30;           // Material holen, Position einnehmen pro Paar
-const MIN_WARM = 6, MIN_SKILL = 10, MIN_COOL = 3;
+const MIN_WARM = 6, MIN_SKILL = 8, MIN_COOL = 3;
 function arbeitSek(id, ziel, tempo){
   const e = EX.get(id).einheit;
   const proWdh = tempo ? 6 : 3;
@@ -53,10 +53,10 @@ const ART = { Mo: "o", Di: "u", Mi: "o", Do: "u", Fr: "o", Sa: "g" };
 // Paar: "a | b"
 const V = {
   F: { r: 3,
-    Mo: { sk: "hswall:15>35 pllean:8>20", p: ["deeppu:6>12 | reary:10>15", "pike:3>8 | row:10>14", "benchdips:8>15 | rfly:10>12:t", "triext:8>12 | hollowt:20>40"] },
+    Mo: { sk: "hswall:10>30 pllean:8>20", p: ["deeppu:6>12 | reary:10>15", "pike:3>8 | row:10>14", "benchdips:8>15 | rfly:10>12:t", "triext:8>12 | hollowt:20>40"] },
     Di: { sk: "tuckl:8>20 crow:10>25", p: ["bss:8>12 | lat:10>12:t", "goblet:10>15 | dbpress:8>12:t", "calf2:15>25 | kneeraise:10>15", "boxpistol:5>10 | hollowt:20>40"] },
     Mi: { sk: "hskick:4>6 crow:10>25", p: ["pullup:3>6 | pu:8>15", "negpu:3>5 | lat:10>12:t", "curl:10>12:t | ohe:10>12:t", "rfly:10>12:t | pikecomp:8>15"] },
-    Do: { sk: "tuckl:8>20 hswall:15>35", p: ["thrust1:10>15 | curl:10>12:t", "sldl:8>12 | wristcurl:12>15:t", "calf1:10>15 | sideplank:20>40", "revlunge:8>12 | legraise:6>10"] },
+    Do: { sk: "tuckl:8>20 hswall:10>30", p: ["thrust1:10>15 | curl:10>12:t", "sldl:8>12 | wristcurl:12>15:t", "calf1:10>15 | sideplank:20>40", "revlunge:8>12 | legraise:6>10"] },
     Fr: { skMin: 15, sk: "hskick:4>6 tuckpl:1>5 crow:10>25", p: ["pullup:3>6 | deeppu:6>12", "row:10>14 | pike:3>8", "pikelift:3>6 | hang:20>40"] },
     Sa: { sk: "hsfree:5>12 crow:10>25", p: ["jumpsq:5>8 | assistpu:5>10", "broadjump:3>5 | pu:8>15", "bss:8>12 | dbpress:8>12:t", "sldl:8>12 | hollowrock:8>15"] }
   },
@@ -142,8 +142,8 @@ for (const ph of PHASEN){
       const plan = [];
       plan.push({ block: "aufwaermen", titel: "Aufwärmen", min: MIN_WARM, uebungen: WARM[art].split(" ").map(id => ({ id, ziel: EX.get(id).einheit.startsWith("sek") ? 30 : 10, einheit: EX.get(id).einheit })) });
       const skills = vt.sk.split(" ").map(parseSlot);
-      plan.push({ block: "skills", titel: "Skills", min: vt.skMin || MIN_SKILL, runden: skills.length > 2 ? 3 : 4, pauseSek: 45,
-        hinweis: "Abwechselnd, ganz frisch und sauber. Geht eine Stufe nicht: leichtere Stufe nehmen.",
+      plan.push({ block: "skills", titel: "Skills", min: vt.skMin || MIN_SKILL, runden: 3, pauseSek: 45,
+        hinweis: "3 kurze Runden, die zwei Skills abwechselnd. Frisch und sauber lernt man Skills am schnellsten. Geht eine Stufe nicht: leichtere nehmen.",
         uebungen: skills.map(s => item(s, k, ph, false)) });
       let paare = vt.p.map(s => s.split("|").map(parseSlot));
       let tests = null;
