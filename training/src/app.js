@@ -50,6 +50,7 @@ function buildSteps(day, log){
   const pre = PROG._meta.vorDemTraining?.antworten || [];
   const preGroups = new Set(pre.filter(a => log.pre.includes(a.text)).flatMap(a => a.gruppen));
   let pairs = 0;
+  const cut = yearCut(day);
   (day.plan || []).forEach((b, bi) => {
     if (b.block === "paar") pairs++;
     if (log.short && ((b.block === "paar" && pairs > 2) || b.block === "abschluss")) return; // «Nur 25 Min» (Idee B6)
@@ -57,6 +58,7 @@ function buildSteps(day, log){
     let rounds = once ? 1 : (b.runden || 1);
     if (!once && log.light) rounds = Math.max(1, rounds - 1);
     if (b.block === "paar" && preGroups.size && b.uebungen.some(u => preGroups.has(EX[log.swaps[`${bi}.${b.uebungen.indexOf(u)}`] || u.id]?.gruppe))) rounds = Math.max(1, rounds - 1);
+    if (cut[bi] != null) rounds = Math.min(rounds, cut[bi]);
     for (let r = 1; r <= rounds; r++) b.uebungen.forEach((u, ui) => {
       const adj = (S.yearAdj || {})[u.id];
       const id = log.swaps[`${bi}.${ui}`] || adj?.stufe || u.id;
@@ -69,6 +71,25 @@ function buildSteps(day, log){
     });
   });
   return steps;
+}
+
+function yearCut(day){
+  const cut = {}; if (!S.yearAdj || !day.plan) return cut;
+  const Z = PROG._meta.zeitmodell || {sekProWdh:3, sekProWdhMitTempo:6, pauseSek:35, wechselSek:30, maxMin:60};
+  const est = () => day.plan.reduce((sum, b, bi) => {
+    const once = b.block === "aufwaermen" || b.block === "abschluss" || b.block === "test";
+    if (once || b.block === "skills") return sum + (b.min || 0) * 60;
+    const rounds = Math.min(b.runden || 1, cut[bi] ?? 99);
+    const per = b.uebungen.reduce((a, u) => { const f = (S.yearAdj[u.id]?.f || 1), z = (u.ziel || 10) * f;
+      return a + (isSec(u.einheit) ? z : z * (u.tempo ? Z.sekProWdhMitTempo : Z.sekProWdh)) * (String(u.einheit).includes("seite") ? 2 : 1) + (b.pauseSek || Z.pauseSek); }, 0);
+    return sum + rounds * per + Z.wechselSek;
+  }, 0) / 60;
+  const pairsIdx = day.plan.map((b, i) => b.block === "paar" ? i : -1).filter(i => i >= 0);
+  pairsIdx.forEach(i => { if (est() > Z.maxMin && (day.plan[i].runden || 1) >= 4) cut[i] = 3; });
+  const last = pairsIdx[pairsIdx.length - 1];
+  if (last != null && est() > Z.maxMin) cut[last] = 2;
+  if (last != null && pairsIdx.length > 3 && est() > Z.maxMin) cut[last] = 0;
+  return cut;
 }
 
 // Verlauf: letzter Wert und Rekord pro Übung (ohne den Tag k)
