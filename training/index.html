@@ -1033,7 +1033,7 @@ function renderStep(steps, log, k){
     const b = $("#done");
     if (T && T.kind === "rest"){ stopTimers(); go(1); return; }
     const v = Math.max(0, Number(val.value) || 0);
-    log.sets[s.key] = {id: s.id, v, kg: showKg ? S.settings.hantelKg : null, t: Date.now()}; save();
+    log.sets[s.key] = {id: s.id, v, kg: showKg ? S.settings.hantelKg : null, t: Date.now(), block: s.block}; save();
     if (h.best != null && v > h.best) toast(`Neuer Rekord: ${v}! ${line("rekord")}`);
     if (!next){ clearInterval(clockIv); finish(log, k, steps); return; }
     stopTimers(); lockScreen();
@@ -1083,7 +1083,7 @@ function viewBericht(){
     ${logoSVG(96)}
     <div class="eyebrow">Kampfbericht · ${longDate(k)}</div>
     <h1 class="title-xl">${log.done ? "Agoge bestanden" : "Noch nicht fertig"}</h1>
-    <div class="tiles" style="width:100%"><div class="tile"><b class="num">${dur ? fmt(dur) : "–"}</b><span>Minuten</span></div><div class="tile"><b class="num">${Object.values(log.sets).filter(x => !["aufwaermen","dehnen","haltung"].includes(EX[x.id]?.gruppe)).length}</b><span>harte Sätze</span></div>
+    <div class="tiles" style="width:100%"><div class="tile"><b class="num">${dur ? fmt(dur) : "–"}</b><span>Minuten</span></div><div class="tile"><b class="num">${Object.values(log.sets).filter(isHard).length}</b><span>harte Sätze</span></div>
       <div class="tile"><b class="num">${weekCount(k)}/6</b><span>Diese Woche</span></div><div class="tile"><b class="num">${recs.length}</b><span>Rekorde</span></div></div>
     ${recs.length ? `<div class="recs">${recs.map(r => `<div class="rec"><span>${esc(exName(r.id))}</span><b class="num">${r.prev} → ${r.best}</b></div>`).join("")}</div>` : `<p class="muted">${esc(line("ende"))}</p>`}
     ${q ? `<div class="quote" style="text-align:left"><p>«${esc(q.text)}»</p><small>${esc([q.wer, q.quelle].filter(Boolean).join(" · "))}</small></div>` : ""}
@@ -1093,13 +1093,15 @@ function viewBericht(){
     <a class="btn primary" href="#heute">Zurück</a>
   </div>`;
 }
+// Ein Satz zählt als hart, wenn er aus Skills, Supersatz oder Test kommt (nicht Aufwärmen/Abschluss)
+const isHard = x => x.block ? ["skills","paar","test"].includes(x.block) : !["aufwaermen","dehnen","haltung"].includes(EX[x.id]?.gruppe);
 // Harte Sätze pro Muskel: Hauptmuskel zählt 1, die anderen ½ (Vorschlag B). Aufwärmen/Dehnen zählen nicht.
 function muscleSets(days){
   const c = {}, skip = new Set(["aufwaermen","dehnen","haltung"]), skill = new Set(["handstand","planche","lsit","press"]);
   const noMap = new Set(["nacken","fuss","finger","handgelenk","schienbein","ruecken_unten","bein_innen"]);
   const add = id => { const u = EX[id] || S.custom.find(x => x.id === id); if (!u || skip.has(u.gruppe)) return; const f = skill.has(u.gruppe) ? .5 : 1;
     (u.muskeln || []).forEach((m, i) => { if (!noMap.has(m)) c[m] = (c[m] || 0) + (i === 0 ? 1 : .5) * f; }); };
-  days.forEach(d => { const l = S.logs[d]; if (!l) return; Object.values(l.sets).forEach(s => add(s.id)); (l.extra || []).forEach(e => add(e.id)); });
+  days.forEach(d => { const l = S.logs[d]; if (!l) return; Object.values(l.sets).filter(isHard).forEach(s => add(s.id)); (l.extra || []).forEach(e => add(e.id)); });
   return c;
 }
 function muscleLoad(days, week = false){
