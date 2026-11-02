@@ -42,7 +42,6 @@ p{margin:0}
 .rank{font-family:var(--display);font-size:12px;letter-spacing:.1em;color:var(--bronze);border:1px solid var(--bronze-2);padding:4px 8px;border-radius:3px;white-space:nowrap}
 .icon-btn{color:var(--bone);text-decoration:none;width:44px;height:44px;border-radius:6px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center}
 .icon-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.logo .lg-rim{fill:var(--bronze)}.logo .lg-face{fill:var(--crimson-2)}.logo .lg-ring{fill:none;stroke:var(--bronze-2);stroke-width:2}.logo .lg-lambda{fill:var(--bronze)}
 
 /* Tabs */
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface);border-top:1px solid var(--line);padding:0 max(8px,env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(8px,env(safe-area-inset-left,0px))}

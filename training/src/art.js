@@ -1,12 +1,22 @@
 // ---------- Logo und Muskelkarte ----------
-// Logo: spartanischer Rundschild (Hoplon) mit dem Lambda, dem Zeichen auf den Schilden der Spartaner.
+// Logo: Spartaner-Helm (korinthischer Helm) mit rotem Helmbusch, Bronze mit Licht und Schatten (Nacht 2, Wunsch Benaja).
+let LOGO_N = 0;
+const HELM_PATHS = {
+  crest: "M74 24 C74 10 62 4 50 4 C28 4 12 22 12 46 C12 56 14 64 18 70 C22 60 24 50 25 44 C27 31 40 22 56 22 C64 22 70 22 74 24 Z",
+  groove: ["M70 18 C66 11 58 8 50 8 C32 8 18 24 17 46", "M64 20 C60 15 55 13 49 13 C35 13 23 26 21 46"],
+  bowl: "M18 92 C25 86 29 76 29 62 C29 40 42 26 60 26 C76 26 86 36 86 48 C78 47 66 48 57 51 C66 53 76 54 83 56 L86 66 L81 67 C80 77 78 85 73 92 C66 82 60 74 52 72 C42 70 32 80 18 92 Z",
+  shine: "M40 36 C46 31 54 29 62 30"
+};
+// Flache Silhouette ohne Konturen: Augenschlitz ist ausgeschnitten (Hintergrund scheint durch), funktioniert hell und dunkel, ab 20 px.
+function helmSVG(n){
+  const P = HELM_PATHS;
+  return `<defs><linearGradient id="hb${n}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2d6a2"/><stop offset=".5" stop-color="#bd8a4c"/><stop offset="1" stop-color="#6f441f"/></linearGradient>`
+    + `<linearGradient id="hc${n}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#dc4034"/><stop offset="1" stop-color="#7a1511"/></linearGradient></defs>`
+    + `<path d="${P.crest}" fill="url(#hc${n})"/><g fill="none" stroke="#5c0f0c" stroke-opacity=".35" stroke-width="1.2" stroke-linecap="round">${P.groove.map(d => `<path d="${d}"/>`).join("")}</g>`
+    + `<path d="${P.bowl}" fill="url(#hb${n})"/><path d="${P.shine}" fill="none" stroke="#fff6e4" stroke-opacity=".55" stroke-width="1.6" stroke-linecap="round"/>`;
+}
 function logoSVG(size = 40, cls = ""){
-  return `<svg class="logo ${cls}" width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true">
-    <circle cx="50" cy="50" r="47" class="lg-rim"/>
-    <circle cx="50" cy="50" r="39" class="lg-face"/>
-    <circle cx="50" cy="50" r="39" class="lg-ring"/>
-    <path class="lg-lambda" d="M50 22 L74 76 H63 L50 45 L37 76 H26 Z"/>
-  </svg>`;
+  return `<svg class="logo helm ${cls}" width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true">${helmSVG(++LOGO_N)}</svg>`;
 }
 
 // Muskelkarte vorne und hinten. Jede Region trägt einen Muskel-Key aus exercises.json.
