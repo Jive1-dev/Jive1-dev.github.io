@@ -1,5 +1,5 @@
-// Offline-Cache für Winter Arc Training (Version mvyfu1vn)
-const CACHE = "wa-training-mvyfu1vn";
+// Offline-Cache für Winter Arc Training (Version mvyi7gf7)
+const CACHE = "wa-training-mvyi7gf7";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./icon-180.png", "./icon-192.png", "./icon-512.png"];
 self.addEventListener("install", e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting())));
 self.addEventListener("activate", e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith("wa-training-") && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())));

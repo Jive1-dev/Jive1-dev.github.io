@@ -237,7 +237,10 @@ function viewHeute(){
         <button class="btn ghost sm grow" id="short" aria-pressed="${!!log.short}">${log.short ? "✓ Nur 25 Min" : "Wenig Zeit? Nur 25 Min"}</button>
       </div>`}`;
   }
+  const yearDone = w > 52 ? `<div class="card hero"><div class="kicker">52 Wochen geschafft</div><h2>Ein Jahr Disziplin</h2><p class="muted" style="margin-top:6px">Schau unter «Körper», was aus deinen Startwerten geworden ist. Ein neues Jahr beginnt wieder mit Phase I, auf deinem neuen Niveau.</p>
+      <button class="btn wide" id="newYear" style="margin-top:10px">Neues Jahr ab nächstem Montag</button></div>` : "";
   $("#view").innerHTML = `<div class="stack">
+    ${yearDone}
     ${q ? `<div class="quote"><p>«${esc(q.text)}»</p><small>${esc([q.wer, q.quelle || q.stelle].filter(Boolean).join(" · "))}</small></div>` : ""}
     ${main}
     <div class="card"><div class="split"><span class="kicker" style="margin:0">Wochenschild</span><span class="small num">${weekCount(k)} von 6 diese Woche</span></div>
@@ -246,6 +249,7 @@ function viewHeute(){
     ${(() => { const v = (MOT.bibel || [])[(weekOf(k) % Math.max(1, (MOT.bibel || []).length) + (MOT.bibel || []).length) % Math.max(1, (MOT.bibel || []).length)]; return v ? `<div class="card"><div class="kicker">Vers der Woche</div><p>${esc(v.sinngemaess || v.text || "")}</p><p class="small" style="margin-top:6px">${esc(v.stelle)} (sinngemäss)</p></div>` : ""; })()}
     <div class="card"><div class="kicker">Selbst eintragen</div><p class="small">Extra trainiert? Trag es ein, es zählt für Rekorde.</p>${extraForm()}</div>
   </div>`;
+  $("#newYear")?.addEventListener("click", () => { S.settings.start = addDays(k, 7 - dayIdx(k)); save(); toast(`Neues Jahr startet ${longDate(S.settings.start)}`); route(); });
   $("#go")?.addEventListener("click", () => { log.started ||= Date.now(); save(); location.hash = "#agoge"; });
   $("#again")?.addEventListener("click", () => { log.pos = 0; save(); location.hash = "#agoge"; });
   $("#light")?.addEventListener("click", () => { log.light = !log.light; save(); viewHeute(); mountFigs($("#view")); });
@@ -462,8 +466,10 @@ function viewBericht(){
 }
 // Harte Sätze pro Muskel: Hauptmuskel zählt 1, die anderen ½ (Vorschlag B). Aufwärmen/Dehnen zählen nicht.
 function muscleSets(days){
-  const c = {}, skip = new Set(["aufwaermen","dehnen","haltung"]);
-  const add = id => { const u = EX[id] || S.custom.find(x => x.id === id); if (!u || skip.has(u.gruppe)) return; (u.muskeln || []).forEach((m, i) => c[m] = (c[m] || 0) + (i === 0 ? 1 : .5)); };
+  const c = {}, skip = new Set(["aufwaermen","dehnen","haltung"]), skill = new Set(["handstand","planche","lsit","press"]);
+  const noMap = new Set(["nacken","fuss","finger","handgelenk","schienbein","ruecken_unten","bein_innen"]);
+  const add = id => { const u = EX[id] || S.custom.find(x => x.id === id); if (!u || skip.has(u.gruppe)) return; const f = skill.has(u.gruppe) ? .5 : 1;
+    (u.muskeln || []).forEach((m, i) => { if (!noMap.has(m)) c[m] = (c[m] || 0) + (i === 0 ? 1 : .5) * f; }); };
   days.forEach(d => { const l = S.logs[d]; if (!l) return; Object.values(l.sets).forEach(s => add(s.id)); (l.extra || []).forEach(e => add(e.id)); });
   return c;
 }
@@ -619,6 +625,7 @@ function viewSettings(){
       <div class="row wrap" style="margin-top:10px"><button class="btn sm" id="exp">Als Datei sichern</button><button class="btn sm" id="copy">Kopieren</button><label class="btn sm">Datei laden<input type="file" id="imp" accept="application/json" hidden></label></div>
       <textarea class="field" id="io" rows="3" placeholder="Oder hier eine Kopie einfügen und «Einfügen» tippen" style="margin-top:10px"></textarea>
       <button class="btn sm" id="paste" style="margin-top:8px">Einfügen</button></div>
+    ${Object.entries(S.videoOk || {}).filter(([, ok]) => ok === false).length ? `<div class="card"><div class="kicker">Ausgeblendete Videos</div><div class="list">${Object.entries(S.videoOk).filter(([, ok]) => ok === false).map(([id]) => `<div class="line"><span>${esc(exName(id))}</span><button class="chip" data-vshow="${id}">Wieder zeigen</button></div>`).join("")}</div></div>` : ""}
     <div class="card"><div class="kicker">Neu anfangen</div><button class="btn sm" id="reset">Alles löschen</button></div>
     <p class="small">Winter Arc Training · Inhalte von Claude A (App, Figuren) und Claude B (Übungen, Programm, Essen). Keine Medizin: bei Schmerzen oder Unsicherheit Arzt fragen.</p>
   </div>`;
@@ -630,12 +637,16 @@ function viewSettings(){
   const dump = () => JSON.stringify(S, null, 1);
   $("#exp").onclick = async () => {
     // Im Claude-Artefakt über die Download-Erlaubnis, auf GitHub Pages über einen normalen Download
-    try { const dl = window.claude?.use ? await window.claude.use("downloads") : null; if (dl){ await dl.save({filename:`winterarc-training-${today()}.json`, data: dump()}); toast("Gesichert"); return; } } catch(e) { if (window.claude?.use){ toast("Nicht gespeichert. Nimm «Kopieren»."); return; } }
+    if (window.claude?.use){
+      try { const dl = await window.claude.use("downloads"); if (dl){ await dl.save({filename:`winterarc-training-${today()}.json`, data: dump()}); toast("Gesichert"); return; } } catch(e) {}
+      $("#io").value = dump(); toast("In dieser Vorschau geht kein Download. Nimm «Kopieren»."); return;
+    }
     try { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([dump()], {type:"application/json"})); a.download = `winterarc-training-${today()}.json`; a.click(); toast("Datei wird gespeichert"); } catch(e) { $("#io").value = dump(); toast("Kopie unten, bitte selbst kopieren"); } };
   $("#copy").onclick = () => { navigator.clipboard?.writeText(dump()).then(() => toast("Kopiert"), () => { $("#io").value = dump(); $("#io").select(); toast("Unten markiert, bitte kopieren"); }); };
   const load = txt => { try { const o = JSON.parse(txt); if (o.v !== 1 || !o.logs) throw 0; S = Object.assign(fresh(), o); save(); applyTheme(); toast("Geladen"); route(); } catch(e) { toast("Das ist keine gültige Sicherung."); } };
   $("#imp").onchange = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => load(r.result); r.readAsText(f); };
   $("#paste").onclick = () => load($("#io").value);
+  $$("[data-vshow]").forEach(b => b.onclick = () => { delete S.videoOk[b.dataset.vshow]; save(); viewSettings(); });
   $("#reset").onclick = e => { const b = e.currentTarget; if (b.dataset.armed !== "1"){ b.dataset.armed = "1"; b.textContent = "Wirklich alles löschen? Nochmal tippen"; return; } S = fresh(); save(); toast("Gelöscht"); route(); };
 }
 
