@@ -482,7 +482,7 @@ function renderStep(steps, log, k){
       <div class="eyebrow">${esc(s.block === "paar" ? "Supersatz" : s.title)}${s.rounds > 1 ? ` · Runde ${s.r} von ${s.rounds}` : ""}</div>
       ${s.block === "skills" && s.r === 1 && s.ui === 0 ? `<p class="hint">Skills: ${s.rounds} kurze Runden, die Übungen abwechselnd. Kurz, frisch und sauber lernt man Skills am schnellsten.</p>` : ""}
       ${u.handgelenk && s.block !== "aufwaermen" && log.wrist == null ? `<div class="card"><div class="kicker">Handgelenke heute?</div><div class="row"><button class="chip grow" data-wr="ok">Gut</button><button class="chip grow" data-wr="zwickt">Zwickt</button></div></div>` : ""}
-      ${figSVG(s.id, u.muskeln || [])}
+      ${typeof hasPhoto === "function" && hasPhoto(s.id) ? photoBox(s.id) : figSVG(s.id, u.muskeln || [])}
       <h2 class="ag-name">${esc(u.name)}</h2>
       <div class="chips">${(u.muskeln || []).slice(0, 4).map(m => `<span class="mchip">${esc(muscleShort(m))}</span>`).join("")}</div>
       <div class="goal"><b class="num">${esc(goal)}</b><span>${esc(s.test ? (s.text || "") : unitText(s.einheit))}${s.kg ? ` · ${S.settings.hantelKg} kg` : ""}</span></div>
@@ -706,7 +706,7 @@ function viewPlan(){
     const dk = addDays(mon, Number(b.dataset.day));
     $("#dayDetail").innerHTML = `<div class="card"><div class="kicker">${DAYS_LONG[Number(b.dataset.day)]} · ${t.minuten} Min</div><h3>${esc(t.name)}</h3>
       ${dk <= today() ? `<a class="btn wide" style="margin-top:10px" href="#bericht-${dk}">${S.logs[dk]?.done ? "Werte ansehen und korrigieren" : "Werte nachtragen"}</a>` : ""}<div class="list" style="margin-top:10px">
-      ${t.plan.map(bl => `<div><div class="eyebrow">${esc(bl.block === "paar" ? bl.titel.replace("Paar", "Supersatz") : bl.titel)}${bl.runden > 1 ? ` · ${bl.runden} Mal` : ""}</div>${bl.uebungen.map(u => `<div class="pline">${figSVG(u.id, EX[u.id]?.muskeln || [], "fig-thumb")}<span>${esc(exName(u.id))}</span><b class="num">${u.bereich ? `${u.bereich[0]}–${u.bereich[1]}` : (u.ziel ?? "")} ${isSec(u.einheit) ? "Sek" : ""}</b></div>`).join("")}</div>`).join("")}
+      ${t.plan.map(bl => `<div><div class="eyebrow">${esc(bl.block === "paar" ? bl.titel.replace("Paar", "Supersatz") : bl.titel)}${bl.runden > 1 ? ` · ${bl.runden} Mal` : ""}</div>${bl.uebungen.map(u => `<div class="pline">${typeof hasPhoto === "function" && hasPhoto(u.id) ? photoBox(u.id, "thumb") : figSVG(u.id, EX[u.id]?.muskeln || [], "fig-thumb")}<span>${esc(exName(u.id))}</span><b class="num">${u.bereich ? `${u.bereich[0]}–${u.bereich[1]}` : (u.ziel ?? "")} ${isSec(u.einheit) ? "Sek" : ""}</b></div>`).join("")}</div>`).join("")}
     </div></div>`;
     mountFigs($("#dayDetail"));
     $("#dayDetail").scrollIntoView({behavior:"smooth", block:"start"});

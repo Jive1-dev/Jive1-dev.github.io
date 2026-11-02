@@ -279,8 +279,20 @@ details.card[open] > summary::after{content:" ▴"}
   .ag-card{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);column-gap:32px;align-items:start}
   .ag-card > *{grid-column:2}
   .ag-card > .fig{grid-column:1;grid-row:1 / span 40;position:sticky;top:16px;max-height:none!important;border-radius:14px}
+  .ag-card > figure.photo{grid-column:1;grid-row:1 / span 40;position:sticky;top:16px;border-radius:14px}
   .ag-card .ag-dock{margin:12px 0 0;border:1px solid var(--line);border-radius:12px}
 }
+/* Echte Fotos (free-exercise-db): Start und Ende im Wechsel */
+figure.photo{position:relative;margin:0;aspect-ratio:4/3;overflow:hidden;border-radius:10px;background:#0d0b09;isolation:isolate}
+figure.photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .4s}
+figure.photo.ready img{opacity:1}
+figure.photo.ready .ph-b{animation:phswap 3.2s ease-in-out infinite}
+@keyframes phswap{0%,38%{opacity:0}50%,88%{opacity:1}100%{opacity:0}}
+figure.photo::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 60%,rgba(13,11,9,.55));pointer-events:none}
+figure.photo figcaption{position:absolute;left:10px;bottom:8px;z-index:1;font-size:10px;letter-spacing:.04em;color:rgba(237,228,209,.8)}
+figure.photo.thumb{width:64px;height:48px;aspect-ratio:auto;border-radius:6px;flex:none}
+figure.photo.thumb figcaption,figure.photo.thumb::after{display:none}
+@media (prefers-reduced-motion:reduce){figure.photo.ready .ph-b{animation:none}}
 </style>
 <div id="root"></div>
 <noscript>Diese App braucht JavaScript.</noscript>
@@ -1032,6 +1044,28 @@ Antworte NUR mit diesem JSON:
   return { card, bind, report, reportWeek, prompt, adj, apply, undo, clean, parseText, weekCard, weekBind };
 })();
 
+// Echte Fotos statt Figur, wo es eine passende Aufnahme gibt (Claude A, Nacht 2).
+// Quelle: free-exercise-db (github.com/yuhonas/free-exercise-db), Unlicense = Public Domain.
+// Zwei Bilder pro Übung (Start, Ende) wechseln sich ab. Skills ohne Foto behalten die 3D-Figur.
+const PHOTOS = {"pu": "Pushups", "deeppu": "Pushups", "incpu": "Incline_Push-Up", "declpu": "Decline_Push-Up", "hspu": "Handstand_Push-Ups", "benchdip": "Bench_Dips", "benchdips": "Bench_Dips", "dip": "Dips_-_Triceps_Version", "triext": "Body_Tricep_Press", "curl": "Dumbbell_Bicep_Curl", "row": "One-Arm_Dumbbell_Row", "rfly": "Seated_Bent-Over_Rear_Delt_Raise", "wristcurl": "Seated_Dumbbell_Palms-Up_Wrist_Curl", "revlunge": "Dumbbell_Rear_Lunge", "pullup": "Pullups", "negpu": "Pullups", "bridge": "Butt_Lift_Bridge", "thrust1": "Single_Leg_Glute_Bridge", "calf1db": "Calf_Raise_On_A_Dumbbell", "sideplank": "Side_Bridge", "crunch": "Crunches", "legraise": "Flat_Bench_Lying_Leg_Raise", "kneeraise": "Bent-Knee_Hip_Raise", "twist": "Russian_Twist", "jumpsq": "Freehand_Jump_Squat", "broadjump": "Standing_Long_Jump", "dbpress": "Dumbbell_Shoulder_Press", "goblet": "Goblet_Squat", "hangknee": "Hanging_Leg_Raise", "squat": "Bodyweight_Squat", "nordic": "Natural_Glute_Ham_Raise", "catcow": "Cat_Stretch", "circles": "Arm_Circles", "hipflex": "Kneeling_Hip_Flexor", "calfstretch": "Calf_Stretch_Hands_Against_Wall", "calf2": "Calf_Raise_On_A_Dumbbell", "calf1": "Calf_Raise_On_A_Dumbbell"};
+const photoSrc = (id, i) => `img/${PHOTOS[id]}_${i}.jpg`;
+const hasPhoto = id => !!PHOTOS[id];
+function photoBox(id, cls = ""){
+  return `<figure class="photo ${cls}" data-pid="${id}" aria-label="Foto der Übung"><img src="${photoSrc(id, 0)}" alt="" decoding="async"><img class="ph-b" src="${photoSrc(id, 1)}" alt="" decoding="async">
+    <figcaption>Start ↔ Ende · Foto: free-exercise-db</figcaption></figure>`;
+}
+// Fotos nach dem Laden einblenden; wenn ein Bild fehlt (offline, noch nicht im Cache), zurück zur Figur
+function mountPhotos(root){
+  (root || document).querySelectorAll("figure.photo img").forEach(img => {
+    const ok = () => img.closest("figure")?.classList.add("ready");
+    if (img.complete && img.naturalWidth) ok(); else { img.addEventListener("load", ok, { once: true });
+      img.addEventListener("error", () => { const f = img.closest("figure"); if (!f || !f.isConnected) return; const id = f.dataset.pid, w = document.createElement("div");
+        w.innerHTML = figSVG(id, (typeof EX !== "undefined" && EX[id]?.muskeln) || [], f.classList.contains("thumb") ? "fig-thumb" : ""); f.replaceWith(w.firstElementChild || w); mountFigs(document.getElementById("view")); }, { once: true }); }
+  });
+}
+// an bestehende mountFigs-Aufrufe anhängen (wie fig3d.js)
+(() => { const prev = mountFigs; mountFigs = function(root){ prev(root); mountPhotos(root); }; })();
+
 // ---------- Logo und Muskelkarte ----------
 // Logo: spartanischer Rundschild (Hoplon) mit dem Lambda, dem Zeichen auf den Schilden der Spartaner.
 function logoSVG(size = 40, cls = ""){
@@ -1572,7 +1606,7 @@ function renderStep(steps, log, k){
       <div class="eyebrow">${esc(s.block === "paar" ? "Supersatz" : s.title)}${s.rounds > 1 ? ` · Runde ${s.r} von ${s.rounds}` : ""}</div>
       ${s.block === "skills" && s.r === 1 && s.ui === 0 ? `<p class="hint">Skills: ${s.rounds} kurze Runden, die Übungen abwechselnd. Kurz, frisch und sauber lernt man Skills am schnellsten.</p>` : ""}
       ${u.handgelenk && s.block !== "aufwaermen" && log.wrist == null ? `<div class="card"><div class="kicker">Handgelenke heute?</div><div class="row"><button class="chip grow" data-wr="ok">Gut</button><button class="chip grow" data-wr="zwickt">Zwickt</button></div></div>` : ""}
-      ${figSVG(s.id, u.muskeln || [])}
+      ${typeof hasPhoto === "function" && hasPhoto(s.id) ? photoBox(s.id) : figSVG(s.id, u.muskeln || [])}
       <h2 class="ag-name">${esc(u.name)}</h2>
       <div class="chips">${(u.muskeln || []).slice(0, 4).map(m => `<span class="mchip">${esc(muscleShort(m))}</span>`).join("")}</div>
       <div class="goal"><b class="num">${esc(goal)}</b><span>${esc(s.test ? (s.text || "") : unitText(s.einheit))}${s.kg ? ` · ${S.settings.hantelKg} kg` : ""}</span></div>
@@ -1796,7 +1830,7 @@ function viewPlan(){
     const dk = addDays(mon, Number(b.dataset.day));
     $("#dayDetail").innerHTML = `<div class="card"><div class="kicker">${DAYS_LONG[Number(b.dataset.day)]} · ${t.minuten} Min</div><h3>${esc(t.name)}</h3>
       ${dk <= today() ? `<a class="btn wide" style="margin-top:10px" href="#bericht-${dk}">${S.logs[dk]?.done ? "Werte ansehen und korrigieren" : "Werte nachtragen"}</a>` : ""}<div class="list" style="margin-top:10px">
-      ${t.plan.map(bl => `<div><div class="eyebrow">${esc(bl.block === "paar" ? bl.titel.replace("Paar", "Supersatz") : bl.titel)}${bl.runden > 1 ? ` · ${bl.runden} Mal` : ""}</div>${bl.uebungen.map(u => `<div class="pline">${figSVG(u.id, EX[u.id]?.muskeln || [], "fig-thumb")}<span>${esc(exName(u.id))}</span><b class="num">${u.bereich ? `${u.bereich[0]}–${u.bereich[1]}` : (u.ziel ?? "")} ${isSec(u.einheit) ? "Sek" : ""}</b></div>`).join("")}</div>`).join("")}
+      ${t.plan.map(bl => `<div><div class="eyebrow">${esc(bl.block === "paar" ? bl.titel.replace("Paar", "Supersatz") : bl.titel)}${bl.runden > 1 ? ` · ${bl.runden} Mal` : ""}</div>${bl.uebungen.map(u => `<div class="pline">${typeof hasPhoto === "function" && hasPhoto(u.id) ? photoBox(u.id, "thumb") : figSVG(u.id, EX[u.id]?.muskeln || [], "fig-thumb")}<span>${esc(exName(u.id))}</span><b class="num">${u.bereich ? `${u.bereich[0]}–${u.bereich[1]}` : (u.ziel ?? "")} ${isSec(u.einheit) ? "Sek" : ""}</b></div>`).join("")}</div>`).join("")}
     </div></div>`;
     mountFigs($("#dayDetail"));
     $("#dayDetail").scrollIntoView({behavior:"smooth", block:"start"});

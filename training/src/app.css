@@ -270,5 +270,17 @@ details.card[open] > summary::after{content:" ▴"}
   .ag-card{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);column-gap:32px;align-items:start}
   .ag-card > *{grid-column:2}
   .ag-card > .fig{grid-column:1;grid-row:1 / span 40;position:sticky;top:16px;max-height:none!important;border-radius:14px}
+  .ag-card > figure.photo{grid-column:1;grid-row:1 / span 40;position:sticky;top:16px;border-radius:14px}
   .ag-card .ag-dock{margin:12px 0 0;border:1px solid var(--line);border-radius:12px}
 }
+/* Echte Fotos (free-exercise-db): Start und Ende im Wechsel */
+figure.photo{position:relative;margin:0;aspect-ratio:4/3;overflow:hidden;border-radius:10px;background:#0d0b09;isolation:isolate}
+figure.photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .4s}
+figure.photo.ready img{opacity:1}
+figure.photo.ready .ph-b{animation:phswap 3.2s ease-in-out infinite}
+@keyframes phswap{0%,38%{opacity:0}50%,88%{opacity:1}100%{opacity:0}}
+figure.photo::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 60%,rgba(13,11,9,.55));pointer-events:none}
+figure.photo figcaption{position:absolute;left:10px;bottom:8px;z-index:1;font-size:10px;letter-spacing:.04em;color:rgba(237,228,209,.8)}
+figure.photo.thumb{width:64px;height:48px;aspect-ratio:auto;border-radius:6px;flex:none}
+figure.photo.thumb figcaption,figure.photo.thumb::after{display:none}
+@media (prefers-reduced-motion:reduce){figure.photo.ready .ph-b{animation:none}}
