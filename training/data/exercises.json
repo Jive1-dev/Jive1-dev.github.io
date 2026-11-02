@@ -180,7 +180,7 @@
         "Nur kleine Kreise: mach sie so gross, wie es angenehm geht.",
         "Schultern zu den Ohren ziehen: locker lassen."
       ],
-      "sicherheit": "Kein Risiko. Langsam starten.",
+      "sicherheit": "Kaum Risiko. Langsam starten.",
       "leichter": null,
       "schwerer": null,
       "leichterTipp": "Kleinere Kreise, langsamer."
@@ -323,7 +323,7 @@
         "Kopf nach unten nicken statt nach hinten schieben.",
         "Schultern hochziehen."
       ],
-      "sicherheit": "Kein Risiko. Sanft, nicht drücken.",
+      "sicherheit": "Kaum Risiko. Sanft, nicht drücken.",
       "leichter": null,
       "schwerer": null,
       "leichterTipp": "Im Liegen machen, Hinterkopf auf dem Boden."
@@ -352,7 +352,7 @@
         "Unterer Rücken löst sich stark von der Wand: Bauch leicht anspannen.",
         "Arme verlieren den Kontakt zur Wand: nur so hoch, wie es geht."
       ],
-      "sicherheit": "Kein Risiko. Langsam bewegen.",
+      "sicherheit": "Kaum Risiko. Langsam bewegen.",
       "leichter": "chintuck",
       "schwerer": null,
       "leichterTipp": "Einen Schritt weg von der Wand, Arme nur in die Luft."
@@ -1496,7 +1496,7 @@
         "Mit Schwung aus dem Rücken.",
         "Ellbogen wandert nach vorne."
       ],
-      "sicherheit": "Kein Risiko bei sauberer Technik.",
+      "sicherheit": "Kaum Risiko bei sauberer Technik.",
       "leichter": null,
       "schwerer": null,
       "tempo": "4 Sek runter, 1 Sek Pause oben, dann wieder hoch",
@@ -1903,7 +1903,7 @@
         "Kopf in den Nacken: Blick bleibt zum Boden.",
         "Mit Schwung."
       ],
-      "sicherheit": "Kein Risiko.",
+      "sicherheit": "Kaum Risiko.",
       "leichter": null,
       "schwerer": "rfly",
       "leichterTipp": "Arme mit gebeugten Ellbogen (wie ein «W»).",
@@ -2049,7 +2049,7 @@
         "Hohlkreuz statt Po anspannen.",
         "Mit den Füssen weit weg vom Po."
       ],
-      "sicherheit": "Kein Risiko.",
+      "sicherheit": "Kaum Risiko.",
       "leichter": null,
       "schwerer": "thrust1",
       "leichterTipp": "Weniger hoch, oben nicht halten."
@@ -2077,7 +2077,7 @@
         "Hüfte kippt zur Seite.",
         "Hohlkreuz."
       ],
-      "sicherheit": "Kein Risiko.",
+      "sicherheit": "Kaum Risiko.",
       "leichter": "bridge",
       "schwerer": "thrustb"
     },
@@ -2246,7 +2246,7 @@
         "Fersen heben sich.",
         "Zu nahe an der Wand: dann ist es zu leicht."
       ],
-      "sicherheit": "Kein Risiko. Brennt schnell, das ist normal.",
+      "sicherheit": "Kaum Risiko. Brennt schnell, das ist normal.",
       "leichter": null,
       "schwerer": null,
       "leichterTipp": "Füsse näher zur Wand.",
@@ -2275,7 +2275,7 @@
         "Ferse hebt sich.",
         "Nur die grosse Zehe arbeitet."
       ],
-      "sicherheit": "Kein Risiko.",
+      "sicherheit": "Kaum Risiko.",
       "leichter": null,
       "schwerer": null,
       "leichterTipp": "Kleineres Handtuch, langsam."
@@ -2332,7 +2332,7 @@
         "Hüfte sinkt ab.",
         "Oberkörper kippt nach vorne."
       ],
-      "sicherheit": "Kein Risiko.",
+      "sicherheit": "Kaum Risiko.",
       "leichter": null,
       "schwerer": null,
       "leichterTipp": "Unteres Knie am Boden lassen.",
@@ -2360,7 +2360,7 @@
         "Am Kopf ziehen.",
         "Ganz hochsitzen: nur die Schultern heben."
       ],
-      "sicherheit": "Kein Risiko.",
+      "sicherheit": "Kaum Risiko.",
       "leichter": null,
       "schwerer": "hollowt",
       "leichterTipp": "Hände neben dem Körper, nur den Kopf heben."
@@ -2387,7 +2387,7 @@
         "Unterer Rücken hebt sich vom Boden.",
         "Luft anhalten: normal weiter atmen."
       ],
-      "sicherheit": "Kein Risiko.",
+      "sicherheit": "Kaum Risiko.",
       "leichter": "crunch",
       "schwerer": "hollow"
     },
@@ -2442,7 +2442,7 @@
         "Knicken in der Hüfte.",
         "Schwung aus den Armen."
       ],
-      "sicherheit": "Kein Risiko.",
+      "sicherheit": "Kaum Risiko.",
       "leichter": "hollow",
       "schwerer": null
     },
@@ -2469,7 +2469,7 @@
         "Mit Schwung.",
         "Unterer Rücken hebt sich beim Absenken."
       ],
-      "sicherheit": "Kein Risiko.",
+      "sicherheit": "Kaum Risiko.",
       "leichter": null,
       "schwerer": "legraise",
       "leichterTipp": "Nur ein Knie nach dem anderen."
@@ -2563,7 +2563,7 @@
     },
     {
       "id": "jumpsq",
-      "name": "Strecksprung aus der Hocke",
+      "name": "Strecksprung aus der Kniebeuge",
       "gruppe": "beine",
       "muskeln": [
         "bein_vorne",
