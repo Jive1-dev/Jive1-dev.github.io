@@ -292,6 +292,7 @@ function viewHeute(){
     main = `<div class="card hero"><div class="eyebrow">${longDate(k)}</div><h1 class="title-xl" style="margin-top:6px">Ruhetag</h1>
       <p class="muted" style="margin-top:6px">${esc(day.hinweis || "Erholung ist Teil des Trainings. Die Muskeln wachsen jetzt.")}</p></div>
       <div class="card"><div class="kicker">Wochen-Check</div>${weightQuick()}</div>
+      ${typeof COACH !== "undefined" ? COACH.weekCard(k) : ""}
       <div class="card"><div class="kicker">Morgen</div><h3>${esc(next.name)}</h3><p class="muted">${esc(next.muskelText || "")} · ${next.minuten} Min</p></div>`;
   } else {
     const steps = buildSteps(day, log);
@@ -379,6 +380,7 @@ function viewHeute(){
     save(); viewHeute(); mountFigs($("#view"));
   }));
   bindWeight(); bindExtra(k);
+  if (typeof COACH !== "undefined" && $("#coachCard")) COACH.weekBind(k);
 }
 function timeline(day, log = {}){
   let t = 0, pairs = 0;

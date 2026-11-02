@@ -34,6 +34,17 @@ const COACH = (() => {
     };
   }
 
+  function reportWeek(k){
+    const mon = addDays(k, -dayIdx(k)), days = [0,1,2,3,4,5].map(i => addDays(mon, i));
+    const ex = {};
+    days.forEach(d => { const log = S.logs[d]; if (!log) return; Object.values(log.sets).filter(x => ["skills","paar","test"].includes(x.block)).forEach(x => {
+      const e = ex[x.id] ||= { id: x.id, name: exName(x.id), einheit: EX[x.id]?.einheit, tage: {}, leichter: EX[x.id]?.leichter || null, schwerer: EX[x.id]?.schwerer || null, notizen: [] };
+      (e.tage[d] ||= []).push(x.v); });
+      Object.entries(log.notes || {}).forEach(([id, t]) => { if (ex[id]) ex[id].notizen.push(t); }); });
+    const planned = days.map(d => { const { day } = progDay(d); return { tag: d, training: day.name, gemacht: !!S.logs[d]?.done, minuten: day.minuten }; });
+    return { woche: weekOf(k), phase: phaseOf(Math.max(1, weekOf(k))).name, tage: planned, uebungen: Object.values(ex),
+      gewicht: (S.body.w || []).slice(-6).map(x => ({ tag: x.d, kg: x.kg })), aktiveAnpassungen: S.coachAdj || {}, profil: { alter: S.profile.alter, kg: latestKg() } };
+  }
   const RULES = `Du bist der Trainings-Coach in einer Calisthenics-App für einen 16-jährigen Anfänger (ca. 50 kg, will Muskeln aufbauen, Skills: Handstand, Planche). Er trainiert zuhause, 6 Tage pro Woche, max. 60 Min.
 Werte das heutige Training aus und schlage Anpassungen für die nächsten Male vor. Regeln:
 - Deutsch (Schweiz, «ss» statt «ß»), du-Form, kurze Sätze, ehrlich, freundlich, nie von oben herab. Keine Fachwörter ohne Erklärung.
@@ -44,18 +55,22 @@ Werte das heutige Training aus und schlage Anpassungen für die nächsten Male v
 - "letzteMale" zeigt frühere Werte. Kleine Schritte sind besser als grosse.
 Antworte NUR mit diesem JSON:
 {"auswertung":"2-4 kurze Sätze","gut":["bis 3 kurze Punkte, was gut war"],"anpassungen":[{"id":"übungs-id","aktion":"ziel|leichter|schwerer","ziel":12,"grund":"1 kurzer Satz"}],"naechstesMal":"1 Satz, worauf er nächstes Mal achten soll","warnung":null}`;
-  const prompt = k => RULES + "\n\nDaten des Trainings (JSON):\n" + JSON.stringify(report(k));
+  const isWeekKey = k => /^W/.test(k);
+  const prompt = k => isWeekKey(k)
+    ? RULES.replace("Werte das heutige Training aus", "Werte die ganze Trainingswoche aus (Wochenbericht am Ruhetag)").replace("2-4 kurze Sätze", "3-5 kurze Sätze zur Woche: was lief, was stagniert, wie oft trainiert") .replace("1 Satz, worauf er nächstes Mal achten soll", "1 Satz: Fokus für nächste Woche")
+      + "\n\nDaten der Woche (JSON):\n" + JSON.stringify(reportWeek(k.slice(1)))
+    : RULES + "\n\nDaten des Trainings (JSON):\n" + JSON.stringify(report(k));
 
   // ---------- Antwort prüfen und übernehmen ----------
   function clean(r, k){
     if (!r || typeof r !== "object") throw new Error("keine Auswertung");
-    const ids = new Set(report(k).uebungen.map(e => e.id));
+    const ids = new Set((isWeekKey(k) ? reportWeek(k.slice(1)) : report(k)).uebungen.map(e => e.id));
     const an = (Array.isArray(r.anpassungen) ? r.anpassungen : []).filter(a => a && ids.has(String(a.id)) && ["ziel", "leichter", "schwerer"].includes(a.aktion))
       .slice(0, 4).map(a => ({ id: String(a.id), aktion: a.aktion, ziel: Number(a.ziel) || null, grund: String(a.grund || "").slice(0, 200) }))
       .filter(a => a.aktion !== "ziel" || a.ziel > 0)
       .filter(a => a.aktion === "ziel" || (a.aktion === "leichter" ? EX[a.id]?.leichter : EX[a.id]?.schwerer));
     return { auswertung: String(r.auswertung || "").slice(0, 700), gut: (Array.isArray(r.gut) ? r.gut : []).slice(0, 3).map(x => String(x).slice(0, 160)),
-      anpassungen: an, naechstesMal: String(r.naechstesMal || "").slice(0, 240), warnung: r.warnung ? String(r.warnung).slice(0, 300) : null };
+      anpassungen: an, naechstesMal: String(r.naechstesMal || "").replace(/^(Fokus( nächste Woche)?|Nächstes Mal)\s*:\s*/i, "").slice(0, 240), warnung: r.warnung ? String(r.warnung).slice(0, 300) : null };
   }
   function planZiel(id, k){
     // Planziel (ohne Claude-Faktor) der Übung heute oder beim nächsten Mal in den kommenden 14 Tagen
@@ -65,6 +80,7 @@ Antworte NUR mit diesem JSON:
     }
     return null;
   }
+  const baseDay = k => isWeekKey(k) ? k.slice(1) : k;
   function apply(k, chosen){
     const c = S.coachLog?.[k]; if (!c) return;
     S.coachAdj ||= {};
@@ -73,12 +89,14 @@ Antworte NUR mit diesem JSON:
       if (!chosen.includes(i)) return;
       const prev = S.coachAdj[a.id] ? { ...S.coachAdj[a.id] } : null;
       if (a.aktion === "ziel"){
-        const base = planZiel(a.id, k); if (!base) return;
-        const f = Math.min(2, Math.max(0.5, a.ziel / base));
-        S.coachAdj[a.id] = { ...(S.coachAdj[a.id] || {}), f: +f.toFixed(3), grund: a.grund, seit: k };
+        const base = planZiel(a.id, baseDay(k)); if (!base) return;
+        // Sicherheitsgrenze im Code: pro Auswertung höchstens ±25 % gegenüber dem bisherigen Faktor, insgesamt 0.5–2
+        const old = S.coachAdj[a.id]?.f || 1;
+        const f = Math.min(2, Math.max(0.5, Math.min(old * 1.25, Math.max(old * 0.75, a.ziel / base))));
+        S.coachAdj[a.id] = { ...(S.coachAdj[a.id] || {}), f: +f.toFixed(3), grund: a.grund, seit: baseDay(k) };
       } else {
         const to = a.aktion === "leichter" ? EX[a.id].leichter : EX[a.id].schwerer;
-        S.coachAdj[a.id] = { ...(S.coachAdj[a.id] || {}), stufe: to, f: 1, grund: a.grund, seit: k };
+        S.coachAdj[a.id] = { ...(S.coachAdj[a.id] || {}), stufe: to, f: 1, grund: a.grund, seit: baseDay(k) };
       }
       done.push({ i, id: a.id, prev });
     });
@@ -100,13 +118,13 @@ Antworte NUR mit diesem JSON:
   const actText = a => a.aktion === "ziel" ? `Ziel neu ${a.ziel}` : a.aktion === "leichter" ? `Leichtere Stufe: ${exName(EX[a.id].leichter)}` : `Schwerere Stufe: ${exName(EX[a.id].schwerer)}`;
   function card(k){ return `<div class="card coach" id="coachCard" data-k="${k}" style="width:100%;text-align:left">${inner(k)}</div>`; }
   function inner(k){
-    const c = S.coachLog?.[k], log = logOf(k);
-    const head = `<div class="kicker">Claude-Coach</div>`;
+    const wk = isWeekKey(k), c = S.coachLog?.[k], log = wk ? { sets: Object.assign({}, ...[0,1,2,3,4,5].map(i => (S.logs[addDays(addDays(k.slice(1), -dayIdx(k.slice(1))), i)] || {}).sets || {})) } : logOf(k);
+    const head = `<div class="kicker">${wk ? "Wochenbericht von Claude" : "Claude-Coach"}</div>`;
     if (busy) return `${head}<p class="coach-think">Claude schaut sich dein Training an …</p><button class="btn" id="coStop">Stopp</button>`;
     if (!c){
-      if (!Object.keys(log.sets).length) return `${head}<p class="muted">Nach dem Training wertet Claude deine Werte aus und passt die nächsten Ziele an.</p>`;
-      return `${head}<p class="muted">Claude wertet deine Werte aus und passt die nächsten Ziele an dich an.</p>
-        <button class="btn primary wide" id="coGo">Training auswerten lassen</button>${unavailable ? fallback(k) : ""}`;
+      if (!Object.keys(log.sets).length) return `${head}<p class="muted">${wk ? "Diese Woche sind noch keine Werte eingetragen." : "Nach dem Training wertet Claude deine Werte aus und passt die nächsten Ziele an."}</p>`;
+      return `${head}<p class="muted">${wk ? "Claude schaut die ganze Woche an: was lief, was stagniert, Fokus für nächste Woche." : "Claude wertet deine Werte aus und passt die nächsten Ziele an dich an."}</p>
+        <button class="btn primary wide" id="coGo">${wk ? "Woche auswerten lassen" : "Training auswerten lassen"}</button>${unavailable ? fallback(k) : ""}`;
     }
     const r = c.res, ap = new Set((c.applied || []).map(x => x.i));
     return `${head}
@@ -119,7 +137,7 @@ Antworte NUR mit diesem JSON:
         ${c.applied ? `<p class="small" style="margin-top:8px">✓ Übernommen. Die App rechnet ab jetzt damit.</p><button class="btn" id="coUndo">Rückgängig</button>`
           : `<button class="btn primary wide" id="coApply" style="margin-top:10px">Übernehmen</button>`}`
         : `<p class="small" style="margin-top:8px">Keine Änderung nötig. Der Plan passt.</p>`}
-      ${r.naechstesMal ? `<p class="hint" style="margin-top:10px">Nächstes Mal: ${esc(r.naechstesMal)}</p>` : ""}
+      ${r.naechstesMal ? `<p class="hint" style="margin-top:10px">${wk ? "Fokus nächste Woche" : "Nächstes Mal"}: ${esc(r.naechstesMal)}</p>` : ""}
       <button class="chip" id="coAgain" style="margin-top:10px">Nochmals auswerten</button>`;
   }
   function fallback(k){
@@ -164,7 +182,7 @@ Antworte NUR mit diesem JSON:
       catch (e) { toast("Das ist keine gültige Antwort. Bitte die ganze Antwort von Claude einfügen."); }
     });
     // Direkt nach dem Training automatisch auswerten (einmal pro Tag), wenn Claude direkt erreichbar ist
-    const log = logOf(k);
+    const log = isWeekKey(k) ? {} : logOf(k);
     if (log.done && !S.coachLog?.[k] && !busy && !unavailable && log.finished && Date.now() - log.finished < 6 * 3600e3 && !log.coachAuto){
       log.coachAuto = true; save();
       getSample().then(s => { if (s) run(k); else { unavailable = true; rerender(k); } });
@@ -174,5 +192,7 @@ Antworte NUR mit diesem JSON:
   }
   // Anpassung für eine Übung (für buildSteps und Anzeige)
   const adj = id => (S.coachAdj || {})[id] || null;
-  return { card, bind, report, prompt, adj, apply, undo, clean, parseText };
+  // Wochenbericht am Sonntag: Schlüssel "W" + Datum des Sonntags
+  const weekCard = k => card("W" + k), weekBind = k => bind("W" + k);
+  return { card, bind, report, reportWeek, prompt, adj, apply, undo, clean, parseText, weekCard, weekBind };
 })();
