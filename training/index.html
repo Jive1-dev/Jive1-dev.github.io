@@ -701,12 +701,13 @@ const F3D = (() => {
   }
 
   // ---------- Körper ----------
-  const PARTS = ["chest", "belly", "pelvis", "neck", "head", "crest", "delt0", "delt1", "glute",
+  const PARTS = ["chest", "pec0", "pec1", "abs", "trap", "belly", "pelvis", "neck", "head", "crest", "delt0", "delt1", "glute",
     "ua0", "el0", "fa0", "hand0", "ua1", "el1", "fa1", "hand1", "th0", "kn0", "sh0", "ft0", "th1", "kn1", "sh1", "ft1", "db0", "db1", "ball"];
   function buildScene(id, muscles){
     const f = FIGS[id], scene = new THREE.Scene(), body = {}; if (ENV) scene.environment = ENV;
     const on = new Set(); (muscles || []).forEach(m => (MUSCLE_SEG[m] || []).forEach(s => on.add(s)));
-    const segOf = k => k.replace(/[01]$/, "").replace("glute", "hip").replace("pelvis", "belly").replace(/^el$/, "x").replace(/^kn$/, "x");
+    const segOf = k => k.replace(/[01]$/, "").replace("glute", "hip").replace("pelvis", "belly").replace(/^el$/, "x").replace(/^kn$/, "x")
+      .replace(/^pec$/, "chest").replace(/^trap$/, "neck").replace(/^abs$/, "belly");
     PARTS.forEach(k => {
       let o;
       if (k === "db0" || k === "db1"){
@@ -759,6 +760,14 @@ const F3D = (() => {
     const glOff = p.clone().sub(m).normalize();
     // Po: hinter der Hüfte (Gegenrichtung zur Blickrichtung). Blickrichtung ≈ senkrecht zur Wirbelsäule in der Bildebene.
     const spine = n.clone().sub(p).normalize(); const fwd = front ? V(0, 0, 1) : V(spine.y, -spine.x, 0);
+    // Anatomie: Brustmuskeln, Bauch, Trapez (vorne = fwd, quer = Schulterachse)
+    const side = front ? WX : WZ;
+    [0, 1].forEach(i => { const c = n.clone().lerp(m, 0.42).addScaledVector(fwd, 5.2).addScaledVector(side, i ? -5.2 : 5.2);
+      placeSeg(B["pec" + i], c.clone().addScaledVector(spine, -3.6), c.clone().addScaledVector(spine, 3.2), 9.5, 4.2, 0.6, ref); });
+    const ac = m.clone().lerp(p, 0.42).addScaledVector(fwd, 4.6);
+    placeSeg(B.abs, ac.clone().addScaledVector(spine, -7), ac.clone().addScaledVector(spine, 6), 9.5, 3.4, 0.5, ref);
+    const tc = n.clone().addScaledVector(fwd, -3.2).addScaledVector(spine, -2.5);
+    placeSeg(B.trap, tc.clone().addScaledVector(spine, -5), tc.clone().addScaledVector(spine, 3.5), 15, 5, 0.6, ref);
     B.glute.position.copy(p).addScaledVector(fwd, -4.5).addScaledVector(glOff, -1.5); B.glute.scale.set(front ? 10 : 7.5, 7.5, front ? 6.5 : 10.5);
     [0, 1].forEach(i => {
       const arm = S.arms[i] || S.arms[0], leg = S.legs[i] || S.legs[0];
