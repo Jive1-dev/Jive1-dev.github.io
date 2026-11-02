@@ -440,3 +440,15 @@ summary.meal small{font-size:12.5px;color:var(--bone-3);font-weight:500}
   .toast{bottom:28px}
   body.agoge .tabs{display:none}
 }
+.rank-wrap .rank{transition:opacity .2s var(--ease)}
+.rank-wrap:has(#saved.on) .rank{opacity:0}
+/* Runde 3: Übungs-Screen auf dem Handy: Name und Ziel zuerst, Bild danach und etwas kleiner, damit die Leiste unten nichts Wichtiges verdeckt */
+.ag-card > .eyebrow{order:-5}
+.ag-card > .ag-name{order:-4}
+.ag-card > .goal{order:-3}
+@media (max-width:1023px){
+  .ag-card > figure.photo{aspect-ratio:16/10}
+  canvas.fig3d{max-height:32vh}
+}
+.stepper input{-moz-appearance:textfield;appearance:textfield}
+.stepper input::-webkit-inner-spin-button,.stepper input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
