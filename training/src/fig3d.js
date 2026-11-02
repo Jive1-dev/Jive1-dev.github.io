@@ -22,6 +22,7 @@ const F3D = (() => {
     skinFar: new THREE.MeshStandardMaterial({ color: 0x8c6237, roughness: 0.42, metalness: 0.72 }),
     muscle: new THREE.MeshStandardMaterial({ color: 0x8e0f0a, roughness: 0.28, metalness: 0.45, emissive: 0x5a0402, emissiveIntensity: 0.7 }),
     muscleFar: new THREE.MeshStandardMaterial({ color: 0x5e0b07, roughness: 0.36, metalness: 0.45, emissive: 0x2e0201, emissiveIntensity: 0.6 }),
+    crest: new THREE.MeshStandardMaterial({ color: 0x7a0d08, roughness: 0.85, metalness: 0.0, emissive: 0x1e0201, emissiveIntensity: 0.4 }),
     wood: new THREE.MeshStandardMaterial({ color: 0x24201c, roughness: 0.5, metalness: 0.35 }),
     floor: new THREE.MeshStandardMaterial({ color: 0x0f0c0a, roughness: 1, metalness: 0, envMapIntensity: 0.15 }),
     metal: new THREE.MeshStandardMaterial({ color: C.metal, roughness: 0.32, metalness: 0.75 }),
@@ -105,7 +106,7 @@ const F3D = (() => {
   }
 
   // ---------- Körper ----------
-  const PARTS = ["chest", "belly", "pelvis", "neck", "head", "delt0", "delt1", "glute",
+  const PARTS = ["chest", "belly", "pelvis", "neck", "head", "crest", "delt0", "delt1", "glute",
     "ua0", "el0", "fa0", "hand0", "ua1", "el1", "fa1", "hand1", "th0", "kn0", "sh0", "ft0", "th1", "kn1", "sh1", "ft1", "db0", "db1", "ball"];
   function buildScene(id, muscles){
     const f = FIGS[id], scene = new THREE.Scene(), body = {}; if (ENV) scene.environment = ENV;
@@ -117,6 +118,8 @@ const F3D = (() => {
         if (!(f.db || []).includes(+k[2])) return;
         o = new THREE.Group(); const h = mesh(CYL, mat.metal); h.scale.set(0.9, 11, 0.9); h.rotation.x = Math.PI / 2; o.add(h);
         [-5, 5].forEach(z => { const pl = mesh(CYL, mat.metal); pl.scale.set(3.6, 2.4, 3.6); pl.rotation.x = Math.PI / 2; pl.position.z = z; o.add(pl); });
+      } else if (k === "crest"){
+        o = mesh(SPH, mat.crest);
       } else if (k === "ball"){
         if (!f.k.some(s => s.ball)) return; o = mesh(SPH, mat.ball);
       } else {
@@ -154,9 +157,13 @@ const F3D = (() => {
     const hc = n.clone().lerp(h, 0.92), hd = h.clone().sub(n).normalize();
     placeSeg(B.neck, n.clone().addScaledVector(hd, -2), n.clone().addScaledVector(hd, 6), 7.5, 7.5, 0.5, ref);
     placeSeg(B.head, hc.clone().addScaledVector(hd, -6.4), hc.clone().addScaledVector(hd, 6.8), 13, 14.5, 0.6, ref);
+    // Spartaner-Helmkamm: zeigt, wo vorne ist (Kopf oben, von der Stirn nach hinten)
+    const hf = front ? V(0, 0, 1) : V(hd.y, -hd.x, 0);
+    const top = hc.clone().addScaledVector(hd, 6.2);
+    placeSeg(B.crest, top.clone().addScaledVector(hf, 5.5).addScaledVector(hd, 1.5), top.clone().addScaledVector(hf, -11).addScaledVector(hd, -2.5), front ? 9 : 3.2, 9, 1.2, front ? WX : WZ);
     const glOff = p.clone().sub(m).normalize();
     // Po: hinter der Hüfte (Gegenrichtung zur Blickrichtung). Blickrichtung ≈ senkrecht zur Wirbelsäule in der Bildebene.
-    const spine = n.clone().sub(p).normalize(); const fwd = front ? V(0, 0, 1) : V(-spine.y, spine.x, 0);
+    const spine = n.clone().sub(p).normalize(); const fwd = front ? V(0, 0, 1) : V(spine.y, -spine.x, 0);
     B.glute.position.copy(p).addScaledVector(fwd, -4.5).addScaledVector(glOff, -1.5); B.glute.scale.set(front ? 10 : 7.5, 7.5, front ? 6.5 : 10.5);
     [0, 1].forEach(i => {
       const arm = S.arms[i] || S.arms[0], leg = S.legs[i] || S.legs[0];
@@ -190,7 +197,8 @@ const F3D = (() => {
     const cx = bx + bw / 2, cy = 110 - (by + bh / 2);
     const front = FRONT_VIEW.has(id), wall = (FIGS[id].props || []).find(([k]) => k === "wall");
     const wallRight = wall && wall[1] > cx;
-    const yaw = (front ? -24 : wallRight ? -30 : 24) * Math.PI / 180, pitch = 9 * Math.PI / 180;
+    const S0 = solve(figKeys(id)[0]), lying = Math.abs(S0.n[1] - S0.p[1]) < 16;
+    const yaw = (front ? -24 : wallRight ? -30 : 24) * Math.PI / 180, pitch = (lying ? 20 : 9) * Math.PI / 180;
     cam.aspect = aspect; cam.fov = 26; cam.updateProjectionMatrix();
     const vf = cam.fov * Math.PI / 180, hf = 2 * Math.atan(Math.tan(vf / 2) * aspect);
     const dist = Math.max((bw * 0.5) / Math.tan(hf / 2), (bh * 0.5) / Math.tan(vf / 2)) * 1.06 + 40;
