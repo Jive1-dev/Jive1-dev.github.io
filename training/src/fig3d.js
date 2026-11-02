@@ -243,6 +243,117 @@ const F3D = (() => {
       requestAnimationFrame(() => draw(item, big && !REDUCED ? performance.now() : null));
     });
   }
+
+  // ---------- Muskelkarte: zwei Bronzestatuen (vorne, hinten) ----------
+  // Liest die Stufen 0–3 aus der gezeichneten Karte (svg.mmap, .mm-r[data-m].sN) und färbt echte Muskeln.
+  // Echter Körper (BodyParts3D, siehe body3d.js) als Bronzestatue; jede Muskelregion bekommt die Farbe ihrer Trainingsstufe.
+  // Anatomie-Stil: helles Grau, trainierte Muskeln rot (je mehr, desto kräftiger)
+  const LV_COL = [0xd2d0cc, 0xe3a493, 0xdc5a45, 0xc81e12].map(c => new THREE.Color(c).convertSRGBToLinear());
+  const SKIN_COL = new THREE.Color(0xc4c1bc).convertSRGBToLinear();
+  const HOSE = new THREE.Color(0x3a3836).convertSRGBToLinear();
+  const LV_WORD = ["noch nicht trainiert", "wenig", "mittel", "viel"];
+  let BODY = null;
+  function bodyGeometry(){
+    if (BODY) return BODY;
+    const D = BODY3D, raw = s => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u.buffer; };
+    const qp = new Uint16Array(raw(D.p)), qn = new Int8Array(raw(D.nm)), ib = raw(D.i), reg = new Uint8Array(raw(D.r)), layer = D.l ? new Uint8Array(raw(D.l)) : new Uint8Array(D.n);
+    const idx = D.n < 65536 ? new Uint16Array(ib) : new Uint32Array(ib);
+    const pos = new Float32Array(D.n * 3), nrm = new Float32Array(D.n * 3), cx = (D.min[0] + D.max[0]) / 2, cz = (D.min[2] + D.max[2]) / 2;
+    for (let v = 0; v < D.n; v++) for (let a = 0; a < 3; a++){
+      const w = D.min[a] + qp[v * 3 + a] / 65535 * (D.max[a] - D.min[a]);
+      pos[v * 3 + a] = (a === 0 ? w - cx : a === 1 ? w - D.min[1] : w - cz) * 100;   // Meter → cm, Füsse auf 0, Mitte auf x = z = 0
+      nrm[v * 3 + a] = qn[v * 3 + a] / 127;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3)); geo.setAttribute("normal", new THREE.BufferAttribute(nrm, 3));
+    geo.setIndex(new THREE.BufferAttribute(idx, 1)); geo.computeBoundingSphere();
+    // Nachbarn für weiche Farbübergänge
+    const nb = Array.from({ length: D.n }, () => new Set());
+    for (let t = 0; t < idx.length; t += 3){ const [x, y, z] = [idx[t], idx[t + 1], idx[t + 2]]; nb[x].add(y).add(z); nb[y].add(x).add(z); nb[z].add(x).add(y); }
+    BODY = { geo, reg, layer, nb: nb.map(s => [...s]), keys: D.keys }; return BODY;
+  }
+  const STATUE_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.05, envMapIntensity: 0.6 });
+  function statue(lv){
+    const { geo: g0, reg, layer, nb, keys } = bodyGeometry(), n = reg.length, geo = g0.clone();
+    let col = new Float32Array(n * 3);
+    for (let v = 0; v < n; v++){ const k = keys[reg[v]], c = k === "hose" ? HOSE : (k === "haut" || !k) ? SKIN_COL : (lv[k] ? LV_COL[lv[k]] : layer[v] ? LV_COL[0] : SKIN_COL); col[v * 3] = c.r; col[v * 3 + 1] = c.g; col[v * 3 + 2] = c.b; }
+    for (let it = 0; it < 2; it++){ const nx = new Float32Array(n * 3);
+      for (let v = 0; v < n; v++){ let r = col[v * 3] * 2, g = col[v * 3 + 1] * 2, b = col[v * 3 + 2] * 2; const L = nb[v];
+        let d = 2; for (const u of L){ if (reg[u] !== reg[v]) continue; r += col[u * 3]; g += col[u * 3 + 1]; b += col[u * 3 + 2]; d++; } nx[v * 3] = r / d; nx[v * 3 + 1] = g / d; nx[v * 3 + 2] = b / d; }
+      col = nx; }
+    geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    const g = new THREE.Group(), body = mesh(geo, STATUE_MAT); body.userData.body = true; g.add(body);
+    return g;
+  }
+  const muscleOfFace = f => { const { reg, keys } = bodyGeometry(); const c = {}; [f.a, f.b, f.c].forEach(v => { const k = keys[reg[v]]; if (k && k !== "hose" && k !== "haut") c[k] = (c[k] || 0) + 1; });
+    return Object.keys(c).sort((x, y) => c[y] - c[x])[0] || null; };
+  function buildMap(lv){
+    const scene = new THREE.Scene(); if (ENV) scene.environment = ENV;
+    const a = statue(lv), b = statue(lv);
+    a.position.x = -27; a.rotation.y = 0.3;  b.position.x = 27; b.rotation.y = Math.PI + 0.3;
+    scene.add(a, b);
+    const stone = new THREE.MeshStandardMaterial({ color: 0x1c1712, roughness: 0.55, metalness: 0.35 }), rimM = new THREE.MeshStandardMaterial({ color: 0x8a6232, roughness: 0.3, metalness: 0.85 });
+    [-27, 27].forEach(x => {
+      const d = new THREE.Mesh(new THREE.CircleGeometry(40, 48), GLOW); d.rotation.x = -Math.PI / 2; d.position.set(x, -7.05, 0); scene.add(d);
+      const pl = mesh(new THREE.CylinderGeometry(19, 21, 6, 56), stone); pl.position.set(x, -3.6, 0); scene.add(pl);
+      const rg = mesh(new THREE.CylinderGeometry(19.3, 19.3, 0.9, 56), rimM, false); rg.position.set(x, -0.45, 0); scene.add(rg);
+    });
+    [-27, 27].forEach(x => { const fl = mesh(new THREE.CircleGeometry(18.8, 48), mat.shadow, false); fl.rotation.x = -Math.PI / 2; fl.position.set(x, 0.05, 0); scene.add(fl); });
+    scene.add(new THREE.HemisphereLight(0xfff4e2, 0x1a120c, 0.55));
+    const key = new THREE.DirectionalLight(0xfff1dc, 1.5); key.position.set(-40, 300, 110); key.target.position.set(0, 80, 0);
+    key.castShadow = true; key.shadow.mapSize.set(1024, 1024); key.shadow.radius = 4; key.shadow.bias = -0.0008;
+    Object.assign(key.shadow.camera, { left: -110, right: 110, top: 190, bottom: -30, near: 10, far: 500 });
+    const rim = new THREE.DirectionalLight(0xd09a55, 1.2); rim.position.set(160, 140, -190);
+    const rim2 = new THREE.DirectionalLight(0xd09a55, 0.9); rim2.position.set(-160, 140, -190);
+    const fill = new THREE.DirectionalLight(0x9fb4d0, 0.35); fill.position.set(120, 60, 120);
+    scene.add(key, key.target, rim, rim2, fill);
+    return { scene, groups: [a, b] };
+  }
+  const mcam = new THREE.PerspectiveCamera(24, 1, 5, 2000);
+  function drawMap(it){
+    const { cv } = it, w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1), W = Math.round(w * dpr), H = Math.round(h * dpr);
+    if (cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; }
+    mcam.aspect = W / H; mcam.updateProjectionMatrix();
+    const vf = mcam.fov * Math.PI / 180, hf = 2 * Math.atan(Math.tan(vf / 2) * mcam.aspect);
+    const dist = Math.max(95 / Math.tan(vf / 2), 62 / Math.tan(hf / 2)) + 20;
+    mcam.position.set(0, 84 + dist * 0.12, dist); mcam.lookAt(0, 81, 0);
+    renderer.setSize(W, H, false); renderer.render(it.st.scene, mcam);
+    const ctx = it.ctx || (it.ctx = cv.getContext("2d")); ctx.clearRect(0, 0, W, H); ctx.drawImage(renderer.domElement, 0, 0);
+  }
+  function upgradeMaps(root){
+    if (typeof BODY3D === "undefined") return;
+    root.querySelectorAll("svg.mmap").forEach(svg => {
+      if (svg.dataset.f3d) return; svg.dataset.f3d = 1;
+      const lv = {}; svg.querySelectorAll(".mm-r[data-m]").forEach(r => { const n = +((r.getAttribute("class").match(/\bs(\d)\b/) || [])[1] || 0); lv[r.dataset.m] = Math.max(lv[r.dataset.m] || 0, n); });
+      lv.schulter_seite = Math.max(lv.schulter_vorne || 0, lv.schulter_hinten || 0);
+      const wrap = document.createElement("div"); wrap.className = "mmap3d"; wrap.style.cssText = "position:relative;max-width:420px;margin:0 auto";
+      const cv = document.createElement("canvas"); cv.style.cssText = "display:block;width:100%;aspect-ratio:1.18/1;height:auto;cursor:pointer;touch-action:manipulation";
+      const trained = Object.keys(lv).filter(k => lv[k] > 0).map(k => muscleShort(k));
+      cv.setAttribute("role", "img"); cv.setAttribute("aria-label", "Muskelkarte vorne und hinten. " + (trained.length ? "Trainiert: " + [...new Set(trained)].join(", ") : "Noch nichts trainiert"));
+      const lab = document.createElement("div"); lab.style.cssText = "display:flex;justify-content:space-around;font:600 11px var(--display);letter-spacing:.18em;color:var(--bone-3);margin-top:-4px";
+      lab.innerHTML = "<span>VORNE</span><span>HINTEN</span>";
+      const tip = document.createElement("div"); tip.className = "mm3-tip"; tip.setAttribute("aria-live", "polite");
+      tip.style.cssText = "min-height:1.4em;text-align:center;font-size:13px;color:var(--bone-2);margin-top:4px";
+      tip.textContent = "Tipp auf einen Muskel";
+      const src = document.createElement("div"); src.style.cssText = "text-align:center;font-size:10px;color:var(--bone-3);margin-top:2px";
+      src.innerHTML = 'Körper: <a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/" target="_blank" rel="noopener" style="color:inherit">BodyParts3D</a> © DBCLS, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener" style="color:inherit">CC BY 4.0</a>, verändert';
+      wrap.append(cv, lab, tip, src); svg.replaceWith(wrap);
+      const it = { cv, st: buildMap(lv), map: true };
+      const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+      cv.addEventListener("click", e => {
+        const r = cv.getBoundingClientRect(); ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+        drawMap(it); ray.setFromCamera(ndc, mcam);
+        const hit = ray.intersectObjects(it.st.groups, true).find(h => h.object.userData.body);
+        const m = hit && hit.face ? muscleOfFace(hit.face) : null;
+        tip.textContent = m ? `${muscleShort(m)}: ${LV_WORD[lv[m] || 0]}` : "Tipp auf einen Muskel";
+      });
+      mapItems.add(it); requestAnimationFrame(() => drawMap(it));
+    });
+  }
+  const mapItems = new Set();
+  let rsz = 0; window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => mapItems.forEach(it => it.cv.isConnected ? drawMap(it) : mapItems.delete(it)), 150); });
+
   function loop(now){
     for (const it of items){
       if (!it.cv.isConnected){ items.delete(it); obs && obs.unobserve(it.cv); continue; }
@@ -251,7 +362,7 @@ const F3D = (() => {
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
-  return { upgrade, items };
+  return { upgrade: root => { upgrade(root); upgradeMaps(root); }, items, mapItems };
 })();
 
 // Bestehende Aufrufe von mountFigs bekommen automatisch die 3D-Figur
