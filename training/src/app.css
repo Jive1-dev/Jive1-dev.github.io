@@ -397,3 +397,21 @@ figure.photo{border-radius:var(--r);box-shadow:var(--sh)}
 .report .logo{width:112px;height:112px;filter:drop-shadow(0 14px 30px rgba(192,40,31,.4))}
 @media (min-width:1024px){.tabs{left:50%;right:auto;transform:translateX(-50%);width:min(620px,calc(100% - 40px))}.hdr{margin-inline:0;padding-inline:0}}
 @media (prefers-reduced-motion: reduce){.btn.primary::after{display:none}}
+
+/* Fotos im Look der App: warm entsättigt, Bronze-Licht, Marke Start/Ende statt Quellenangabe (Kritik B 10, 12) */
+figure.photo img{filter:grayscale(.7) sepia(.28) contrast(1.06) brightness(.94) saturate(1.1)}
+figure.photo::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(120% 90% at 30% 10%,rgba(214,160,90,.16),transparent 60%),linear-gradient(180deg,transparent 55%,rgba(13,11,9,.5));mix-blend-mode:normal}
+figure.photo::after{display:none}
+figure.photo figcaption{left:10px;bottom:10px;z-index:2;display:grid}
+figure.photo figcaption span{grid-area:1/1;font:600 11px/1 var(--display);letter-spacing:.16em;text-transform:uppercase;color:#f6ecd8;background:rgba(13,11,9,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid rgba(255,230,190,.18);padding:5px 9px;border-radius:999px}
+figure.photo.ready .pb{animation:phswap 3.2s ease-in-out infinite}
+figure.photo.ready .pa{animation:phswap 3.2s ease-in-out infinite reverse}
+figure.photo:not(.ready) .pb{opacity:0}
+figure.photo.thumb::before{display:none}
+@media (prefers-reduced-motion:reduce){figure.photo .pb{display:none}}
+
+/* «✓ gesichert» sitzt in der Kopfzeile über dem Rang-Abzeichen, verdeckt nie Inhalt (Schwachstelle: überdeckte «fertig ca.») */
+.rank-wrap{position:relative;display:inline-flex}
+.rank-wrap #saved,body.agoge .rank-wrap #saved{position:absolute;left:auto;right:0;top:50%;bottom:auto;transform:translateY(-50%) scale(.96);white-space:nowrap;border-radius:999px;padding:5px 11px;font-size:12px;background:var(--card-a);border:1px solid color-mix(in srgb,var(--good) 55%,transparent);color:var(--good);box-shadow:var(--sh);transition:opacity .25s var(--ease),transform .25s var(--ease)}
+.rank-wrap #saved.on{transform:translateY(-50%) scale(1)}
+.rank-wrap #saved.warn{border-color:var(--bronze);color:var(--bronze)}

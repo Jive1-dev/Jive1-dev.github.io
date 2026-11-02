@@ -78,11 +78,12 @@ async function cloudInit(){
     push();
   } catch(e) {} finally { if (BOOT){ BOOT = false; SNAP = parts(); } }
 }
-// kleine Anzeige unten links: Benaja sieht, dass nichts verloren geht
+// kleine Anzeige in der Kopfzeile (über dem Rang): Benaja sieht, dass nichts verloren geht, ohne dass sie Inhalt verdeckt
 let svT = null;
 function flashSaved(text, warn = false){
   let el = document.getElementById("saved");
-  if (!el){ el = document.createElement("div"); el.id = "saved"; el.setAttribute("role", "status"); document.body.appendChild(el); }
+  if (!el){ el = document.createElement("div"); el.id = "saved"; el.setAttribute("role", "status"); }
+  const home = document.getElementById("rankWrap") || document.body; if (el.parentNode !== home) home.appendChild(el);
   el.textContent = text; el.className = warn ? "warn on" : "on";
   clearTimeout(svT); svT = setTimeout(() => el.classList.remove("on"), 1800);
 }
@@ -245,7 +246,7 @@ function shell(){
   root.innerHTML = `
   <div class="app">
     <header class="hdr">${logoSVG(38)}<div class="brand">WINTER ARC<small>TRAINING · 52 WOCHEN</small></div><div class="sp"></div>
-      <span class="rank" id="rank"></span>
+      <span class="rank-wrap" id="rankWrap"><span class="rank" id="rank"></span></span>
       <a class="icon-btn" href="#einstellungen" aria-label="Einstellungen">${ICON.gear}</a></header>
     <main id="view"></main>
   </div>
