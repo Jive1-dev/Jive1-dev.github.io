@@ -80,6 +80,7 @@ Erzeugt von `tools/gen-program.js` (nicht von Hand ändern, sondern Vorlage im S
   kürzt der Generator: erst 4→3 Runden, dann letztes Paar auf 2 Runden, dann letztes Paar weg (mindestens 3 Paare).
 - **Deload** (jede 5. Woche): 2 Runden, Ziel 80 %. **Test**: Paar 1 wird durch 2 Messungen ersetzt, Rest 2 Runden.
 - Die Zahlen sind ein Plan. Die Fortschritts-Engine (A) passt sie an echte Ergebnisse an.
+- `_meta.neuesJahr`: Regel für Jahr 2 (Ziele mit Faktor aus echten Werten W52 skalieren, zu hohe Ziele → schwerere Stufe).
 
 ## Werkzeuge
 `node tools/gen-exercises.js exercises.json` · `node tools/gen-program.js exercises.json program.json` · `node tools/check-exercises.js`

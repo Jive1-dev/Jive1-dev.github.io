@@ -223,6 +223,19 @@ const out = {
       ],
       hinweis: "Nie ganz streichen, mindestens 1 Runde bleibt (Regel 6). Gruppen = exercises.json `gruppe`."
     },
+    neuesJahr: {
+      text: "Neues Jahr: gleicher Aufbau, aber mit deinen Werten aus Woche 52 als Start.",
+      regel: [
+        "1. Für jede Übung: bester Wert der letzten 4 Wochen (oder Testwert W52) = B. Ziel derselben Übung am gleichen Tag in Woche 1 = Z1.",
+        "2. Faktor f = B / Z1, begrenzt auf 1.0 bis 2.5. Gibt es keinen Wert: f = 1.",
+        "3. Neues Ziel in jeder Woche = runden(altes Ziel × f), Bereich gleich skaliert.",
+        "4. Wäre das neue Ziel in Woche 1 grösser als das Ziel derselben Übung in Woche 51: schwerere Stufe (exercises.json `schwerer`) mit dem alten Ziel aus Woche 1.",
+        "5. Haltezeiten (Sekunden) höchstens 60, sonst schwerere Stufe wie in 4.",
+        "6. Hanteln: Gewicht wie zuletzt benutzt, nie weniger.",
+        "7. Danach gilt wieder die 60-Min-Grenze: ist ein Tag länger, Runden kürzen wie im Generator (erst 4→3, dann letztes Paar 2 Runden)."
+      ],
+      js: "f = clamp(B / Z1, 1, 2.5); neu = Math.round(ziel * f); if (neuW1 > zielW51 || (einheit startsWith 'sek' && neu > 60)) { id = ex[id].schwerer || id; neu = zielW1 }"
+    },
     wochentage: TAGE.map(([tag, name, muskelText]) => ({ tag, name, muskelText }))
   },
   wochen
