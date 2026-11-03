@@ -1271,6 +1271,10 @@ const F3D = (() => {
   }
   // Feine Muskelfasern (Streifen quer zur Faserrichtung); blenden bei kleinen Bildern aus, damit nichts flimmert
   function fibers(m){
+    // fwidth braucht in WebGL 1 eine Erweiterung; ohne sie keine Fasern (Figur bleibt sichtbar)
+    const gl2 = renderer.capabilities.isWebGL2, der = gl2 || !!renderer.extensions.get("OES_standard_derivatives");
+    if (!der) return m;
+    if (!gl2) m.extensions = { derivatives: true };
     m.onBeforeCompile = sh => {
       sh.vertexShader = "attribute float fib;\nvarying float vFib;\n" + sh.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvFib = fib;");
       sh.fragmentShader = "varying float vFib;\n" + sh.fragmentShader.replace("#include <color_fragment>", `#include <color_fragment>
