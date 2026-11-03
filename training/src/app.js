@@ -733,7 +733,7 @@ function viewSkills(){
   $("#view").innerHTML = `<div class="stack"><div><div class="eyebrow">Skill-Leitern</div><h1 class="title-xl" style="margin-top:6px">Meisterschaft</h1>
     <p class="muted" style="margin-top:6px">${esc(D.skills._meta?.regel || "")}</p></div>
     ${D.skills.leitern.map(L => { const pos = ladderPos(L), cur = L.stufen.find(s => s.nr === pos) || L.stufen[L.stufen.length - 1]; const ex = EX[cur.uebung] || {};
-      return `<div class="card" id="L-${L.id}"><div class="split"><h3>${esc(L.name)}</h3><span class="small num">Stufe ${pos} von ${L.stufen.length}</span></div>
+      return `<div class="card" id="L-${L.id}"><div class="split"><h3>${esc(L.name)}</h3><span class="small num">Stufe ${pos} von ${L.stufen.length}</span></div>${!S.skills[L.id] && pos > 1 ? `<p class="small" style="margin-top:2px">Startstufe aus deinem Test vom 1. November</p>` : ""}
         <div style="margin-top:10px">${figSVG(cur.uebung, ex.muskeln || [])}</div>
         <p style="margin-top:10px"><b>${esc(cur.name)}</b></p><p class="hint" style="margin-top:6px">Test: ${esc(cur.test.text)}</p>
         <button class="btn wide" style="margin-top:10px" data-pass="${L.id}">Test geschafft ✓</button>
