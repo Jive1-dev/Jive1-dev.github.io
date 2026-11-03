@@ -2005,7 +2005,8 @@ function viewHeute(){
         <div class="row" style="margin-top:12px"><a class="btn sm" href="#bericht">Kampfbericht</a><button class="btn sm" id="again">Nochmal öffnen</button></div></div>` : `
       <div class="card"><div class="kicker">Schlag deine Zahlen</div><div class="list">
         ${goals.map(s => { const h = history(s.id, k); const zielT = s.bereich ? `${s.bereich[0]}–${s.bereich[1]}` : s.ziel;
-          return `<div class="line"><span>${esc(exName(s.id))}</span><b class="num">${h.last != null ? `${h.last} → ${Math.max(h.last + 1, s.ziel || 0)}` : zielT} ${isSec(s.einheit) ? "Sek" : ""}</b></div>`; }).join("")}
+          const sv = (PROG._meta?.startwerte || {})[s.id];   // Woche 1: Startwert vom Test als Vergleich, solange es kein «letztes Mal» gibt
+          return `<div class="line"><span>${esc(exName(s.id))}</span><b class="num">${h.last != null ? `${h.last} → ${Math.max(h.last + 1, s.ziel || 0)}` : typeof sv === "number" ? `<span class="tbd">Start ${sv} ·</span> ${zielT}` : zielT} ${isSec(s.einheit) ? "Sek" : ""}</b></div>`; }).join("")}
       </div></div>
       <div class="card"><div class="kicker">${esc(preQ?.frage || "Was hast du heute schon gemacht?")}</div>
         <div class="chips" id="pre">${(preQ?.antworten || []).map(a => `<button class="chip" data-pre="${esc(a.text)}" aria-pressed="${a.text === "Nichts" ? !log.pre.length : log.pre.includes(a.text)}">${esc(a.text)}</button>`).join("")}</div>
@@ -2015,7 +2016,7 @@ function viewHeute(){
         <button class="seg-b" id="light" aria-pressed="${!!log.light}">Leichter<small>Muskelkater</small></button>
         <button class="seg-b" id="short" aria-pressed="${!!log.short}">25 Min<small>wenig Zeit</small></button>
       </div><p class="small" style="margin-top:8px">${log.light && log.short ? "Leichter und kurz: weniger Runden, nur das Wichtigste." : log.light ? "Leichter: weniger Runden, gleiche Übungen." : log.short ? "Kurz: nur die wichtigsten Supersätze, kein Abschluss." : "Mitten im Training kannst du jederzeit kürzen (⋯ Mehr)."}</p></div>
-      <details class="card"><summary class="kicker" style="margin:0;cursor:pointer">Ablauf · ${mins} Min</summary><div class="timeline" style="margin-top:10px">${timeline(day, log)}</div></details>      </div>`}`;
+      <details class="card" ${innerWidth >= 1024 ? "open" : ""}><summary class="kicker" style="margin:0;cursor:pointer">Ablauf · ${mins} Min</summary><div class="timeline" style="margin-top:10px">${timeline(day, log)}</div></details>      </div>`}`;
   }
   const yearDone = w > 52 ? `<div class="card hero"><div class="kicker">${S.year ? `Jahr ${S.year}` : "52 Wochen"} geschafft</div><h2>Ein Jahr Disziplin</h2><p class="muted" style="margin-top:6px">Schau unter «Körper», was aus deinen Startwerten geworden ist. Ein neues Jahr beginnt wieder mit Phase I, auf deinem neuen Niveau.</p>
       <button class="btn wide" id="newYear" style="margin-top:10px">Neues Jahr ab nächstem Montag</button></div>` : "";
