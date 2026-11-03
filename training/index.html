@@ -463,6 +463,8 @@ summary.meal small{font-size:12.5px;color:var(--bone-3);font-weight:500}
 .stepper input::-webkit-inner-spin-button,.stepper input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 details.card > summary::after{margin-left:8px;content:"▾"}
 details.card[open] > summary::after{content:"▴"}
+#done.rest{gap:8px}
+#done.rest .nx{font-size:.72em;letter-spacing:.04em}
 </style>
 <div id="root"></div>
 <noscript>Diese App braucht JavaScript.</noscript>
@@ -941,7 +943,14 @@ const F3D = (() => {
     const toe = i => { const L2 = leg(i); if (L2 && L2[2]) return P(L2[2]).add(off(i, HW)).addScaledVector(P(L2[2]).sub(P(L2[1])).normalize(), 2);
       const a = an(i), sh2 = kn(i).sub(a).normalize(), f2 = front ? V(0, 0, 1) : V(-sh2.y, sh2.x, 0).multiplyScalar(-1);
       return a.clone().addScaledVector(f2.dot(fwd) < 0 ? f2.negate() : f2, 0.15 * G).addScaledVector(sh2, -0.05 * G); };
-    const J = { p: () => p, m: () => m, n: () => n, h: () => h, sh, el, wr: wrUp, fi, hip, kn, an, toe };
+    // Starke Hüftbeugung (Krähe, Frosch): Becken kippt mit, unterer Rücken rundet sich (wie beim echten Körper)
+    let m2 = m;
+    if (!front && leg(0)){
+      const d = m.clone().sub(p).normalize(), t = kn(0).sub(hip(0)).normalize(), flex = 180 - d.angleTo(t) * 180 / Math.PI;
+      if (flex > 95){ const want = 95 + (flex - 95) * 0.35, rot = (flex - want) * Math.PI / 180, sgn = Math.sign(d.x * t.y - d.y * t.x) || 1;
+        m2 = p.clone().add(d.applyAxisAngle(V(0, 0, 1), sgn * rot).multiplyScalar(m.distanceTo(p))); }
+    }
+    const J = { p: () => p, m: () => m2, n: () => n, h: () => h, sh, el, wr: wrUp, fi, hip, kn, an, toe };
     skinPose(st, J, front);
     [0, 1].forEach(i => { if (B["db" + i] && arm(i)){ const w = wr(i), d = w.clone().sub(el(i)).normalize(); B["db" + i].position.copy(w).addScaledVector(d, 0.07 * G); B["db" + i].rotation.set(0, front ? Math.PI / 2 : 0, 0); } });
     if (B.ball && S.arms[0]){ const a = wr(0), b2 = wr(1); B.ball.position.copy(a).add(b2).multiplyScalar(0.5).add(V(0, 4, 0)); B.ball.scale.set(7, 7, 7); }
@@ -1019,7 +1028,7 @@ const F3D = (() => {
     wade: ["SHN", "TH", "FT"], schienbein: ["SHN", "FT"], fuss: ["FT", "SHN"] };
   const TRUNKY = new Set(["brust", "ruecken_oben", "ruecken_breit", "nacken", "bauch", "bauch_seite", "ruecken_unten", "po", "hose"]);
   function segDist(v, b){ const t = Math.max(0, Math.min(b.len, v.clone().sub(b.a).dot(b.u))); return v.distanceTo(b.a.clone().addScaledVector(b.u, t)); }
-  let SKIN = null;
+  let SKIN = null; const EXPO = (typeof window !== "undefined" && window.__anaExpo) || 3;
   function skinWeights(){
     if (SKIN) return SKIN;
     const { raw, reg, keys } = bodyGeometry(), n = reg.length, b0 = new Uint8Array(n), b1 = new Uint8Array(n), w0 = new Float32Array(n), v = V(0, 0, 0), R = 0.045;
@@ -1030,24 +1039,35 @@ const F3D = (() => {
       // weiche Verteilung auf die zwei nächsten erlaubten Knochen (1/d^6), Rumpfmuskeln bleiben bevorzugt am Rumpf
       const cand = names.map(nm => { const j = bi(nm, BONES.find(b => b[0] === nm)[3] ? sd : 0); let d = segDist(v, BONES[j]) + 0.004;
         if (TRUNKY.has(k) && /UA|TH/.test(nm)) d *= 2.4; if (/schulter/.test(k || "") && nm === "upT") d *= 1.4; return { j, d }; }).sort((x, y) => x.d - y.d);
-      const best = cand[0].j, other = (cand[1] || cand[0]).j, a1 = 1 / Math.pow(cand[0].d, 6), a2 = cand[1] ? 1 / Math.pow(cand[1].d, 6) : 0, w = a1 / (a1 + a2);
+      const best = cand[0].j, other = (cand[1] || cand[0]).j, a1 = 1 / Math.pow(cand[0].d, EXPO), a2 = cand[1] ? 1 / Math.pow(cand[1].d, EXPO) : 0, w = a1 / (a1 + a2);
       b0[i] = best; b1[i] = other; w0[i] = w;
     }
-    SKIN = { b0, b1, w0 }; return SKIN;
+    const ch = new Int8Array(n).fill(-1);   // gemeinsames Gelenk: Kind-Knochen des Paars (oder -1)
+    for (let i = 0; i < n; i++){ if (b0[i] === b1[i]) continue; if (BONES[b1[i]][4] === b0[i]) ch[i] = b1[i]; else if (BONES[b0[i]][4] === b1[i]) ch[i] = b0[i]; }
+    SKIN = { b0, b1, w0, ch }; return SKIN;
+  }
+  let REST_E = null;
+  function restEdges(){
+    if (REST_E) return REST_E; const { raw, idx } = bodyGeometry(); REST_E = new Float32Array(idx.length / 3);
+    const d = (a, b) => Math.hypot(raw[a * 3] - raw[b * 3], raw[a * 3 + 1] - raw[b * 3 + 1], raw[a * 3 + 2] - raw[b * 3 + 2]) * G * 1.25;
+    for (let t = 0; t < idx.length; t += 3) REST_E[t / 3] = Math.max(d(idx[t], idx[t + 1]), d(idx[t + 1], idx[t + 2]), d(idx[t + 2], idx[t]));
+    return REST_E;
   }
   const ANA_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.58, metalness: 0.03, envMapIntensity: 0.4 });
   function anatomyMesh(muscles){
     const B = bodyGeometry(), n = B.reg.length, on = new Set(muscles || []);
     const geo = new THREE.BufferGeometry(), col = new Float32Array(n * 3);
     for (let v = 0; v < n; v++){ const k = B.keys[B.reg[v]], c = k === "hose" ? HOSE : on.has(k) ? LV_COL[3] : B.layer[v] ? LV_COL[0] : SKIN_COL; col[v * 3] = c.r; col[v * 3 + 1] = c.g; col[v * 3 + 2] = c.b; }
+    if (window.__anaDbg){ const { b0 } = skinWeights(), pal = [0xffffff, 0x3060ff, 0xffd000, 0xff3030, 0x30ff30, 0xff30ff, 0x30ffff, 0xff8000, 0x8000ff, 0x00a080];
+      for (let v = 0; v < n; v++){ const c = new THREE.Color(pal[b0[v] % 10]); col[v * 3] = c.r; col[v * 3 + 1] = c.g; col[v * 3 + 2] = c.b; } }
     geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(n * 3), 3)); geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(n * 3), 3));
-    geo.setAttribute("color", new THREE.BufferAttribute(col, 3)); geo.setIndex(new THREE.BufferAttribute(B.idx, 1));
+    geo.setAttribute("color", new THREE.BufferAttribute(col, 3)); geo.setIndex(new THREE.BufferAttribute(B.idx.slice(), 1));
     const m = mesh(geo, ANA_MAT); m.frustumCulled = false; skinWeights(); return m;
   }
   const R0_SIDE = new THREE.Quaternion().setFromAxisAngle(V(0, 1, 0), Math.PI / 2), Q1 = new THREE.Quaternion(), Q2 = new THREE.Quaternion();
   // Pose (Welt-Gelenke) → Matrizen pro Knochen → Eckpunkte
   function skinPose(st, J, front){
-    const B = bodyGeometry(), { b0, b1, w0 } = skinWeights(), R0 = front ? new THREE.Quaternion() : R0_SIDE, axis = V(0, 0, 1);
+    const B = bodyGeometry(), { b0, b1, w0, ch } = skinWeights(), R0 = front ? new THREE.Quaternion() : R0_SIDE, axis = V(0, 0, 1);
     const L = BONES.map(b => {
       const sd = b[3], key = s2 => s2 ? (front ? (sd > 0 ? 0 : 1) : (sd > 0 ? 1 : 0)) : 0;   // Seite → Index der Pose
       const a = J[b[1]](key(sd)), e = J[b[2]](key(sd)), up = e.clone().sub(a), plen = up.length() || 1e-6; up.divideScalar(plen);
@@ -1061,11 +1081,25 @@ const F3D = (() => {
         (ratio - 1) * b.u.y * b.u.x, 1 + (ratio - 1) * b.u.y * b.u.y, (ratio - 1) * b.u.y * b.u.z, (ratio - 1) * b.u.z * b.u.x, (ratio - 1) * b.u.z * b.u.y, 1 + (ratio - 1) * b.u.z * b.u.z);
       const lin = new THREE.Matrix4().setFromMatrix3(S); lin.premultiply(m); lin.multiplyScalar(G); lin.elements[15] = 1;
       const ta = b.a.clone().applyMatrix4(lin); lin.setPosition(a.x - ta.x, a.y - ta.y, a.z - ta.z);
-      return { e: lin.elements, r: m.elements };
+      const sc = new THREE.Matrix3().copy(S).multiplyScalar(G);
+      return { e: lin.elements, r: m.elements, q: q.clone(), s: sc.elements, ap: a.clone() };
     });
     const pos = st.ana.geometry.attributes.position.array, nr = st.ana.geometry.attributes.normal.array, raw = B.raw, rn = B.nrm, n = b0.length;
+    const qb = new THREE.Quaternion(), tv = new THREE.Vector3(), tn = new THREE.Vector3();
     for (let i = 0; i < n; i++){
       const x = raw[i * 3], y = raw[i * 3 + 1], z = raw[i * 3 + 2], A = L[b0[i]].e, C = L[b1[i]].e, w = w0[i], u = 1 - w;
+      if (ch[i] >= 0 && w > 0.002 && w < 0.998){
+        // um das gemeinsame Gelenk drehen: Drehungen mischen (nlerp), Skalierung linear, dann vom gebeugten Gelenk aus ansetzen
+        const K = BONES[ch[i]], qa = L[b0[i]].q, qc = L[b1[i]].q, dt = qa.x * qc.x + qa.y * qc.y + qa.z * qc.z + qa.w * qc.w, sg = dt < 0 ? -1 : 1;
+        qb.set(w * qa.x + u * sg * qc.x, w * qa.y + u * sg * qc.y, w * qa.z + u * sg * qc.z, w * qa.w + u * sg * qc.w).normalize();
+        const dx = x - K.a.x, dy = y - K.a.y, dz = z - K.a.z, Sa = L[b0[i]].s, Sc = L[b1[i]].s;
+        tv.set(w * (Sa[0] * dx + Sa[3] * dy + Sa[6] * dz) + u * (Sc[0] * dx + Sc[3] * dy + Sc[6] * dz),
+               w * (Sa[1] * dx + Sa[4] * dy + Sa[7] * dz) + u * (Sc[1] * dx + Sc[4] * dy + Sc[7] * dz),
+               w * (Sa[2] * dx + Sa[5] * dy + Sa[8] * dz) + u * (Sc[2] * dx + Sc[5] * dy + Sc[8] * dz)).applyQuaternion(qb).add(L[ch[i]].ap);
+        pos[i * 3] = tv.x; pos[i * 3 + 1] = tv.y; pos[i * 3 + 2] = tv.z;
+        tn.set(rn[i * 3], rn[i * 3 + 1], rn[i * 3 + 2]).applyQuaternion(qb); nr[i * 3] = tn.x; nr[i * 3 + 1] = tn.y; nr[i * 3 + 2] = tn.z;
+        continue;
+      }
       pos[i * 3] = w * (A[0] * x + A[4] * y + A[8] * z + A[12]) + u * (C[0] * x + C[4] * y + C[8] * z + C[12]);
       pos[i * 3 + 1] = w * (A[1] * x + A[5] * y + A[9] * z + A[13]) + u * (C[1] * x + C[5] * y + C[9] * z + C[13]);
       pos[i * 3 + 2] = w * (A[2] * x + A[6] * y + A[10] * z + A[14]) + u * (C[2] * x + C[6] * y + C[10] * z + C[14]);
@@ -1074,6 +1108,16 @@ const F3D = (() => {
       nr[i * 3 + 1] = w * (Ra[1] * nx + Ra[5] * ny + Ra[9] * nz) + u * (Rc[1] * nx + Rc[5] * ny + Rc[9] * nz);
       nr[i * 3 + 2] = w * (Ra[2] * nx + Ra[6] * ny + Ra[10] * nz) + u * (Rc[2] * nx + Rc[6] * ny + Rc[10] * nz);
     }
+    // Sicherheitsnetz: stark überdehnte Dreiecke (Fetzen bei extremer Beugung) ausblenden
+    const I0 = B.idx, ix = st.ana.geometry.index.array, rl = restEdges();
+    for (let t = 0; t < I0.length; t += 3){
+      const a = I0[t], b = I0[t + 1], c = I0[t + 2];
+      const e = Math.max(Math.hypot(pos[a * 3] - pos[b * 3], pos[a * 3 + 1] - pos[b * 3 + 1], pos[a * 3 + 2] - pos[b * 3 + 2]),
+        Math.hypot(pos[b * 3] - pos[c * 3], pos[b * 3 + 1] - pos[c * 3 + 1], pos[b * 3 + 2] - pos[c * 3 + 2]), Math.hypot(pos[c * 3] - pos[a * 3], pos[c * 3 + 1] - pos[a * 3 + 1], pos[c * 3 + 2] - pos[a * 3 + 2]));
+      const bad = e > rl[t / 3] * 2.2 + 0.6;
+      ix[t] = a; ix[t + 1] = bad ? a : b; ix[t + 2] = bad ? a : c;
+    }
+    st.ana.geometry.index.needsUpdate = true;
     st.ana.geometry.attributes.position.needsUpdate = true; st.ana.geometry.attributes.normal.needsUpdate = true;
     st.ana.geometry.computeBoundingSphere();
   }
