@@ -201,6 +201,7 @@ const F3D = (() => {
       if (flex > 95){ const want = 95 + (flex - 95) * 0.35, rot = (flex - want) * Math.PI / 180, sgn = Math.sign(d.x * t.y - d.y * t.x) || 1;
         m2 = p.clone().add(d.applyAxisAngle(V(0, 0, 1), sgn * rot).multiplyScalar(m.distanceTo(p))); }
     }
+    st.sharp = Math.max(0, Math.min(1, (Math.max(flexOf(0), flexOf(1)) - 110) / 40));
     const J = { p: () => p, m: () => m2, n: () => n, h: () => h, sh, el, wr: wrUp, fi, hip, kn, an, toe };
     skinPose(st, J, front);
     [0, 1].forEach(i => { if (B["db" + i] && arm(i)){ const w = wr(i), d = w.clone().sub(el(i)).normalize(); B["db" + i].position.copy(w).addScaledVector(d, 0.07 * G); B["db" + i].rotation.set(0, front ? Math.PI / 2 : 0, 0); } });
@@ -272,6 +273,7 @@ const F3D = (() => {
   [1, -1].forEach(sd => { const b = BONES.length;
     BONES.push(["UA", "sh", "el", sd, 1], ["FA", "el", "wr", sd, b], ["HD", "wr", "fi", sd, b + 1], ["TH", "hip", "kn", sd, 0], ["SHN", "kn", "an", sd, b + 3], ["FT", "an", "toe", sd, b + 4]); });
   BONES.forEach(b => { b.a = rj(b[1], b[3] || 1); b.b = rj(b[2], b[3] || 1); if (!b[3]){ b.a.x = 0; b.b.x = 0; } b.len = b.a.distanceTo(b.b); b.u = b.b.clone().sub(b.a).normalize(); });
+  const HIPPAIR = BONES.map(b => b[0] === "TH" || b[0] === "lowT");
   const bi = (nm, sd) => BONES.findIndex(b => b[0] === nm && (b[3] === sd || !b[3]));
   const ALLOW = { brust: ["upT", "UA", "lowT"], schulter_vorne: ["UA", "upT"], schulter_seite: ["UA", "upT"], schulter_hinten: ["UA", "upT"], ruecken_oben: ["upT", "UA"], ruecken_breit: ["upT", "lowT", "UA"],
     nacken: ["upT", "head"], bizeps: ["UA", "FA", "upT"], trizeps: ["UA", "FA", "upT"], unterarm: ["FA", "UA", "HD"], bauch: ["lowT", "upT"], bauch_seite: ["lowT", "upT"], ruecken_unten: ["lowT", "upT"],
@@ -337,9 +339,13 @@ const F3D = (() => {
       return { e: lin.elements, r: m.elements, q: q.clone(), s: sc.elements, ap: a.clone() };
     });
     const pos = st.ana.geometry.attributes.position.array, nr = st.ana.geometry.attributes.normal.array, raw = B.raw, rn = B.nrm, n = b0.length;
-    const qb = new THREE.Quaternion(), tv = new THREE.Vector3(), tn = new THREE.Vector3();
+    const qb = new THREE.Quaternion(), tv = new THREE.Vector3(), tn = new THREE.Vector3(), sharp = st.sharp || 0;
     for (let i = 0; i < n; i++){
-      const x = raw[i * 3], y = raw[i * 3 + 1], z = raw[i * 3 + 2], A = L[b0[i]].e, C = L[b1[i]].e, w = w0[i], u = 1 - w;
+      const x = raw[i * 3], y = raw[i * 3 + 1], z = raw[i * 3 + 2], A = L[b0[i]].e, C = L[b1[i]].e;
+      let w = w0[i];
+      // Starke Hüftbeugung: an der Hüfte hart mischen, sonst stehen halb gedrehte Oberschenkel-/Po-Muskeln als Fetzen ab
+      if (sharp && HIPPAIR[b0[i]] && HIPPAIR[b1[i]] && b0[i] !== b1[i]) w = Math.max(0, Math.min(1, (w - 0.5) * (1 + sharp * 7) + 0.5));
+      const u = 1 - w;
       if (ch[i] >= 0 && w > 0.002 && w < 0.998){
         // um das gemeinsame Gelenk drehen: Drehungen mischen (nlerp), Skalierung linear, dann vom gebeugten Gelenk aus ansetzen
         const K = BONES[ch[i]], qa = L[b0[i]].q, qc = L[b1[i]].q, dt = qa.x * qc.x + qa.y * qc.y + qa.z * qc.z + qa.w * qc.w, sg = dt < 0 ? -1 : 1;
