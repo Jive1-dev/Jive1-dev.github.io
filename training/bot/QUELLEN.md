@@ -1,3 +1,4 @@
 # Puppe und Bewegungen
-- `xbot.glb`: Mixamo-Puppe «X Bot», aus den three.js-Beispielen (github.com/mrdoob/three.js, examples/models/gltf/Xbot.glb, r149).
-- `clips.json`: 8 Mixamo-Animationen (mixamo.com, von Benaja geladen), auf die Puppe umgerechnet (Welt-Rotation je Knochen, 20 Bilder/s). Nur zur Nutzung in dieser App.
+- `ybot.glb`: Mixamo-Figur «Y Bot» (mixamo.com, von Benaja geladen), in GLB umgewandelt, doppelte Punkte zusammengeführt, auf Meter skaliert.
+- `clips.json`: 8 Mixamo-Animationen (mixamo.com, von Benaja geladen), auf Y Bot umgerechnet (Welt-Rotation je Knochen, 20 Bilder/s).
+Nur zur Nutzung in dieser App (Mixamo: Einbau in eigene Projekte erlaubt, keine Weitergabe als Einzeldateien).

@@ -11,16 +11,18 @@ const BOT3D = (() => {
   try { const c = document.createElement("canvas"); if (!(c.getContext("webgl2") || c.getContext("webgl"))) return null; } catch (e) { return null; }
   const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
   const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const ASSET = { glb: "bot/xbot.glb", clips: "bot/clips.json" };
+  const ASSET = { glb: "bot/ybot.glb", clips: "bot/clips.json" };
   // Übungen mit echter Mixamo-Bewegung. move: Vorwärtsbewegung behalten (Weitsprung)
   const CLIP_MAP = { squat: { c: "Air_Squat" }, pu: { c: "Push_Up" }, ftplank: { c: "Plank" }, curl: { c: "Bicep_Curl" },
     jumpsq: { c: "Jump" }, broadjump: { c: "Forward_Jump", move: true }, pistol: { c: "Pistol" }, hang: { c: "Hanging_Idle", bar: true } };
 
+  // Knochenname vereinheitlichen: «mixamorig:Hips», «mixamorigHips_1» -> «Hips»
+  const NK = n => n.replace(/[:]/g, "").replace(/^mixamorig\d*/, "").replace(/_\d+$/, "");
   // ---------- Muskelzonen ----------
   const REG = ["none","brust","schulter_vorne","schulter_seite","schulter_hinten","trizeps","bizeps","unterarm","handgelenk","finger","ruecken_breit","ruecken_oben","ruecken_unten","nacken","bauch","bauch_seite","hueftbeuger","po","bein_vorne","bein_hinten","bein_innen","wade","schienbein","fuss"];
   function classify(mesh){
     const g = mesh.geometry, P = g.attributes.position, N = g.attributes.normal, SI = g.attributes.skinIndex, SW = g.attributes.skinWeight;
-    const bones = mesh.skeleton.bones.map(b => b.name.replace(/[:]/g, "").replace("mixamorig", ""));
+    const bones = mesh.skeleton.bones.map(b => NK(b.name));
     const BW = {}; mesh.skeleton.bones.forEach((b, i) => { BW[bones[i]] = b.getWorldPosition(V()); });
     const out = new Uint8Array(P.count), v = V(), n = V();
     const nm = new THREE.Matrix3().getNormalMatrix(mesh.matrixWorld.clone().multiply(mesh.bindMatrix));
@@ -63,13 +65,17 @@ const BOT3D = (() => {
     LeftHand: 0.03, RightHand: 0.03, LeftHandMiddle1: 0.015, RightHandMiddle1: 0.015, LeftForeArm: 0.045, RightForeArm: 0.045, LeftLeg: 0.06, RightLeg: 0.06, Spine2: 0.12, Spine: 0.11 };
   let tb, rest, restDir, SC, root, model;
   function rig(){
-    tb = {}; model.traverse(o => { if (o.isBone) tb[o.name.replace(/[:]/g, "").replace("mixamorig", "")] = o; });
+    tb = {};
+    // ein Skelett für alle Hautteile (Export kann pro Haut ein eigenes Skelett erzeugen)
+    model.traverse(o => { if (o.isBone && !/_\d+$/.test(o.name)) tb[NK(o.name)] = o; });
+    model.traverse(o => { if (o.isBone && !tb[NK(o.name)]) tb[NK(o.name)] = o; });
+    model.traverse(o => { if (o.isSkinnedMesh){ const bs = o.skeleton.bones.map(b => tb[NK(b.name)] || b); o.skeleton = new THREE.Skeleton(bs, o.skeleton.boneInverses); } });
     root.rotation.set(0, 0, 0); root.position.set(0, 0, 0); root.updateMatrixWorld(true);
     rest = {}; for (const k in tb){ const b = tb[k]; rest[k] = { lq: b.quaternion.clone(), lp: b.position.clone(), wq: b.getWorldQuaternion(new THREE.Quaternion()), wp: b.getWorldPosition(V()) }; }
     restDir = {}; for (const k in CH) if (tb[k] && tb[CH[k]]) restDir[k] = rest[CH[k]].wp.clone().sub(rest[k].wp).normalize();
     SC = (rest.LeftUpLeg.wp.distanceTo(rest.LeftLeg.wp) + rest.LeftLeg.wp.distanceTo(rest.LeftFoot.wp)) / 45;
   }
-  const bkey = b => b.name.replace(/[:]/g, "").replace("mixamorig", "");
+  const bkey = b => NK(b.name);
   function resetPose(){ for (const k in tb){ tb[k].quaternion.copy(rest[k].lq); tb[k].position.copy(rest[k].lp); } root.updateMatrixWorld(true); }
   const pWQ = b => b.parent.getWorldQuaternion(new THREE.Quaternion());
   function aim(k, d){
@@ -112,7 +118,7 @@ const BOT3D = (() => {
     const M = CLIP_MAP[id], C = CLIPS[M.c]; resetPose();
     const fr = (t * C.n) % (C.n - 1), f0 = Math.floor(fr), f1 = Math.min(C.n - 1, f0 + 1), a = fr - f0;
     const q0 = new THREE.Quaternion(), q1 = new THREE.Quaternion();
-    for (const k in C.q){ const b = tb[k.replace("mixamorig", "")]; if (!b) continue; const v = C.q[k]; q0.fromArray(v, f0 * 4); q1.fromArray(v, f1 * 4); b.quaternion.copy(q0.slerp(q1, a)); }
+    for (const k in C.q){ const b = tb[NK(k)]; if (!b) continue; const v = C.q[k]; q0.fromArray(v, f0 * 4); q1.fromArray(v, f1 * 4); b.quaternion.copy(q0.slerp(q1, a)); }
     const h = C.hp, hp = V(h[f0 * 3] * (1 - a) + h[f1 * 3] * a, h[f0 * 3 + 1] * (1 - a) + h[f1 * 3 + 1] * a, h[f0 * 3 + 2] * (1 - a) + h[f1 * 3 + 2] * a);
     if (!M.move){ hp.x = 0; hp.z = 0; }
     const base = rest.Hips.wp.clone();
