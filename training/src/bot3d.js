@@ -11,7 +11,7 @@ const BOT3D = (() => {
   try { const c = document.createElement("canvas"); if (!(c.getContext("webgl2") || c.getContext("webgl"))) return null; } catch (e) { return null; }
   const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
   const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const ASSET = { glb: "bot/ybot.glb", clips: "bot/clips.json" };
+  const ASSET = { glb: "bot/ybot.json", clips: "bot/clips.json" };   // Puppe als Base64 in JSON (Artefakt liefert keine .glb aus)
   // Übungen mit echter Mixamo-Bewegung. move: Vorwärtsbewegung behalten (Weitsprung)
   const CLIP_MAP = { squat: { c: "Air_Squat" }, pu: { c: "Push_Up" }, ftplank: { c: "Plank" }, curl: { c: "Bicep_Curl" },
     jumpsq: { c: "Jump" }, broadjump: { c: "Forward_Jump", move: true }, pistol: { c: "Pistol" }, hang: { c: "Hanging_Idle", bar: true } };
@@ -133,7 +133,7 @@ const BOT3D = (() => {
   function load(){
     if (ready) return ready;
     ready = (async () => {
-      const [gltf, clips] = await Promise.all([new THREE.GLTFLoader().loadAsync(ASSET.glb), fetch(ASSET.clips).then(r => { if (!r.ok) throw new Error("clips"); return r.json(); })]);
+      const [gltf, clips] = await Promise.all([fetch(ASSET.glb).then(r => { if (!r.ok) throw new Error("glb"); return r.json(); }).then(j => new Promise((res, rej) => { const bin = atob(j.glb), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); new THREE.GLTFLoader().parse(u.buffer, "", res, rej); })), fetch(ASSET.clips).then(r => { if (!r.ok) throw new Error("clips"); return r.json(); })]);
       CLIPS = clips; model = gltf.scene; root = new THREE.Group(); root.add(model);
       R = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
       R.outputEncoding = THREE.sRGBEncoding; R.toneMapping = THREE.ACESFilmicToneMapping; R.toneMappingExposure = 1.05;
