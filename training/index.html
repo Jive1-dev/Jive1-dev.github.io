@@ -1175,7 +1175,8 @@ const F3D = (() => {
   // Rahmen aus der echten Figur über die ganze Bewegung (+ Geräte), damit sie das Bild füllt
   function fitBox(st, id){
     const box = new THREE.Box3(), f = FIGS[id], n = figKeys(id).length, T = (n === 2 ? 2 : n) * f.ms, tmp = new THREE.Box3();
-    for (let k = 0; k < 8; k++){ pose(st, figState(id, T * k / 8));
+    const ns = st.thumb ? 2 : 8;
+    for (let k = 0; k < ns; k++){ pose(st, st.thumb ? solve(figKeys(id)[k * (figKeys(id).length - 1)]) : figState(id, T * k / ns));
       if (st.ana){ st.ana.geometry.computeBoundingBox(); box.union(st.ana.geometry.boundingBox); }
       else Object.values(st.body).forEach(o => { if (o.visible){ o.updateMatrixWorld(true); tmp.setFromObject(o); box.union(tmp); } }); }
     if (st.props.children.length){ tmp.setFromObject(st.props); box.union(tmp); }
@@ -1218,11 +1219,11 @@ const F3D = (() => {
       const [, , bw, bh] = figBox(id); cv.style.aspectRatio = `${bw} / ${bh}`; cv.style.height = "auto";
       svg.replaceWith(cv);
       const big = cv.getBoundingClientRect().width >= 200;
-      const item = { cv, id, st: buildScene(id, mus), big };
+      const item = { cv, id, st: big ? buildScene(id, mus) : null, mus, big };
       cv.__vis = true; obs && obs.observe(cv);
       items.add(item);
-      requestAnimationFrame(() => { draw(item, big && !REDUCED ? performance.now() : null);
-        if (!big && item.st.ana){ item.st.ana.geometry.dispose(); item.st.ana = null; items.delete(item); } });   // kleine Figuren: einmal zeichnen, Speicher frei
+      if (big) requestAnimationFrame(() => draw(item, !REDUCED ? performance.now() : null));
+      else thumbs.push(item);   // kleine Figuren: nacheinander zeichnen (eine pro Bild), dann Speicher frei
     });
   }
 
@@ -1360,10 +1361,20 @@ const F3D = (() => {
   const mapItems = new Set();
   let rsz = 0; window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => mapItems.forEach(it => it.cv.isConnected ? drawMap(it) : mapItems.delete(it)), 150); });
 
+  const thumbs = [];
+  function drawThumb(){
+    const t0 = performance.now();
+    while (thumbs.length && performance.now() - t0 < 12){
+      const it = thumbs.shift(); if (!it.cv.isConnected){ items.delete(it); continue; }
+      it.st = buildScene(it.id, it.mus); it.st.thumb = true; draw(it, null);
+      if (it.st.ana) it.st.ana.geometry.dispose(); it.st = null; items.delete(it);
+    }
+  }
   function loop(now){
+    if (thumbs.length) drawThumb();
     for (const it of items){
       if (!it.cv.isConnected){ items.delete(it); obs && obs.unobserve(it.cv); continue; }
-      if (it.big && !REDUCED && it.cv.__vis !== false){ if (it.st.ana && now - (it.last || 0) < 30) continue; it.last = now; draw(it, now); }   // Anatomie: 30 Bilder/s reichen, spart Akku
+      if (it.big && it.st && !REDUCED && it.cv.__vis !== false){ if (it.st.ana && now - (it.last || 0) < 30) continue; it.last = now; draw(it, now); }   // Anatomie: 30 Bilder/s reichen, spart Akku
     }
     requestAnimationFrame(loop);
   }
