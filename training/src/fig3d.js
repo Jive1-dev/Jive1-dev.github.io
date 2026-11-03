@@ -308,7 +308,7 @@ const F3D = (() => {
   function anatomyMesh(muscles){
     const B = bodyGeometry(), n = B.reg.length, on = new Set(muscles || []);
     const geo = new THREE.BufferGeometry(), col = new Float32Array(n * 3);
-    for (let v = 0; v < n; v++){ const k = B.keys[B.reg[v]], c = k === "hose" ? (on.has("po") && B.nrm[v * 3 + 2] < -0.25 ? LV_COL[3] : HOSE) : k === "haare" ? HAIR : on.has(k) ? LV_COL[3] : (k && k !== "haut") ? LV_COL[0] : SKIN_COL; col[v * 3] = c.r; col[v * 3 + 1] = c.g; col[v * 3 + 2] = c.b; }
+    for (let v = 0; v < n; v++){ const k = B.keys[B.reg[v]], c = k === "hose" ? ((on.has("po") && B.nrm[v * 3 + 2] < -0.25) || (on.has("hueftbeuger") && B.nrm[v * 3 + 2] > 0.3 && B.raw[v * 3 + 1] < 0.89 && Math.abs(B.raw[v * 3]) > 0.035) ? LV_COL[3] : HOSE) : k === "haare" ? HAIR : on.has(k) ? LV_COL[3] : (k && k !== "haut") ? LV_COL[0] : SKIN_COL; col[v * 3] = c.r; col[v * 3 + 1] = c.g; col[v * 3 + 2] = c.b; }
     if (window.__anaDbg){ const { b0 } = skinWeights(), pal = [0xffffff, 0x3060ff, 0xffd000, 0xff3030, 0x30ff30, 0xff30ff, 0x30ffff, 0xff8000, 0x8000ff, 0x00a080];
       for (let v = 0; v < n; v++){ const c = new THREE.Color(pal[b0[v] % 10]); col[v * 3] = c.r; col[v * 3 + 1] = c.g; col[v * 3 + 2] = c.b; } }
     geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(n * 3), 3)); geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(n * 3), 3));
@@ -502,9 +502,9 @@ const F3D = (() => {
   }
   const STATUE_MAT = fibers(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.05, envMapIntensity: 0.6 }));
   function statue(lv){
-    const { geo: g0, reg, layer, nb, keys, nrm: nrmB } = bodyGeometry(), n = reg.length, geo = g0.clone();
+    const { geo: g0, reg, layer, nb, keys, nrm: nrmB, raw: rawB } = bodyGeometry(), n = reg.length, geo = g0.clone();
     let col = new Float32Array(n * 3);
-    for (let v = 0; v < n; v++){ const k = keys[reg[v]], c = k === "hose" ? (lv.po && nrmB[v * 3 + 2] < -0.25 ? LV_COL[lv.po] : HOSE) : k === "haare" ? HAIR : (k === "haut" || !k) ? SKIN_COL : (lv[k] ? LV_COL[lv[k]] : LV_COL[0]); col[v * 3] = c.r; col[v * 3 + 1] = c.g; col[v * 3 + 2] = c.b; }
+    for (let v = 0; v < n; v++){ const k = keys[reg[v]], c = k === "hose" ? (lv.po && nrmB[v * 3 + 2] < -0.25 ? LV_COL[lv.po] : lv.hueftbeuger && nrmB[v * 3 + 2] > 0.3 && rawB[v * 3 + 1] < 0.89 && Math.abs(rawB[v * 3]) > 0.035 ? LV_COL[lv.hueftbeuger] : HOSE) : k === "haare" ? HAIR : (k === "haut" || !k) ? SKIN_COL : (lv[k] ? LV_COL[lv[k]] : LV_COL[0]); col[v * 3] = c.r; col[v * 3 + 1] = c.g; col[v * 3 + 2] = c.b; }
     for (let it = 0; it < 2; it++){ const nx = new Float32Array(n * 3);
       for (let v = 0; v < n; v++){ let r = col[v * 3] * 2, g = col[v * 3 + 1] * 2, b = col[v * 3 + 2] * 2; const L = nb[v];
         let d = 2; for (const u of L){ if (reg[u] !== reg[v]) continue; r += col[u * 3]; g += col[u * 3 + 1]; b += col[u * 3 + 2]; d++; } nx[v * 3] = r / d; nx[v * 3 + 1] = g / d; nx[v * 3 + 2] = b / d; }
