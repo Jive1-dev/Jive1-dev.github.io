@@ -503,7 +503,7 @@ function renderStep(steps, log, k){
       ${next ? `<p class="next">Danach: ${esc(exName(next.id))}</p>` : ""}
       <div id="panel"></div>
       <div class="ag-dock">
-        ${isSec(s.einheit) ? `<button class="watch" id="watch">▶ Halten starten</button>` : ""}
+        ${isSec(s.einheit) ? `<button class="watch" id="watch" style="min-height:46px;font-size:18px">⏱ Halten starten</button>` : ""}
         <div class="stepper"><button id="minus" aria-label="weniger">−</button><input id="val" class="num" type="number" inputmode="numeric" min="0" value="${startVal}" aria-label="${isSec(s.einheit) ? "Sekunden" : "Wiederholungen"}"><button id="plus" aria-label="mehr">+</button></div>
         <button class="btn primary" id="done">${next ? "Fertig ✓" : "Agoge beenden ✓"}</button>
         <div class="ag-tools">
@@ -538,7 +538,7 @@ function renderStep(steps, log, k){
   // Stoppuhr im Knopf: 3 Sek Vorlauf, dann zählt sie hoch, tippen = Stopp
   $("#watch")?.addEventListener("click", () => {
     const b = $("#watch");
-    if (T && T.kind === "watch"){ const sec = T.start ? Math.round((Date.now() - T.start) / 1000) : 0; stopTimers(); lockScreen(); b.classList.remove("run"); b.textContent = "▶ Halten starten"; if (sec){ val.value = sec; $("#done").click(); } return; }
+    if (T && T.kind === "watch"){ const sec = T.start ? Math.round((Date.now() - T.start) / 1000) : 0; stopTimers(); lockScreen(); b.classList.remove("run"); b.textContent = "⏱ Halten starten"; if (sec){ val.value = sec; $("#done").click(); } return; }
     stopTimers(); lockScreen(); b.classList.add("run");
     T = {kind:"watch", start:0, prep: Date.now() + 3000, last:4};
     T.iv = setInterval(() => {
@@ -837,7 +837,7 @@ function viewSettings(){
     ${Object.entries(S.videoOk || {}).filter(([, ok]) => ok === false).length ? `<div class="card"><div class="kicker">Ausgeblendete Videos</div><div class="list">${Object.entries(S.videoOk).filter(([, ok]) => ok === false).map(([id]) => `<div class="line"><span>${esc(exName(id))}</span><button class="chip" data-vshow="${id}">Wieder zeigen</button></div>`).join("")}</div></div>` : ""}
     <div class="card"><div class="kicker">Neu anfangen</div><button class="btn sm danger" id="reset">Alles löschen</button></div>
     <p class="small">Winter Arc Training · Inhalte von Claude A (App, Figuren) und Claude B (Übungen, Programm, Essen). Keine Medizin: bei Schmerzen oder Unsicherheit Arzt fragen.</p>
-    <p class="small">Logo: «Spartan helmet» von Delapouite, <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>, Lizenz CC BY 3.0 (eingefärbt). Fotos: free-exercise-db, Public Domain.</p>
+    <p class="small">Logo: «Spartan helmet» von Delapouite, <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>, Lizenz CC BY 3.0 (eingefärbt). Fotos: free-exercise-db, Public Domain. 3D-Körper: <a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/" target="_blank" rel="noopener">BodyParts3D</a> © DBCLS, Lizenz <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (vereinfacht, eingefärbt, bewegt).</p>
   </div>`;
   $("#sSave").onclick = () => {
     P.name = $("#sName").value.trim(); P.alter = Number($("#sAlter").value) || P.alter; P.cm = Number($("#sCm").value) || P.cm;
