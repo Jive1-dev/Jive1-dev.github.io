@@ -4,6 +4,7 @@ const fs = require("fs");
 
 const rechnung = {
   formel: "Mifflin-St Jeor (Standardformel für den Grundumsatz)",
+  grenze: "Die Formel wurde für Erwachsene entwickelt. Bei 16 Jahren ist das Ergebnis nur ein grober Richtwert (≈). Massgebend ist der Gewichtstrend über 2 Wochen, darum die Regeln unter «anpassen».",
   grundumsatz: "10 × Gewicht(kg) + 6.25 × Grösse(cm) − 5 × Alter + 5",
   aktivitaet: 1.7,
   aktivitaetText: "6 Trainings pro Woche + Alltag (Lehre, Schule, Velo)",

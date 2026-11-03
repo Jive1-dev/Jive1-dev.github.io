@@ -141,11 +141,10 @@ Antworte NUR mit diesem JSON:
       <button class="chip" id="coAgain" style="margin-top:10px">Nochmals auswerten</button>`;
   }
   function fallback(k){
-    return `<div class="coach-fb"><p class="small" style="margin-top:10px">Hier kann die App Claude nicht direkt fragen. So geht es trotzdem:
-      1. «Daten kopieren», 2. Claude-Chat öffnen und einfügen, 3. Claudes Antwort kopieren und unten einfügen.</p>
+    return `<details class="coach-fb" style="margin-top:10px"><summary class="small">Ohne Verbindung? So geht's</summary><p class="small" style="margin-top:6px">Daten kopieren, im Claude-Chat einfügen, Antwort hier einfügen.</p>
       <div class="row" style="gap:8px;margin-top:8px"><button class="btn" id="coCopy">Daten kopieren</button><a class="btn" href="https://claude.ai/new" target="_blank" rel="noopener">Claude öffnen</a></div>
       <textarea class="field" id="coPaste" rows="4" placeholder="Antwort von Claude hier einfügen" style="margin-top:8px;width:100%"></textarea>
-      <button class="btn wide" id="coPasteGo" style="margin-top:6px">Antwort übernehmen</button></div>`;
+      <button class="btn wide" id="coPasteGo" style="margin-top:6px">Antwort übernehmen</button></details>`;
   }
   function rerender(k){ const el = document.getElementById("coachCard"); if (el && el.dataset.k === k){ el.innerHTML = inner(k); bind(k); } }
   async function run(k){
