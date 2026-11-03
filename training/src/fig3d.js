@@ -299,7 +299,7 @@ const F3D = (() => {
   function restEdges(){
     if (REST_E) return REST_E; const { raw, idx } = bodyGeometry(); REST_E = new Float32Array(idx.length / 3);
     const d = (a, b) => Math.hypot(raw[a * 3] - raw[b * 3], raw[a * 3 + 1] - raw[b * 3 + 1], raw[a * 3 + 2] - raw[b * 3 + 2]) * G * 1.25;
-    for (let t = 0; t < idx.length; t += 3) REST_E[t / 3] = Math.max(d(idx[t], idx[t + 1]), d(idx[t + 1], idx[t + 2]), d(idx[t + 2], idx[t]));
+    for (let t = 0; t < idx.length; t += 3){ const m = Math.max(d(idx[t], idx[t + 1]), d(idx[t + 1], idx[t + 2]), d(idx[t + 2], idx[t])) * 2.2 + 0.6; REST_E[t / 3] = m * m; }   // Grenze im Quadrat
     return REST_E;
   }
   const ANA_MAT = fibers(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.58, metalness: 0.03, envMapIntensity: 0.4 }));
@@ -358,18 +358,18 @@ const F3D = (() => {
       nr[i * 3 + 1] = w * (Ra[1] * nx + Ra[5] * ny + Ra[9] * nz) + u * (Rc[1] * nx + Rc[5] * ny + Rc[9] * nz);
       nr[i * 3 + 2] = w * (Ra[2] * nx + Ra[6] * ny + Ra[10] * nz) + u * (Rc[2] * nx + Rc[6] * ny + Rc[10] * nz);
     }
-    // Sicherheitsnetz: stark überdehnte Dreiecke (Fetzen bei extremer Beugung) ausblenden
-    const I0 = B.idx, ix = st.ana.geometry.index.array, rl = restEdges();
-    for (let t = 0; t < I0.length; t += 3){
-      const a = I0[t], b = I0[t + 1], c = I0[t + 2];
-      const e = Math.max(Math.hypot(pos[a * 3] - pos[b * 3], pos[a * 3 + 1] - pos[b * 3 + 1], pos[a * 3 + 2] - pos[b * 3 + 2]),
-        Math.hypot(pos[b * 3] - pos[c * 3], pos[b * 3 + 1] - pos[c * 3 + 1], pos[b * 3 + 2] - pos[c * 3 + 2]), Math.hypot(pos[c * 3] - pos[a * 3], pos[c * 3 + 1] - pos[a * 3 + 1], pos[c * 3 + 2] - pos[a * 3 + 2]));
-      const bad = e > rl[t / 3] * 2.2 + 0.6;
-      ix[t] = a; ix[t + 1] = bad ? a : b; ix[t + 2] = bad ? a : c;
+    // Sicherheitsnetz: stark überdehnte Dreiecke (Fetzen bei extremer Beugung) ausblenden; Index nur hochladen, wenn sich etwas ändert
+    const I0 = B.idx, ix = st.ana.geometry.index.array, T2 = restEdges(); let changed = false;
+    for (let t = 0, f = 0; t < I0.length; t += 3, f++){
+      const a = I0[t] * 3, b = I0[t + 1] * 3, c = I0[t + 2] * 3;
+      let dx = pos[a] - pos[b], dy = pos[a + 1] - pos[b + 1], dz = pos[a + 2] - pos[b + 2], e = dx * dx + dy * dy + dz * dz;
+      dx = pos[b] - pos[c]; dy = pos[b + 1] - pos[c + 1]; dz = pos[b + 2] - pos[c + 2]; const e2 = dx * dx + dy * dy + dz * dz; if (e2 > e) e = e2;
+      dx = pos[c] - pos[a]; dy = pos[c + 1] - pos[a + 1]; dz = pos[c + 2] - pos[a + 2]; const e3 = dx * dx + dy * dy + dz * dz; if (e3 > e) e = e3;
+      const bad = e > T2[f], nb = bad ? I0[t] : I0[t + 1];
+      if (ix[t + 1] !== nb){ ix[t + 1] = nb; ix[t + 2] = bad ? I0[t] : I0[t + 2]; changed = true; }
     }
-    st.ana.geometry.index.needsUpdate = true;
+    if (changed) st.ana.geometry.index.needsUpdate = true;
     st.ana.geometry.attributes.position.needsUpdate = true; st.ana.geometry.attributes.normal.needsUpdate = true;
-    st.ana.geometry.computeBoundingSphere();
   }
 
   // ---------- Kamera und Zeichnen ----------
@@ -416,7 +416,7 @@ const F3D = (() => {
     const dpr = Math.min(2, window.devicePixelRatio || 1), W = Math.round(w * dpr), H = Math.round(h * dpr);
     if (cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; }
     if (!st.fit) st.fit = fitBox(st, id);
-    pose(st, now == null ? solve(figKeys(id)[0]) : figState(id, now));
+    const tp = performance.now(); pose(st, now == null ? solve(figKeys(id)[0]) : figState(id, now)); item.poseMs = performance.now() - tp;
     renderer.setSize(W, H, false); if (st.fit) aimFit(id, st.fit, W / H); else aimCamera(id, W / H);
     renderer.render(st.scene, cam);
     const ctx = item.ctx || (item.ctx = cv.getContext("2d")); ctx.clearRect(0, 0, W, H); ctx.drawImage(renderer.domElement, 0, 0);
@@ -578,7 +578,7 @@ const F3D = (() => {
   function loop(now){
     for (const it of items){
       if (!it.cv.isConnected){ items.delete(it); obs && obs.unobserve(it.cv); continue; }
-      if (it.big && !REDUCED && it.cv.__vis !== false) draw(it, now);
+      if (it.big && !REDUCED && it.cv.__vis !== false){ if (it.st.ana && now - (it.last || 0) < 30) continue; it.last = now; draw(it, now); }   // Anatomie: 30 Bilder/s reichen, spart Akku
     }
     requestAnimationFrame(loop);
   }
