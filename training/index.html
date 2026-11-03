@@ -484,6 +484,15 @@ details.photo-more figure.photo{margin-top:10px}
 .kp-big small{font-size:18px;color:var(--bone-2)}
 .kp-up{color:var(--good);font-size:12px}
 .kp-note{border-color:color-mix(in srgb,var(--bronze) 50%,var(--line))}
+/* B, Nacht 3: Plan */
+.pl-week .split{align-items:center}
+.pl-prog{display:flex;align-items:center;gap:6px;margin-top:10px}
+.pl-prog i{width:22px;height:8px;border-radius:4px;background:var(--line)}
+.pl-prog i.on{background:var(--crimson)}
+.pl-prog .small{margin-left:6px}
+.dayrow.pl-today{border-left:3px solid var(--crimson);padding-left:8px}
+.pl-badge{font:600 10px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--crimson);border:1px solid currentColor;border-radius:999px;padding:1px 6px;margin-left:4px;vertical-align:2px}
+.pl-day .pl-pad{padding:4px 0 12px}
 </style>
 <div id="root"></div>
 <noscript>Diese App braucht JavaScript.</noscript>
@@ -2408,34 +2417,48 @@ function muscleLoad(days, week = false){
 
 // ---------- PLAN ----------
 let planSel = null;
-function viewPlan(){
-  const k = today(), cw = Math.max(1, weekOf(k)); planSel ??= Math.min(52, cw);
+function viewPlan(){   // B, Nacht 3: Woche zuerst, Tag klappt direkt auf, Jahr mit Erklärung zugeklappt
+  const k = today(), cw = Math.max(1, Math.min(52, weekOf(k))); planSel ??= cw;
+  const wk = PROG.wochen[planSel - 1], ph = phaseOf(planSel), phNr = PROG._meta.phasen.indexOf(ph), mon = addDays(S.settings.start, (planSel - 1) * 7);
+  const trainDays = wk.tage.filter(t => t.plan).length, doneDays = wk.tage.filter((t, i) => t.plan && S.logs[addDays(mon, i)]?.done).length;
+  const typ = wk.typ === "deload" ? "Leichte Woche" : wk.typ === "test" ? "Testwoche" : "";
   let g = "";
-  ROMAN.forEach((rn, r) => { g += `<span class="rn">${rn}</span>`; for (let i = 1; i <= 13; i++){ const w = r * 13 + i, wk = PROG.wochen[w - 1];
-    g += `<button class="wc ${wk.typ === "deload" ? "dl" : ""} ${wk.typ === "test" ? "ts" : ""} ${w < cw ? "past" : ""} ${w === cw ? "now" : ""} ${w === planSel ? "sel" : ""}" data-w="${w}" aria-label="Woche ${w}">${wk.typ === "test" ? "T" : ""}</button>`; } });
-  const wk = PROG.wochen[planSel - 1], ph = phaseOf(planSel), mon = addDays(S.settings.start, (planSel - 1) * 7);
+  ROMAN.forEach((rn, r) => { g += `<span class="rn">${rn}</span>`; for (let i = 1; i <= 13; i++){ const w = r * 13 + i, x = PROG.wochen[w - 1];
+    g += `<button class="wc ${x.typ === "deload" ? "dl" : ""} ${x.typ === "test" ? "ts" : ""} ${w < cw ? "past" : ""} ${w === cw ? "now" : ""} ${w === planSel ? "sel" : ""}" data-w="${w}" aria-label="Woche ${w}">${x.typ === "test" ? "T" : ""}</button>`; } });
+  const phases = PROG._meta.phasen.map((p, i) => `<div class="line"><span><b>${ROMAN[i]}</b> ${esc(p.name)}</span><span class="small">Woche ${i * 13 + 1}–${i * 13 + 13}</span></div>`).join("");
   $("#view").innerHTML = `<div class="stack">
-    <div><div class="eyebrow">Start ${longDate(S.settings.start)}</div><h1 class="title-xl" style="margin-top:6px">Dein Jahr</h1></div>
-    <div class="card"><div class="wgrid">${g}</div>
-      <div class="legend" style="margin-top:10px"><span><i class="wc now"></i>jetzt</span><span><i class="wc past"></i>vorbei</span><span><i class="wc dl"></i>leichte Woche</span><span><i class="wc ts"></i>Test</span></div></div>
-    <div class="card"><div class="kicker">Phase ${ROMAN[PROG._meta.phasen.indexOf(ph)]} · ${esc(ph.name)}</div><p class="muted">${esc(ph.ziel)}</p></div>
-    <div class="card"><div class="split"><h3>Woche ${planSel}</h3><span class="small">${wk.typ === "deload" ? "leichte Woche" : wk.typ === "test" ? "Testwoche" : ""}</span></div>
-      <p class="small" style="margin-top:4px">${esc(wk.fokus || "")}</p>
-      <div style="margin-top:8px">${wk.tage.map((t, i) => { const dk = addDays(mon, i); const done = S.logs[dk]?.done;
-        return `<button class="dayrow" data-day="${i}"><b>${DAYS[i]}</b><span>${esc(t.name)}<br><span class="small">${esc(t.muskelText || t.hinweis || "")}</span></span><span class="${done ? "ok" : "small num"}">${t.minuten ? t.minuten + " Min" : ""}${done ? " ✓" : ""}</span></button>`; }).join("")}</div></div>
-    <div id="dayDetail"></div>
+    <div><div class="eyebrow">Dein Plan · 52 Wochen</div><h1 class="title-xl" style="margin-top:6px">Woche ${planSel}</h1></div>
+    <div class="card pl-week">
+      <div class="split"><button class="btn sm" id="plPrev" aria-label="Vorige Woche" ${planSel <= 1 ? "disabled" : ""}>‹</button>
+        <div style="text-align:center"><div class="kicker" style="margin:0">Phase ${ROMAN[phNr]} · ${esc(ph.name)}</div>
+          <div class="small">${planSel === cw ? "diese Woche" : planSel < cw ? "vorbei" : `in ${planSel - cw} Woche${planSel - cw > 1 ? "n" : ""}`} · ${longDate(mon)}${typ ? ` · <b>${typ}</b>` : ""}</div></div>
+        <button class="btn sm" id="plNext" aria-label="Nächste Woche" ${planSel >= 52 ? "disabled" : ""}>›</button></div>
+      <div class="pl-prog" aria-label="${doneDays} von ${trainDays} Trainings">${wk.tage.map((t, i) => t.plan ? `<i class="${S.logs[addDays(mon, i)]?.done ? "on" : ""}"></i>` : "").join("")}<span class="small">${doneDays} von ${trainDays} Trainings</span></div>
+      ${wk.fokus ? `<p class="small" style="margin-top:6px">${esc(wk.fokus)}</p>` : ""}
+      <div style="margin-top:6px">${wk.tage.map((t, i) => { const dk = addDays(mon, i), done = S.logs[dk]?.done, isToday = dk === k;
+        return `<button class="dayrow ${isToday ? "pl-today" : ""}" data-day="${i}" aria-expanded="false"><b>${DAYS[i]}</b><span>${esc(t.name)}${isToday ? ' <span class="pl-badge">heute</span>' : ""}<br><span class="small">${esc(t.muskelText || t.hinweis || "")}</span></span><span class="${done ? "ok" : "small num"}">${t.minuten ? t.minuten + " Min" : ""}${done ? " ✓" : ""}</span></button><div class="pl-day" data-dd="${i}" hidden></div>`; }).join("")}</div>
+      <p class="small" style="margin-top:8px">Tag antippen: alle Übungen mit Zielen.</p></div>
+    <details class="card more-card"><summary class="kicker" style="margin:0;cursor:pointer">Ganzes Jahr</summary><div style="margin-top:10px">
+      <p class="small">Das Jahr hat 4 Phasen zu je 13 Wochen. Jede 5. Woche ist leichter (der Körper baut auf, wenn er sich erholt). Am Ende jeder Phase eine Testwoche: dort misst du neu, und die Ziele passen sich an.</p>
+      <div class="wgrid" style="margin-top:10px">${g}</div>
+      <div class="legend" style="margin-top:10px"><span><i class="wc now"></i>jetzt</span><span><i class="wc past"></i>vorbei</span><span><i class="wc dl"></i>leichte Woche</span><span><i class="wc ts"></i>Test</span></div>
+      <div class="list" style="margin-top:10px">${phases}</div>
+      <p class="small" style="margin-top:6px">${esc(ph.ziel)}</p></div></details>
   </div>`;
-  $$(".wc[data-w]").forEach(b => b.onclick = () => { planSel = Number(b.dataset.w); viewPlan(); });
+  $$(".wc[data-w]").forEach(b => b.onclick = () => { planSel = Number(b.dataset.w); viewPlan(); window.scrollTo(0, 0); });
+  $("#plPrev").onclick = () => { planSel = Math.max(1, planSel - 1); viewPlan(); };
+  $("#plNext").onclick = () => { planSel = Math.min(52, planSel + 1); viewPlan(); };
   $$(".dayrow").forEach(b => b.onclick = () => {
-    const t = wk.tage[Number(b.dataset.day)];
-    if (!t.plan){ $("#dayDetail").innerHTML = `<div class="card"><h3>Ruhetag</h3><p class="muted">${esc(t.hinweis || "")}</p></div>`; return; }
-    const dk = addDays(mon, Number(b.dataset.day));
-    $("#dayDetail").innerHTML = `<div class="card"><div class="kicker">${DAYS_LONG[Number(b.dataset.day)]} · ${t.minuten} Min</div><h3>${esc(t.name)}</h3>
-      ${dk <= today() ? `<a class="btn wide" style="margin-top:10px" href="#bericht-${dk}">${S.logs[dk]?.done ? "Werte ansehen und korrigieren" : "Werte nachtragen"}</a>` : ""}<div class="list" style="margin-top:10px">
-      ${t.plan.map(bl => `<div><div class="eyebrow">${esc(bl.block === "paar" ? bl.titel.replace("Paar", "Supersatz") : bl.titel)}${bl.runden > 1 ? ` · ${bl.runden} Mal` : ""}</div>${bl.uebungen.map(u => `<div class="pline">${figSVG(u.id, EX[u.id]?.muskeln || [], "fig-thumb")}<span>${esc(exName(u.id))}</span><b class="num">${u.bereich ? `${u.bereich[0]}–${u.bereich[1]}` : (u.ziel ?? "")} ${isSec(u.einheit) ? "Sek" : ""}</b></div>`).join("")}</div>`).join("")}
-    </div></div>`;
-    mountFigs($("#dayDetail"));
-    $("#dayDetail").scrollIntoView({behavior:"smooth", block:"start"});
+    const i = Number(b.dataset.day), t = wk.tage[i], box = document.querySelector(`.pl-day[data-dd="${i}"]`), open = !box.hidden;
+    $$(".pl-day").forEach(x => { x.hidden = true; x.innerHTML = ""; }); $$(".dayrow").forEach(x => x.setAttribute("aria-expanded", "false"));
+    if (open) return;
+    const dk = addDays(mon, i);
+    box.innerHTML = !t.plan ? `<p class="muted pl-pad">${esc(t.hinweis || "Ruhetag.")}</p>` : `<div class="pl-pad">
+      ${dk <= k ? `<a class="btn sm wide" href="#bericht-${dk}">${S.logs[dk]?.done ? "Werte ansehen und korrigieren" : "Werte nachtragen"}</a>` : ""}
+      ${t.plan.map(bl => `<div style="margin-top:8px"><div class="eyebrow">${esc(bl.block === "paar" ? bl.titel.replace("Paar", "Supersatz") : bl.titel)}${bl.runden > 1 ? ` · ${bl.runden} Mal` : ""}</div>${bl.uebungen.map(u => `<div class="pline">${figSVG(u.id, EX[u.id]?.muskeln || [], "fig-thumb")}<span>${esc(exName(u.id))}</span><b class="num">${u.bereich ? `${u.bereich[0]}–${u.bereich[1]}` : (u.ziel ?? "")} ${isSec(u.einheit) ? "Sek" : ""}</b></div>`).join("")}</div>`).join("")}</div>`;
+    box.hidden = false; b.setAttribute("aria-expanded", "true");
+    mountFigs(box);
+    b.scrollIntoView({behavior: "smooth", block: "start"});
   });
 }
 

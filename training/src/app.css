@@ -475,3 +475,12 @@ details.photo-more figure.photo{margin-top:10px}
 .kp-big small{font-size:18px;color:var(--bone-2)}
 .kp-up{color:var(--good);font-size:12px}
 .kp-note{border-color:color-mix(in srgb,var(--bronze) 50%,var(--line))}
+/* B, Nacht 3: Plan */
+.pl-week .split{align-items:center}
+.pl-prog{display:flex;align-items:center;gap:6px;margin-top:10px}
+.pl-prog i{width:22px;height:8px;border-radius:4px;background:var(--line)}
+.pl-prog i.on{background:var(--crimson)}
+.pl-prog .small{margin-left:6px}
+.dayrow.pl-today{border-left:3px solid var(--crimson);padding-left:8px}
+.pl-badge{font:600 10px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--crimson);border:1px solid currentColor;border-radius:999px;padding:1px 6px;margin-left:4px;vertical-align:2px}
+.pl-day .pl-pad{padding:4px 0 12px}
