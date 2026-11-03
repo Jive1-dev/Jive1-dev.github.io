@@ -2300,7 +2300,10 @@ function renderStep(steps, log, k){
     if (next.id !== s.id){ const cur = document.querySelector(".ag-card canvas.fig3d, .ag-card svg.fig");
       if (cur){ const nz = next.bereich ? `${next.bereich[0]}–${next.bereich[1]}` : (next.ziel ?? ""), wrap = document.createElement("div"); wrap.className = "next-prev";
         wrap.innerHTML = `<div class="eyebrow" style="margin-bottom:4px">Gleich: ${esc(exName(next.id))}${nz !== "" ? ` · ${nz}${isSec(next.einheit) ? " Sek" : ""}` : ""}</div>${figSVG(next.id, EX[next.id]?.muskeln || [])}`;
-        cur.replaceWith(wrap); mountFigs(wrap); } }
+        cur.replaceWith(wrap); mountFigs(wrap); }
+      // Kritik A: in der Pause gehört der Kopf zur nächsten Übung, Titel/Ziel der fertigen dimmen, «Halten starten» weg
+      document.querySelectorAll(".ag-card > .ag-name, .ag-card > .goal, .ag-card > .eyebrow, .ag-card > .chips").forEach(el => { el.style.opacity = ".45"; });
+      const wb = $("#watch"); if (wb) wb.style.display = "none"; }
     let left = s.pause; b.classList.add("rest");
     const nn = exName(next.id), short = nn.length > 22 ? nn.slice(0, 21) + "…" : nn;
     const paint = () => { b.innerHTML = `<span>Pause <b class="num">${fmt(left)}</b></span><span class="nx">→ ${esc(short)}</span>`; };
