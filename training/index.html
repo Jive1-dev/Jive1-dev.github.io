@@ -2382,7 +2382,7 @@ function viewPlan(){
     <div class="card"><div class="split"><h3>Woche ${planSel}</h3><span class="small">${wk.typ === "deload" ? "leichte Woche" : wk.typ === "test" ? "Testwoche" : ""}</span></div>
       <p class="small" style="margin-top:4px">${esc(wk.fokus || "")}</p>
       <div style="margin-top:8px">${wk.tage.map((t, i) => { const dk = addDays(mon, i); const done = S.logs[dk]?.done;
-        return `<button class="dayrow" data-day="${i}"><b>${DAYS[i]}</b><span>${esc(t.name)}<br><span class="small">${esc(t.muskelText || t.hinweis || "")}</span></span><span class="${done ? "ok" : "small num"}">${done ? "✓" : t.minuten ? t.minuten + " Min" : ""}</span></button>`; }).join("")}</div></div>
+        return `<button class="dayrow" data-day="${i}"><b>${DAYS[i]}</b><span>${esc(t.name)}<br><span class="small">${esc(t.muskelText || t.hinweis || "")}</span></span><span class="${done ? "ok" : "small num"}">${t.minuten ? t.minuten + " Min" : ""}${done ? " ✓" : ""}</span></button>`; }).join("")}</div></div>
     <div id="dayDetail"></div>
   </div>`;
   $$(".wc[data-w]").forEach(b => b.onclick = () => { planSel = Number(b.dataset.w); viewPlan(); });
@@ -2446,7 +2446,7 @@ function viewKoerper(){
     <div><div class="eyebrow">Fortschritt</div><h1 class="title-xl" style="margin-top:6px">Dein Körper</h1></div>
     <div class="tiles"><div class="tile"><b class="num">${latestKg()}<small>kg</small></b><span>aktuell</span></div><div class="tile"><b class="num">${gain >= 0 ? "+" : ""}${gain.toFixed(1)}<small>kg</small></b><span>seit Start</span></div></div>
     <div class="card"><div class="kicker">Gewicht</div>${weightQuick()}<div style="margin-top:12px">${weightChart()}</div></div>
-    <div class="card"><div class="kicker">Diese Woche trainiert</div>${muscleMapSVG(muscleLoad(weekDays, true))}<p class="small" style="margin-top:6px">Harte Sätze pro Muskel diese Woche: hellrot unter 6, mittel 6–10, voll ab 10. Graue Muskeln kommen zu kurz.</p></div>
+    <div class="card"><div class="kicker">Diese Woche trainiert</div>${muscleMapSVG(muscleLoad(weekDays, true))}<p class="small" style="margin-top:6px">Harte Sätze pro Muskel diese Woche: hellrot unter 6, mittel 6–10, voll ab 10. Grau = diese Woche noch nichts. Schienbein und Füsse laufen nebenbei mit.</p></div>
     ${beforeAfter()}
     <div class="card"><div class="kicker">Rekorde</div><div class="list">${Object.keys(recs).length ? Object.entries(recs).sort((a, b) => exName(a[0]).localeCompare(exName(b[0]))).map(([id, v]) => `<div class="line"><span>${esc(exName(id))}</span><b class="num">${v}</b></div>`).join("") : `<p class="small">Noch keine. Nach dem ersten Training stehen sie hier.</p>`}</div></div>
     <div class="card"><div class="kicker">Masse · einmal im Monat</div>
@@ -2476,7 +2476,7 @@ function targets(){
 }
 function viewEssen(){
   const k = today(), f = (S.food[k] ||= {checks:[], koffein:[]}), t = targets(), N = D.nut;
-  const mg = f.koffein.reduce((a, x) => a + x, 0), max = Math.round((N.koffein.maxMgProKg || 3) * t.kg), late = new Date().getHours() >= (N.koffein.nachUhr || 14);
+  const mg = f.koffein.reduce((a, x) => a + x, 0), max = Math.round((N.koffein.maxMgProKg || 3) * t.kg / 5) * 5, late = new Date().getHours() >= (N.koffein.nachUhr || 14);
   $("#view").innerHTML = `<div class="stack">
     <div><div class="eyebrow">Ohne Kalorienzählen</div><h1 class="title-xl" style="margin-top:6px">Essen</h1></div>
     <div class="tiles"><div class="tile"><b class="num">${t.protein}<small>g</small></b><span>Protein pro Tag</span></div><div class="tile"><b class="num">≈${t.kcal}</b><span>kcal, nur Richtwert</span></div></div>
@@ -2488,7 +2488,7 @@ function viewEssen(){
     <div class="card"><div class="split"><span class="kicker" style="margin:0">Koffein heute</span><span class="small num">${mg} / ${max} mg</span></div>
       <div class="meter ${mg > max ? "over" : ""}" style="margin-top:8px"><i style="width:${Math.min(100, mg / max * 100)}%"></i></div>
       <p class="small" style="margin-top:6px">${mg > max ? "Über der Grenze. Kein Koffein mehr heute, viel Wasser trinken." : late ? `Nach ${N.koffein.nachUhr} Uhr: kein Koffein mehr, sonst schläfst du schlecht.` : esc(N.koffein.text)}</p>
-      <div class="chips" style="margin-top:8px">${N.koffein.getraenke.map((g, i) => `<button class="chip" data-k="${i}">+ ${esc(g.name)} (${g.mg})</button>`).join("")}${f.koffein.length ? `<button class="chip" id="kUndo">Rückgängig</button>` : ""}</div></div>
+      <div class="chips" style="margin-top:8px">${N.koffein.getraenke.map((g, i) => `<button class="chip" data-k="${i}">+ ${esc(g.name)} (${g.mg}${g.mg > max ? " · über deiner Grenze" : ""})</button>`).join("")}${f.koffein.length ? `<button class="chip" id="kUndo">Rückgängig</button>` : ""}</div></div>
     <div class="card"><div class="kicker">Mahlzeiten ohne Kochen</div><div class="list">${N.mahlzeiten.map(m => `<details class="more"><summary class="plain meal"><span>${esc(m.name)}</span><small>${m.protein} g Protein · ${m.kcal} kcal</small></summary><p class="small" style="margin-top:4px">${esc((m.zutaten || []).join(", "))}${m.hinweis ? ` · ${esc(m.hinweis)}` : ""}${m.preis ? ` · ca. ${m.preis.toFixed(2)} Fr.` : ""}</p></details>`).join("")}</div></div>
     <div class="card"><div class="kicker">Einkauf pro Woche</div><div class="list">${N.einkauf.proWoche.map(e => `<div class="line"><span>${esc(e.was)}</span><b class="num">${esc(e.menge)}</b></div>`).join("")}</div>${N.einkauf.summeCHF ? `<p class="small" style="margin-top:6px">Ca. ${N.einkauf.summeCHF} Fr. pro Woche (Schätzung).</p>` : ""}</div>
     ${N.nichtNehmen ? `<div class="card"><details class="more"><summary>Nicht nehmen (unter 18)</summary><ul class="steps" style="margin-top:6px">${(Array.isArray(N.nichtNehmen) ? N.nichtNehmen : N.nichtNehmen.liste || []).map(x => `<li>${esc(typeof x === "string" ? x : (x.was || x.text || ""))}${x.warum ? `: ${esc(x.warum)}` : ""}</li>`).join("")}</ul></details></div>` : ""}
@@ -2518,7 +2518,7 @@ function viewSettings(){
       <button class="btn sm" id="paste" style="margin-top:8px">Einfügen</button></div>
     ${Object.entries(S.videoOk || {}).filter(([, ok]) => ok === false).length ? `<div class="card"><div class="kicker">Ausgeblendete Videos</div><div class="list">${Object.entries(S.videoOk).filter(([, ok]) => ok === false).map(([id]) => `<div class="line"><span>${esc(exName(id))}</span><button class="chip" data-vshow="${id}">Wieder zeigen</button></div>`).join("")}</div></div>` : ""}
     <div class="card"><div class="kicker">Neu anfangen</div><button class="btn sm danger" id="reset">Alles löschen</button></div>
-    <p class="small">Winter Arc Training · Inhalte von Claude A (App, Figuren) und Claude B (Übungen, Programm, Essen). Keine Medizin: bei Schmerzen oder Unsicherheit Arzt fragen.</p>
+    <p class="small">Winter Arc Training · Inhalte von Claude A (App, Design) und Claude B (3D-Körper, Übungen, Programm, Essen, Coach). Keine Medizin: bei Schmerzen oder Unsicherheit Arzt fragen.</p>
     <p class="small">Logo: «Spartan helmet» von Delapouite, <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>, Lizenz CC BY 3.0 (eingefärbt). Fotos: free-exercise-db, Public Domain. 3D-Körper: <a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/" target="_blank" rel="noopener">BodyParts3D</a> © DBCLS, Lizenz <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (vereinfacht, eingefärbt, bewegt).</p>
   </div>`;
   $("#sSave").onclick = () => {
