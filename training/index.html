@@ -461,6 +461,8 @@ summary.meal small{font-size:12.5px;color:var(--bone-3);font-weight:500}
 }
 .stepper input{-moz-appearance:textfield;appearance:textfield}
 .stepper input::-webkit-inner-spin-button,.stepper input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+details.card > summary::after{margin-left:8px;content:"▾"}
+details.card[open] > summary::after{content:"▴"}
 </style>
 <div id="root"></div>
 <noscript>Diese App braucht JavaScript.</noscript>
@@ -2223,7 +2225,7 @@ function viewBericht(){
     ${(() => { let nk = addDays(k, 1); if (dayIdx(nk) === 6) nk = addDays(nk, 1); const nd = progDay(nk).day;
       return `<div class="card" style="width:100%;text-align:left"><div class="kicker">${dayIdx(addDays(k, 1)) === 6 ? "Morgen Ruhetag, dann" : "Morgen"}</div><h3>${esc(nd.name)}</h3><p class="muted" style="margin-top:4px">${esc(nd.muskelText || "")} · ${nd.minuten} Min</p></div>`; })()}
     ${editCard(k, !!hk)}
-    <a class="btn primary" href="${hk ? "#plan" : "#heute"}">Zurück</a>
+    <a class="btn wide" href="${hk ? "#plan" : "#heute"}">${hk ? "Zum Plan" : "Fertig, zu Heute"}</a>
   </div>`;
   bindEdit(k);
   if (typeof COACH !== "undefined") COACH.bind(k);
@@ -2261,7 +2263,7 @@ function viewPlan(){
     <div class="card"><div class="split"><h3>Woche ${planSel}</h3><span class="small">${wk.typ === "deload" ? "leichte Woche" : wk.typ === "test" ? "Testwoche" : ""}</span></div>
       <p class="small" style="margin-top:4px">${esc(wk.fokus || "")}</p>
       <div style="margin-top:8px">${wk.tage.map((t, i) => { const dk = addDays(mon, i); const done = S.logs[dk]?.done;
-        return `<button class="dayrow" data-day="${i}"><b>${DAYS[i]}</b><span>${esc(t.name)}<br><span class="small">${esc(t.muskelText || t.hinweis || "")}</span></span><span class="${done ? "ok" : "small num"}">${done ? "✓" : t.minuten ? t.minuten + "′" : ""}</span></button>`; }).join("")}</div></div>
+        return `<button class="dayrow" data-day="${i}"><b>${DAYS[i]}</b><span>${esc(t.name)}<br><span class="small">${esc(t.muskelText || t.hinweis || "")}</span></span><span class="${done ? "ok" : "small num"}">${done ? "✓" : t.minuten ? t.minuten + " Min" : ""}</span></button>`; }).join("")}</div></div>
     <div id="dayDetail"></div>
   </div>`;
   $$(".wc[data-w]").forEach(b => b.onclick = () => { planSel = Number(b.dataset.w); viewPlan(); });
