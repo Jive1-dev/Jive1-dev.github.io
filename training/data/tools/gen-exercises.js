@@ -608,10 +608,10 @@ x("cossack", "Seitliche Kniebeuge", "beine", ["bein_vorne", "bein_innen", "po"],
 
 x("sideplank", "Seitstütz", "bauch", ["bauch_seite", "schulter_seite"], "sek_seite", ["boden"],
   "Starke Seiten am Bauch, schützt den Rücken.",
-  ["Leg dich auf die Seite, Ellbogen unter der Schulter.", "Füsse übereinander.", "Hüfte hoch, Körper gerade.", "Halten, dann Seite wechseln."],
+  ["Leg dich auf die Seite, Hand unter der Schulter, Arm gestreckt.", "Füsse übereinander.", "Hüfte hoch, Körper gerade, oberer Arm zeigt nach oben.", "Halten, dann Seite wechseln."],
   ["Hüfte sinkt ab.", "Oberkörper kippt nach vorne."],
-  "Kaum Risiko.", null, null,
-  { leichterTipp: "Unteres Knie am Boden lassen.", schwererTipp: "Oberes Bein hochheben." });
+  "Zwickt das Handgelenk: auf den Unterarm gehen (Ellbogen unter der Schulter).", null, null,
+  { leichterTipp: "Auf den Unterarm gehen oder unteres Knie am Boden lassen.", schwererTipp: "Oberes Bein hochheben." });
 
 /* ---------- Bauch ---------- */
 x("crunch", "Crunch", "bauch", ["bauch"], "wdh", ["boden"],
