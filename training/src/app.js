@@ -490,7 +490,7 @@ function renderStep(steps, log, k){
       <h2 class="ag-name">${esc(u.name)}</h2>
       <div class="chips">${(u.muskeln || []).slice(0, 4).map(m => `<span class="mchip">${esc(muscleShort(m))}</span>`).join("")}</div>
       <div class="goal"><b class="num">${esc(goal)}</b><span>${esc(s.test ? (s.text || "") : unitText(s.einheit))}${s.kg ? ` · ${S.settings.hantelKg} kg` : ""}</span></div>
-      ${h.last != null ? `<div class="beat"><span>Letztes Mal <b class="num">${h.last}</b></span><span>Heute? <b class="num">${h.last + 1}</b></span><span>Rekord <b class="num">${h.best}</b></span></div>` : ""}
+      ${h.last != null ? `<div class="beat"><span>Letztes Mal <b class="num">${h.last}</b></span><span>Heute? <b class="num">${h.last + 1}</b></span><span>Rekord <b class="num">${h.best}</b></span></div>` :(() => { const sv = (PROG._meta?.startwerte || {})[s.id]; return typeof sv === "number" ? `<div class="beat"><span>Dein Startwert vom Test <b class="num">${sv}${isSec(u.einheit) ? " Sek" : ""}</b></span><span>Heute schlagen?</span></div>` : ""; })()}
       ${(() => { const n = log.notes?.[s.id] ? { d: k, t: log.notes[s.id] } : lastNote(s.id, k); return n ? `<p class="hint">${n.d === k ? "Deine Notiz heute" : `Deine Notiz vom ${DAYS[dayIdx(n.d)]} ${parse(n.d).getDate()}.${parse(n.d).getMonth() + 1}.`}: ${esc(n.t)}</p>` : ""; })()}
       ${s.tempo ? `<p class="hint">Tempo: ${esc(s.tempo)}</p>` : ""}
       ${u.handgelenk && (log.wrist === "zwickt" || !log.wristTip || log.wristTip === s.key) ? `<p class="hint">${log.wrist === "zwickt" ? "Heute zwicken die Handgelenke: auf die Parallettes oder auf die Fäuste, Handtuch unter die Handballen, weniger weit lehnen. Sticht es: «Schmerz?» tippen." : esc(META.handgelenkTipp)}</p>` : ""}
