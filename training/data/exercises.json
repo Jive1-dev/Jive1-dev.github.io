@@ -126,7 +126,8 @@
       "leichter": null,
       "schwerer": null,
       "leichterTipp": "Weniger weit nach vorne schaukeln.",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": []
     },
     {
       "id": "scap",
@@ -155,7 +156,10 @@
       "leichter": null,
       "schwerer": null,
       "leichterTipp": "Auf den Knien machen.",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "wallangel"
+      ]
     },
     {
       "id": "circles",
@@ -183,7 +187,8 @@
       "sicherheit": "Kaum Risiko. Langsam starten.",
       "leichter": null,
       "schwerer": null,
-      "leichterTipp": "Kleinere Kreise, langsamer."
+      "leichterTipp": "Kleinere Kreise, langsamer.",
+      "alternativen": []
     },
     {
       "id": "legswing",
@@ -213,7 +218,8 @@
       "sicherheit": "Klein anfangen, jede Runde etwas höher.",
       "leichter": null,
       "schwerer": null,
-      "leichterTipp": "Kleiner schwingen, mit beiden Händen festhalten."
+      "leichterTipp": "Kleiner schwingen, mit beiden Händen festhalten.",
+      "alternativen": []
     },
     {
       "id": "catcow",
@@ -243,7 +249,8 @@
       "leichter": null,
       "schwerer": null,
       "leichterTipp": "Kleinere Bewegung, nur so weit es angenehm ist.",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": []
     },
     {
       "id": "squat",
@@ -272,7 +279,13 @@
       "leichter": null,
       "schwerer": "revlunge",
       "leichterTipp": "Auf einen Stuhl absetzen und wieder aufstehen.",
-      "schwererTipp": "Unten 2 Sek halten oder den 6-kg-Ball vor der Brust halten."
+      "schwererTipp": "Unten 2 Sek halten oder den 6-kg-Ball vor der Brust halten.",
+      "alternativen": [
+        "boxpistol",
+        "revlunge",
+        "bss",
+        "bssdb"
+      ]
     },
     {
       "id": "door",
@@ -300,7 +313,8 @@
       "leichter": null,
       "schwerer": null,
       "gesperrt": true,
-      "ersatz": "wallangel"
+      "ersatz": "wallangel",
+      "alternativen": []
     },
     {
       "id": "chintuck",
@@ -326,7 +340,8 @@
       "sicherheit": "Kaum Risiko. Sanft, nicht drücken.",
       "leichter": null,
       "schwerer": null,
-      "leichterTipp": "Im Liegen machen, Hinterkopf auf dem Boden."
+      "leichterTipp": "Im Liegen machen, Hinterkopf auf dem Boden.",
+      "alternativen": []
     },
     {
       "id": "wallangel",
@@ -355,7 +370,10 @@
       "sicherheit": "Kaum Risiko. Langsam bewegen.",
       "leichter": "chintuck",
       "schwerer": null,
-      "leichterTipp": "Einen Schritt weg von der Wand, Arme nur in die Luft."
+      "leichterTipp": "Einen Schritt weg von der Wand, Arme nur in die Luft.",
+      "alternativen": [
+        "scap"
+      ]
     },
     {
       "id": "hipflex",
@@ -384,7 +402,8 @@
       "sicherheit": "Nur bis zum Ziehen, nie bis es sticht.",
       "leichter": null,
       "schwerer": null,
-      "leichterTipp": "Weniger weit nach vorne schieben."
+      "leichterTipp": "Weniger weit nach vorne schieben.",
+      "alternativen": []
     },
     {
       "id": "calfstretch",
@@ -411,7 +430,8 @@
       "sicherheit": "Nur bis zum Ziehen.",
       "leichter": null,
       "schwerer": null,
-      "leichterTipp": "Hinteren Fuss näher zur Wand."
+      "leichterTipp": "Hinteren Fuss näher zur Wand.",
+      "alternativen": []
     },
     {
       "id": "hswall",
@@ -445,7 +465,10 @@
       "leichter": "pike",
       "schwerer": "hskick",
       "leichterTipp": "Pike-Liegestütz-Position halten, Füsse auf dem Stuhl.",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "hsfree"
+      ]
     },
     {
       "id": "hskick",
@@ -475,7 +498,11 @@
       "sicherheit": "Platz frei räumen. Rausfallen üben: Hand zur Seite und Rad. Nicht nach hinten auf den Rücken fallen.",
       "leichter": "hswall",
       "schwerer": "hsfree",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "hsshape",
+        "hspu"
+      ]
     },
     {
       "id": "hsfree",
@@ -508,7 +535,11 @@
       "leichter": "hskick",
       "schwerer": "hsshape",
       "schwererTipp": "Länger halten: Ziel 30 Sek.",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "hswall",
+        "ftplank"
+      ]
     },
     {
       "id": "hsshape",
@@ -538,7 +569,11 @@
       "sicherheit": "Erst üben, wenn der freie Handstand 15 Sek klappt. Rausfallen mit Rad.",
       "leichter": "hsfree",
       "schwerer": null,
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "hskick",
+        "hspu"
+      ]
     },
     {
       "id": "hspu",
@@ -570,7 +605,11 @@
       "leichter": "pikeel",
       "schwerer": null,
       "leichterTipp": "Nur runter (langsam 5 Sek), dann mit den Füssen absteigen.",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "hskick",
+        "hsshape"
+      ]
     },
     {
       "id": "pllean",
@@ -604,7 +643,13 @@
       "schwerer": "tuckpl",
       "leichterTipp": "Weniger weit nach vorne lehnen.",
       "schwererTipp": "Weiter nach vorne lehnen, bis die Schultern vor den Fingern sind.",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "frog",
+        "tuckpl",
+        "crow",
+        "advtuck"
+      ]
     },
     {
       "id": "frog",
@@ -635,7 +680,13 @@
       "leichter": null,
       "schwerer": "crow",
       "leichterTipp": "Nur einen Fuss abheben.",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "pllean",
+        "tuckpl",
+        "crow",
+        "advtuck"
+      ]
     },
     {
       "id": "crow",
@@ -667,7 +718,13 @@
       "leichter": "frog",
       "schwerer": "tuckpl",
       "schwererTipp": "Arme ganz strecken (gestreckte Krähe).",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "pllean",
+        "frog",
+        "tuckpl",
+        "advtuck"
+      ]
     },
     {
       "id": "tuckpl",
@@ -699,7 +756,13 @@
       "leichter": "pllean",
       "schwerer": "advtuck",
       "leichterTipp": "Nur die Füsse kurz abheben, oder mit den Zehenspitzen am Boden halten.",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "pllean",
+        "frog",
+        "crow",
+        "straddle"
+      ]
     },
     {
       "id": "advtuck",
@@ -730,7 +793,13 @@
       "sicherheit": "Erst, wenn die Tuck-Planche 15 Sek klappt.",
       "leichter": "tuckpl",
       "schwerer": "straddle",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "pllean",
+        "frog",
+        "tuckpl",
+        "straddle"
+      ]
     },
     {
       "id": "straddle",
@@ -761,7 +830,13 @@
       "sicherheit": "Erst, wenn die fortgeschrittene Tuck-Planche 15 Sek klappt.",
       "leichter": "advtuck",
       "schwerer": null,
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "pllean",
+        "tuckpl",
+        "frog",
+        "advtuck"
+      ]
     },
     {
       "id": "support",
@@ -790,7 +865,8 @@
       "sicherheit": "Kaum Risiko. Parallettes müssen fest stehen.",
       "leichter": null,
       "schwerer": "tuckl",
-      "leichterTipp": "Füsse leicht am Boden lassen und nur einen Teil des Gewichts tragen."
+      "leichterTipp": "Füsse leicht am Boden lassen und nur einen Teil des Gewichts tragen.",
+      "alternativen": []
     },
     {
       "id": "tuckl",
@@ -819,7 +895,12 @@
       "sicherheit": "Kaum Risiko.",
       "leichter": "support",
       "schwerer": "onel",
-      "leichterTipp": "Nur ein Knie anziehen, der andere Fuss bleibt am Boden."
+      "leichterTipp": "Nur ein Knie anziehen, der andere Fuss bleibt am Boden.",
+      "alternativen": [
+        "lsit",
+        "vsit",
+        "onel"
+      ]
     },
     {
       "id": "onel",
@@ -846,7 +927,12 @@
       ],
       "sicherheit": "Kaum Risiko.",
       "leichter": "tuckl",
-      "schwerer": "lsit"
+      "schwerer": "lsit",
+      "alternativen": [
+        "lsit",
+        "vsit",
+        "tuckl"
+      ]
     },
     {
       "id": "lsit",
@@ -875,7 +961,12 @@
       ],
       "sicherheit": "Kaum Risiko.",
       "leichter": "onel",
-      "schwerer": "vsit"
+      "schwerer": "vsit",
+      "alternativen": [
+        "tuckl",
+        "onel",
+        "vsit"
+      ]
     },
     {
       "id": "vsit",
@@ -903,7 +994,12 @@
       ],
       "sicherheit": "Erst, wenn der L-Sitz 20 Sek klappt.",
       "leichter": "lsit",
-      "schwerer": null
+      "schwerer": null,
+      "alternativen": [
+        "tuckl",
+        "onel",
+        "lsit"
+      ]
     },
     {
       "id": "pikecomp",
@@ -932,7 +1028,13 @@
       "leichter": null,
       "schwerer": "pikelift",
       "leichterTipp": "Nur ein Bein heben.",
-      "schwererTipp": "Hände weiter vorne bei den Füssen."
+      "schwererTipp": "Hände weiter vorne bei den Füssen.",
+      "alternativen": [
+        "tuckpress",
+        "puhs",
+        "strpress",
+        "pikelift"
+      ]
     },
     {
       "id": "pikelift",
@@ -963,7 +1065,13 @@
       "sicherheit": "Stuhl an die Wand stellen, damit er nicht rutscht.",
       "leichter": "pike",
       "schwerer": "crowhs",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "tuckpress",
+        "puhs",
+        "strpress",
+        "crowhs"
+      ]
     },
     {
       "id": "crowhs",
@@ -994,7 +1102,13 @@
       "sicherheit": "Zuerst an der Wand üben. Rausfallen mit Rad.",
       "leichter": "crow",
       "schwerer": "tuckpress",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "pikelift",
+        "puhs",
+        "strpress",
+        "tuckpress"
+      ]
     },
     {
       "id": "tuckpress",
@@ -1025,7 +1139,13 @@
       "sicherheit": "Zuerst mit dem Rücken nahe an der Wand üben. Rausfallen mit Rad.",
       "leichter": "crowhs",
       "schwerer": "strpress",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "pikelift",
+        "puhs",
+        "strpress",
+        "crowhs"
+      ]
     },
     {
       "id": "strpress",
@@ -1056,7 +1176,13 @@
       "sicherheit": "Braucht viel Beweglichkeit. Nie mit Gewalt dehnen.",
       "leichter": "tuckpress",
       "schwerer": null,
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "pikelift",
+        "puhs",
+        "tuckpress",
+        "crowhs"
+      ]
     },
     {
       "id": "puhs",
@@ -1086,7 +1212,13 @@
       "sicherheit": "Freie Fläche. Rausfallen mit Rad.",
       "leichter": "pikelift",
       "schwerer": null,
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "tuckpress",
+        "pikelift",
+        "strpress",
+        "crowhs"
+      ]
     },
     {
       "id": "ftplank",
@@ -1115,7 +1247,10 @@
       "sicherheit": "Auf den Knien starten. Langsam steigern, Finger sind kleine Gelenke.",
       "leichter": null,
       "schwerer": "pllean",
-      "leichterTipp": "Auf den Knien machen."
+      "leichterTipp": "Auf den Knien machen.",
+      "alternativen": [
+        "hsfree"
+      ]
     },
     {
       "id": "incpu",
@@ -1143,7 +1278,13 @@
       ],
       "sicherheit": "Stuhl steht an der Wand, damit er nicht wegrutscht.",
       "leichter": "kneepu",
-      "schwerer": "pu"
+      "schwerer": "pu",
+      "alternativen": [
+        "deeppu",
+        "declpu",
+        "kneepu",
+        "pu"
+      ]
     },
     {
       "id": "pu",
@@ -1175,7 +1316,13 @@
       "leichter": "incpu",
       "schwerer": "deeppu",
       "schwererTipp": "Langsamer: 3 Sek runter.",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "declpu",
+        "kneepu",
+        "incpu",
+        "deeppu"
+      ]
     },
     {
       "id": "deeppu",
@@ -1203,7 +1350,13 @@
       ],
       "sicherheit": "Nur so tief, wie es in der Schulter angenehm ist. Kein Stechen.",
       "leichter": "pu",
-      "schwerer": "declpu"
+      "schwerer": "declpu",
+      "alternativen": [
+        "incpu",
+        "kneepu",
+        "declpu",
+        "pu"
+      ]
     },
     {
       "id": "declpu",
@@ -1233,7 +1386,13 @@
       "sicherheit": "Stuhl an die Wand, damit er nicht wegrutscht.",
       "leichter": "deeppu",
       "schwerer": "pppu",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "incpu",
+        "kneepu",
+        "pu",
+        "deeppu"
+      ]
     },
     {
       "id": "kneepu",
@@ -1264,7 +1423,13 @@
       "leichter": null,
       "schwerer": "incpu",
       "leichterTipp": "Hände auf einen Stuhl oder an die Wand.",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "deeppu",
+        "declpu",
+        "incpu",
+        "pu"
+      ]
     },
     {
       "id": "pppu",
@@ -1295,7 +1460,13 @@
       "sicherheit": "Am Boden nur mit Parallettes, sonst knicken die Handgelenke zu stark ab.",
       "leichter": "declpu",
       "schwerer": null,
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "pike",
+        "pikeel",
+        "dbpress",
+        "pu"
+      ]
     },
     {
       "id": "pike",
@@ -1325,7 +1496,13 @@
       "leichter": "incpu",
       "schwerer": "pikeel",
       "leichterTipp": "Füsse weiter weg von den Händen, oder nur halb runter.",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "pikeel",
+        "dbpress",
+        "pppu",
+        "deeppu"
+      ]
     },
     {
       "id": "pikeel",
@@ -1355,7 +1532,13 @@
       "sicherheit": "Stuhl an die Wand, damit er nicht rutscht.",
       "leichter": "pike",
       "schwerer": "hspu",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "pike",
+        "dbpress",
+        "pppu",
+        "incpu"
+      ]
     },
     {
       "id": "benchdip",
@@ -1385,7 +1568,13 @@
       "leichter": null,
       "schwerer": "benchdips",
       "leichterTipp": "Füsse näher zum Stuhl, weniger tief.",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "dip",
+        "benchdips",
+        "triext",
+        "ohe"
+      ]
     },
     {
       "id": "benchdips",
@@ -1414,7 +1603,13 @@
       "sicherheit": "Nur bis die Oberarme waagrecht sind. Stuhl an die Wand.",
       "leichter": "benchdip",
       "schwerer": "dip",
-      "handgelenk": true
+      "handgelenk": true,
+      "alternativen": [
+        "benchdip",
+        "dip",
+        "triext",
+        "ohe"
+      ]
     },
     {
       "id": "dip",
@@ -1443,7 +1638,13 @@
       "sicherheit": "Vorher testen, ob die Stühle wackeln. Kein Stuhl mit Rollen. Kein Stechen vorne in der Schulter.",
       "leichter": "benchdips",
       "schwerer": null,
-      "leichterTipp": "Nur runter (5 Sek langsam), mit den Füssen wieder hoch."
+      "leichterTipp": "Nur runter (5 Sek langsam), mit den Füssen wieder hoch.",
+      "alternativen": [
+        "benchdip",
+        "benchdips",
+        "triext",
+        "ohe"
+      ]
     },
     {
       "id": "triext",
@@ -1471,7 +1672,13 @@
       "leichter": null,
       "schwerer": "dip",
       "leichterTipp": "Füsse näher zum Stuhl.",
-      "schwererTipp": "Füsse weiter weg."
+      "schwererTipp": "Füsse weiter weg.",
+      "alternativen": [
+        "benchdip",
+        "benchdips",
+        "ohe",
+        "dip"
+      ]
     },
     {
       "id": "curl",
@@ -1501,7 +1708,8 @@
       "schwerer": null,
       "tempo": "4 Sek runter, 1 Sek Pause oben, dann wieder hoch",
       "leichterTipp": "Nur 3 Sek runter, oder weniger Wiederholungen.",
-      "schwererTipp": "Schwerere Hantel oder 5 Sek runter."
+      "schwererTipp": "Schwerere Hantel oder 5 Sek runter.",
+      "alternativen": []
     },
     {
       "id": "ohe",
@@ -1530,7 +1738,13 @@
       "schwerer": null,
       "leichterTipp": "Leichtere Hantel oder im Sitzen.",
       "tempo": "4 Sek runter, 1 Sek Pause oben, dann wieder hoch",
-      "schwererTipp": "Einarmig oder schwerere Hantel."
+      "schwererTipp": "Einarmig oder schwerere Hantel.",
+      "alternativen": [
+        "triext",
+        "benchdip",
+        "benchdips",
+        "dip"
+      ]
     },
     {
       "id": "lat",
@@ -1559,7 +1773,8 @@
       "schwerer": null,
       "tempo": "4 Sek runter, 1 Sek Pause oben, dann wieder hoch",
       "leichterTipp": "Nur eine Hantel, abwechselnd.",
-      "schwererTipp": "5 Sek runter oder schwerere Hanteln."
+      "schwererTipp": "5 Sek runter oder schwerere Hanteln.",
+      "alternativen": []
     },
     {
       "id": "row",
@@ -1591,7 +1806,12 @@
       "schwerer": null,
       "leichterTipp": "Leichtere Hantel, Knie auf den Stuhl stützen.",
       "tempo": "4 Sek runter, 1 Sek Pause oben, dann wieder hoch",
-      "schwererTipp": "Schwerere Hantel oder oben 2 Sek halten."
+      "schwererTipp": "Schwerere Hantel oder oben 2 Sek halten.",
+      "alternativen": [
+        "pullup",
+        "assistpu",
+        "negpu"
+      ]
     },
     {
       "id": "rfly",
@@ -1621,7 +1841,8 @@
       "schwerer": null,
       "tempo": "4 Sek runter, 1 Sek Pause oben, dann wieder hoch",
       "leichterTipp": "Ohne Hanteln oder mit Wasserflaschen.",
-      "schwererTipp": "Schwerere Hanteln."
+      "schwererTipp": "Schwerere Hanteln.",
+      "alternativen": []
     },
     {
       "id": "wristcurl",
@@ -1651,7 +1872,8 @@
       "leichter": null,
       "schwerer": null,
       "leichterTipp": "Leichtere Hantel oder ohne Gewicht.",
-      "tempo": "4 Sek runter, 1 Sek Pause oben, dann wieder hoch"
+      "tempo": "4 Sek runter, 1 Sek Pause oben, dann wieder hoch",
+      "alternativen": []
     },
     {
       "id": "revlunge",
@@ -1680,7 +1902,13 @@
       "sicherheit": "Langsam, bis du sicher stehst.",
       "leichter": "squat",
       "schwerer": "bss",
-      "leichterTipp": "Ohne Hantel."
+      "leichterTipp": "Ohne Hantel.",
+      "alternativen": [
+        "boxpistol",
+        "squat",
+        "bssdb",
+        "pistol"
+      ]
     },
     {
       "id": "sldl",
@@ -1710,7 +1938,13 @@
       "sicherheit": "Rücken gerade. Bei Wackeln mit einer Hand an der Wand halten.",
       "leichter": null,
       "schwerer": null,
-      "leichterTipp": "Ohne Hantel oder mit einer Hand an der Wand."
+      "leichterTipp": "Ohne Hantel oder mit einer Hand an der Wand.",
+      "alternativen": [
+        "nordic",
+        "bridge",
+        "thrust1",
+        "thrustb"
+      ]
     },
     {
       "id": "hang",
@@ -1739,7 +1973,8 @@
       "sicherheit": "Stange vorher fest prüfen. Langsam loslassen, nicht abspringen.",
       "leichter": null,
       "schwerer": "assistpu",
-      "leichterTipp": "Füsse leicht auf einem Stuhl lassen."
+      "leichterTipp": "Füsse leicht auf einem Stuhl lassen.",
+      "alternativen": []
     },
     {
       "id": "pullup",
@@ -1769,7 +2004,12 @@
       "sicherheit": "Stange vorher fest prüfen.",
       "leichter": "negpu",
       "schwerer": null,
-      "schwererTipp": "Langsamer runter (4 Sek) oder oben 2 Sek halten."
+      "schwererTipp": "Langsamer runter (4 Sek) oder oben 2 Sek halten.",
+      "alternativen": [
+        "row",
+        "negpu",
+        "assistpu"
+      ]
     },
     {
       "id": "negpu",
@@ -1798,7 +2038,12 @@
       ],
       "sicherheit": "Stuhl an die Seite, damit du beim Runtergehen nicht drauf landest.",
       "leichter": "assistpu",
-      "schwerer": "pullup"
+      "schwerer": "pullup",
+      "alternativen": [
+        "row",
+        "pullup",
+        "assistpu"
+      ]
     },
     {
       "id": "assistpu",
@@ -1826,7 +2071,12 @@
       ],
       "sicherheit": "Stuhl stabil, nicht mit Rollen.",
       "leichter": "hang",
-      "schwerer": "negpu"
+      "schwerer": "negpu",
+      "alternativen": [
+        "row",
+        "pullup",
+        "negpu"
+      ]
     },
     {
       "id": "doorrow",
@@ -1852,7 +2102,8 @@
       "leichter": null,
       "schwerer": null,
       "gesperrt": true,
-      "ersatz": "row"
+      "ersatz": "row",
+      "alternativen": []
     },
     {
       "id": "doorrowlow",
@@ -1878,7 +2129,8 @@
       "leichter": null,
       "schwerer": null,
       "gesperrt": true,
-      "ersatz": "row"
+      "ersatz": "row",
+      "alternativen": []
     },
     {
       "id": "reary",
@@ -1907,7 +2159,8 @@
       "leichter": null,
       "schwerer": "rfly",
       "leichterTipp": "Arme mit gebeugten Ellbogen (wie ein «W»).",
-      "schwererTipp": "Kleine Wasserflaschen in die Hände."
+      "schwererTipp": "Kleine Wasserflaschen in die Hände.",
+      "alternativen": []
     },
     {
       "id": "bss",
@@ -1936,7 +2189,13 @@
       ],
       "sicherheit": "Stuhl an die Wand. Am Anfang neben einer Wand üben, falls du wackelst.",
       "leichter": "revlunge",
-      "schwerer": "bssdb"
+      "schwerer": "bssdb",
+      "alternativen": [
+        "cossack",
+        "bssdb",
+        "squat",
+        "boxpistol"
+      ]
     },
     {
       "id": "bssdb",
@@ -1967,7 +2226,13 @@
       "sicherheit": "Stuhl an die Wand.",
       "leichter": "bss",
       "schwerer": null,
-      "schwererTipp": "Zwei Hanteln oder 3 Sek runter."
+      "schwererTipp": "Zwei Hanteln oder 3 Sek runter.",
+      "alternativen": [
+        "cossack",
+        "bss",
+        "squat",
+        "revlunge"
+      ]
     },
     {
       "id": "pistol",
@@ -1996,7 +2261,13 @@
       "sicherheit": "Am Anfang mit einer Hand an der Wand.",
       "leichter": "boxpistol",
       "schwerer": null,
-      "leichterTipp": "Mit einer Hand an der Wand oder nur halb runter."
+      "leichterTipp": "Mit einer Hand an der Wand oder nur halb runter.",
+      "alternativen": [
+        "goblet",
+        "squat",
+        "revlunge",
+        "bss"
+      ]
     },
     {
       "id": "boxpistol",
@@ -2024,7 +2295,13 @@
       "sicherheit": "Stuhl an die Wand.",
       "leichter": "squat",
       "schwerer": "pistol",
-      "schwererTipp": "Tieferer Sitz (Kissen weg, Treppenstufe)."
+      "schwererTipp": "Tieferer Sitz (Kissen weg, Treppenstufe).",
+      "alternativen": [
+        "revlunge",
+        "squat",
+        "bss",
+        "bssdb"
+      ]
     },
     {
       "id": "bridge",
@@ -2052,7 +2329,12 @@
       "sicherheit": "Kaum Risiko.",
       "leichter": null,
       "schwerer": "thrust1",
-      "leichterTipp": "Weniger hoch, oben nicht halten."
+      "leichterTipp": "Weniger hoch, oben nicht halten.",
+      "alternativen": [
+        "thrustb",
+        "thrust1",
+        "sldl"
+      ]
     },
     {
       "id": "thrust1",
@@ -2079,7 +2361,12 @@
       ],
       "sicherheit": "Kaum Risiko.",
       "leichter": "bridge",
-      "schwerer": "thrustb"
+      "schwerer": "thrustb",
+      "alternativen": [
+        "bridge",
+        "thrustb",
+        "sldl"
+      ]
     },
     {
       "id": "thrustb",
@@ -2108,7 +2395,12 @@
       "sicherheit": "Stuhl an die Wand, damit er nicht wegrutscht.",
       "leichter": "thrust1",
       "schwerer": null,
-      "schwererTipp": "Hantel auf die Hüfte legen."
+      "schwererTipp": "Hantel auf die Hüfte legen.",
+      "alternativen": [
+        "bridge",
+        "thrust1",
+        "sldl"
+      ]
     },
     {
       "id": "nordic",
@@ -2137,7 +2429,10 @@
       "sicherheit": "Hände immer bereit zum Abfangen. Möbel muss schwer genug sein.",
       "leichter": "thrust1",
       "schwerer": null,
-      "leichterTipp": "Nur ein Stück nach vorne und wieder zurück."
+      "leichterTipp": "Nur ein Stück nach vorne und wieder zurück.",
+      "alternativen": [
+        "sldl"
+      ]
     },
     {
       "id": "calf2",
@@ -2166,7 +2461,11 @@
       "leichter": null,
       "schwerer": "calf1",
       "leichterTipp": "Auf dem flachen Boden statt auf der Stufe.",
-      "tempo": "2 Sek hoch, 1 Sek oben, 3 Sek runter"
+      "tempo": "2 Sek hoch, 1 Sek oben, 3 Sek runter",
+      "alternativen": [
+        "calf1db",
+        "calf1"
+      ]
     },
     {
       "id": "calf1",
@@ -2194,7 +2493,11 @@
       "sicherheit": "Gut festhalten.",
       "leichter": "calf2",
       "schwerer": "calf1db",
-      "tempo": "2 Sek hoch, 1 Sek oben, 3 Sek runter"
+      "tempo": "2 Sek hoch, 1 Sek oben, 3 Sek runter",
+      "alternativen": [
+        "calf2",
+        "calf1db"
+      ]
     },
     {
       "id": "calf1db",
@@ -2222,7 +2525,11 @@
       "sicherheit": "Mit der freien Hand gut festhalten.",
       "leichter": "calf1",
       "schwerer": null,
-      "tempo": "2 Sek hoch, 1 Sek oben, 3 Sek runter"
+      "tempo": "2 Sek hoch, 1 Sek oben, 3 Sek runter",
+      "alternativen": [
+        "calf2",
+        "calf1"
+      ]
     },
     {
       "id": "tib",
@@ -2250,7 +2557,8 @@
       "leichter": null,
       "schwerer": null,
       "leichterTipp": "Füsse näher zur Wand.",
-      "schwererTipp": "Füsse weiter weg von der Wand."
+      "schwererTipp": "Füsse weiter weg von der Wand.",
+      "alternativen": []
     },
     {
       "id": "foot",
@@ -2278,7 +2586,8 @@
       "sicherheit": "Kaum Risiko.",
       "leichter": null,
       "schwerer": null,
-      "leichterTipp": "Kleineres Handtuch, langsam."
+      "leichterTipp": "Kleineres Handtuch, langsam.",
+      "alternativen": []
     },
     {
       "id": "cossack",
@@ -2307,7 +2616,13 @@
       "sicherheit": "Nur so tief, wie es ohne Stechen geht.",
       "leichter": "squat",
       "schwerer": null,
-      "leichterTipp": "Nur halb runter, Hände vorne an einem Stuhl."
+      "leichterTipp": "Nur halb runter, Hände vorne an einem Stuhl.",
+      "alternativen": [
+        "bss",
+        "bssdb",
+        "revlunge",
+        "boxpistol"
+      ]
     },
     {
       "id": "sideplank",
@@ -2336,7 +2651,8 @@
       "leichter": null,
       "schwerer": null,
       "leichterTipp": "Unteres Knie am Boden lassen.",
-      "schwererTipp": "Oberes Bein hochheben."
+      "schwererTipp": "Oberes Bein hochheben.",
+      "alternativen": []
     },
     {
       "id": "crunch",
@@ -2363,7 +2679,13 @@
       "sicherheit": "Kaum Risiko.",
       "leichter": null,
       "schwerer": "hollowt",
-      "leichterTipp": "Hände neben dem Körper, nur den Kopf heben."
+      "leichterTipp": "Hände neben dem Körper, nur den Kopf heben.",
+      "alternativen": [
+        "hollowrock",
+        "kneeraise",
+        "legraise",
+        "dragon"
+      ]
     },
     {
       "id": "hollowt",
@@ -2389,7 +2711,10 @@
       ],
       "sicherheit": "Kaum Risiko.",
       "leichter": "crunch",
-      "schwerer": "hollow"
+      "schwerer": "hollow",
+      "alternativen": [
+        "hollow"
+      ]
     },
     {
       "id": "hollow",
@@ -2417,7 +2742,10 @@
       "sicherheit": "Unterer Rücken bleibt am Boden.",
       "leichter": "hollowt",
       "schwerer": "hollowrock",
-      "leichterTipp": "Arme neben den Körper, Beine höher."
+      "leichterTipp": "Arme neben den Körper, Beine höher.",
+      "alternativen": [
+        "hollowt"
+      ]
     },
     {
       "id": "hollowrock",
@@ -2444,7 +2772,13 @@
       ],
       "sicherheit": "Kaum Risiko.",
       "leichter": "hollow",
-      "schwerer": null
+      "schwerer": null,
+      "alternativen": [
+        "kneeraise",
+        "legraise",
+        "dragon",
+        "hangknee"
+      ]
     },
     {
       "id": "kneeraise",
@@ -2472,7 +2806,13 @@
       "sicherheit": "Kaum Risiko.",
       "leichter": null,
       "schwerer": "legraise",
-      "leichterTipp": "Nur ein Knie nach dem anderen."
+      "leichterTipp": "Nur ein Knie nach dem anderen.",
+      "alternativen": [
+        "hollowrock",
+        "legraise",
+        "dragon",
+        "hangknee"
+      ]
     },
     {
       "id": "legraise",
@@ -2499,7 +2839,13 @@
       ],
       "sicherheit": "Unterer Rücken bleibt am Boden.",
       "leichter": "kneeraise",
-      "schwerer": "dragon"
+      "schwerer": "dragon",
+      "alternativen": [
+        "hollowrock",
+        "kneeraise",
+        "hangknee",
+        "crunch"
+      ]
     },
     {
       "id": "dragon",
@@ -2529,7 +2875,13 @@
       "sicherheit": "Erst, wenn Beinheben 15 Mal sauber geht. Nie auf dem Nacken abstützen.",
       "leichter": "legraise",
       "schwerer": null,
-      "leichterTipp": "Knie angezogen lassen."
+      "leichterTipp": "Knie angezogen lassen.",
+      "alternativen": [
+        "hollowrock",
+        "kneeraise",
+        "hangknee",
+        "legraise"
+      ]
     },
     {
       "id": "twist",
@@ -2559,7 +2911,8 @@
       "leichter": "crunch",
       "schwerer": null,
       "leichterTipp": "Ohne Ball, Füsse am Boden.",
-      "schwererTipp": "Füsse vom Boden heben."
+      "schwererTipp": "Füsse vom Boden heben.",
+      "alternativen": []
     },
     {
       "id": "jumpsq",
@@ -2589,7 +2942,10 @@
       "leichter": "squat",
       "schwerer": "broadjump",
       "ohneFigur": true,
-      "figurErsatz": "squat"
+      "figurErsatz": "squat",
+      "alternativen": [
+        "broadjump"
+      ]
     },
     {
       "id": "broadjump",
@@ -2619,7 +2975,10 @@
       "leichter": "jumpsq",
       "schwerer": null,
       "ohneFigur": true,
-      "figurErsatz": "squat"
+      "figurErsatz": "squat",
+      "alternativen": [
+        "jumpsq"
+      ]
     },
     {
       "id": "dbpress",
@@ -2650,7 +3009,13 @@
       "schwerer": "pikeel",
       "ohneFigur": true,
       "figurErsatz": "ohe",
-      "tempo": "3 Sek runter, dann kräftig hoch"
+      "tempo": "3 Sek runter, dann kräftig hoch",
+      "alternativen": [
+        "pike",
+        "pikeel",
+        "pppu",
+        "incpu"
+      ]
     },
     {
       "id": "goblet",
@@ -2680,7 +3045,13 @@
       "leichter": "squat",
       "schwerer": "bssdb",
       "ohneFigur": true,
-      "figurErsatz": "squat"
+      "figurErsatz": "squat",
+      "alternativen": [
+        "pistol",
+        "revlunge",
+        "boxpistol",
+        "bss"
+      ]
     },
     {
       "id": "hangknee",
@@ -2710,7 +3081,13 @@
       "leichter": "kneeraise",
       "schwerer": null,
       "ohneFigur": true,
-      "figurErsatz": "hang"
+      "figurErsatz": "hang",
+      "alternativen": [
+        "hollowrock",
+        "legraise",
+        "dragon",
+        "kneeraise"
+      ]
     }
   ]
 }

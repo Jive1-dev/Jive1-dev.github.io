@@ -613,7 +613,8 @@ function renderStep(steps, log, k){
     else toast(u.leichterTipp || "Weniger Wiederholungen oder langsamer, dafür sauber.");
   };
   $("#swap").onclick = () => {
-    const alts = Object.values(EX).filter(x => x.gruppe === u.gruppe && x.id !== s.id && !x.gesperrt).slice(0, 12);
+    const best = (u.alternativen || []).map(id => EX[id]).filter(Boolean);   // B: passende Alternativen zuerst (gleiche Muskeln, Einheit, Material)
+    const alts = [...best, ...Object.values(EX).filter(x => x.gruppe === u.gruppe && x.id !== s.id && !x.gesperrt && !best.includes(x))].slice(0, 8);
     $("#panel").innerHTML = `<div class="card"><div class="kicker">Statt ${esc(u.name)}</div><div class="list">${alts.map(x => `<button class="btn sm wide" data-alt="${x.id}" style="justify-content:flex-start">${esc(x.name)}</button>`).join("")}</div></div>`;
     $$("[data-alt]").forEach(b => b.onclick = () => { log.swaps[`${s.bi}.${s.ui}`] = b.dataset.alt; save(); clearInterval(clockIv); viewAgoge(); mountFigs($("#view")); });
   };

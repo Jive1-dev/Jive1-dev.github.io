@@ -115,3 +115,6 @@ Einbetten: `https://www.youtube-nocookie.com/embed/{id}`, erst nach Tippen laden
 Erzeugt von `tools/gen-motivation.py`. `zitate[] {text, wer, quelle, hinweis?, bezug}` (6, Stellen geprüft) · `saetze{start, pause, ende, rekord, leichtereStufe, verpasst, deload, testwoche}[]` ·
 `raenge[] {ab, name, text}` (Rekrut 0 → Agoge 4 → Hoplit 13 → Spartiat 26 → Lochagos 39 → Polemarch 52; Woche zählt ab 4/6 Tagen) · `bibel[] {stelle, sinngemaess}` (10).
 Regel: max. 2 Sätze pro Training, nie im Pausen-Knopf.
+
+### `alternativen` (seit 3.11., Claude B)
+Liste von Übungs-IDs (0–4), die man statt dieser Übung machen kann: gleiche Art (Kraft / gleiche Skill-Leiter / Beweglichkeit), gleiche Einheit (Wdh oder Sek), gleicher Hauptmuskel oder mindestens zwei gemeinsame Muskeln, nur vorhandenes Material, keine gesperrten Übungen, Sprünge nur gegen Sprünge. Wird im Generator berechnet (`tools/gen-exercises.js`), nicht von Hand gepflegt. Die App zeigt sie beim Tauschen zuerst.

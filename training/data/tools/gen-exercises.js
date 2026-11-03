@@ -703,6 +703,22 @@ x("hangknee", "Knieheben hängend", "bauch", ["bauch", "hueftbeuger", "unterarm"
   { ohneFigur: true, figurErsatz: "hang" });
 
 /* ---------- Ausgabe ---------- */
+// Alternativen zum Tauschen (B, Nacht 3): bis 4 ähnliche Übungen. Gleiche Art (Kraft / Skill-Leiter / Beweglichkeit),
+// gleiche Einheit (Wdh oder Sek, damit das Ziel passt), nur vorhandenes Material, keine gesperrten Übungen.
+{ const ART = g => ["aufwaermen", "dehnen", "haltung"].includes(g) ? "mobil" : ["handstand", "planche", "press", "lsit"].includes(g) ? "skill:" + g : "kraft";
+  const sek = e => String(e.einheit).startsWith("sek");
+  const ok = e => !e.gesperrt && !(e.material || []).includes("tuer");
+  L.forEach(a => {
+    if (!ok(a)) { a.alternativen = []; return; }
+    const ma = new Set(a.muskeln), chain = new Set([a.leichter, a.schwerer].filter(Boolean));
+    a.alternativen = L.filter(b => b.id !== a.id && ok(b) && ART(b.gruppe) === ART(a.gruppe) && sek(b) === sek(a))
+      .map(b => { const mb = new Set(b.muskeln), inter = [...ma].filter(m => mb.has(m)).length, uni = new Set([...ma, ...mb]).size;
+        const sc = (b.muskeln[0] === a.muskeln[0] ? 3 : 0) + (b.gruppe === a.gruppe ? 1.5 : 0) + 2 * inter / uni - (chain.has(b.id) ? 0.5 : 0);
+        return { id: b.id, sc, inter }; })
+      .filter(x => { const b = L.find(e => e.id === x.id), jump = e => /sprung/i.test(e.name);
+        return x.inter > 0 && x.sc >= 2 && jump(a) === jump(b) && (b.muskeln[0] === a.muskeln[0] || (b.gruppe === a.gruppe && x.inter >= 2)); })
+      .sort((x, y) => y.sc - x.sc).slice(0, 4).map(x => x.id);
+  }); }
 const out = { _meta: meta, uebungen: L };
 fs.writeFileSync(process.argv[2], JSON.stringify(out, null, 2) + "\n");
 console.log("geschrieben:", L.length, "Übungen");
