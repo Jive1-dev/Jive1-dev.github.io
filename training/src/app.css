@@ -484,3 +484,32 @@ details.photo-more figure.photo{margin-top:10px}
 .dayrow.pl-today{border-left:3px solid var(--crimson);padding-left:8px}
 .pl-badge{font:600 10px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--crimson);border:1px solid currentColor;border-radius:999px;padding:1px 6px;margin-left:4px;vertical-align:2px}
 .pl-day .pl-pad{padding:4px 0 12px}
+
+/* ---------- Heute (Nacht 3): Trainings-Übersicht, Fortschritt, weniger Text ---------- */
+.ov-list{display:grid;gap:2px;margin-top:4px}
+.ov-h{font:600 11px/1 var(--display);letter-spacing:.16em;text-transform:uppercase;color:var(--bone-3);margin:12px 0 4px}
+.ov-row{display:grid;grid-template-columns:60px 1fr auto;gap:12px;align-items:center;width:100%;text-align:left;padding:6px 8px 6px 4px;border:1px solid transparent;border-radius:12px;background:none;color:inherit;transition:background .2s var(--ease),border-color .2s}
+.ov-row:active{transform:scale(.99)}
+.ov-row:hover,.ov-row.sel{background:color-mix(in srgb,var(--raise) 70%,transparent);border-color:var(--edge)}
+.ov-row .fig-thumb,.ov-row canvas.fig3d,.ov-alt .fig-thumb,.ov-alt canvas.fig3d{width:60px;max-height:48px;border-radius:8px;background:color-mix(in srgb,var(--bg) 50%,transparent)}
+.ov-n{display:grid;gap:2px;min-width:0}
+.ov-n b{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov-n small{font-size:12.5px;color:var(--bone-3)}
+.ov-go{color:var(--bone-3);font-size:22px;line-height:1}
+.ov-row.changed .ov-n small{color:var(--bronze)}
+.ov-row.off{opacity:.45}.ov-row.off .ov-n b{text-decoration:line-through}
+.ov-sheet{margin-top:12px;padding:14px;border-radius:14px;border:1px solid color-mix(in srgb,var(--bronze) 35%,transparent);background:linear-gradient(180deg,var(--card-a),var(--card-b));display:grid;gap:10px;animation:rise .35s var(--ease) both}
+.ov-sheet h3{font-size:20px}
+.ov-ctl{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--edge)}
+.ov-step{display:flex;align-items:center;gap:10px}.ov-step b{font:700 22px var(--display);min-width:56px;text-align:center}
+.ov-step .chip{min-width:44px;min-height:40px;font-size:20px;padding:0}
+.ov-alts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ov-alt{display:grid;grid-template-columns:60px 1fr;gap:8px;align-items:center;text-align:left;padding:6px;border-radius:12px;border:1px solid var(--edge);background:color-mix(in srgb,var(--raise) 50%,transparent);color:inherit;font-size:13px}
+.prog-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:10px}
+.prog-big{display:block;font:700 46px/1 var(--display);letter-spacing:.01em;background:linear-gradient(180deg,var(--bone),color-mix(in srgb,var(--bone) 60%,var(--bronze)));-webkit-background-clip:text;background-clip:text;color:transparent}
+.prog-lbl{display:block;font:600 11px var(--display);letter-spacing:.16em;text-transform:uppercase;color:var(--bone-3);margin-top:4px}
+.prog-wk{text-align:right}.prog-wk b{font:700 26px/1 var(--display)}.prog-wk small{font-size:.6em;color:var(--bone-3)}
+details.pre-q{margin-top:12px;border-top:1px solid var(--edge);padding-top:8px}
+details.pre-q summary{cursor:pointer;font-size:14px;color:var(--bone-2);min-height:36px;display:flex;align-items:center}
+details.pre-q .chips{margin-top:6px}
+@media (min-width:1024px){.stack > .ov{grid-column:1/-1}.ov-list{grid-template-columns:1fr 1fr;column-gap:16px}.ov-h{grid-column:1/-1}.ov-alts{grid-template-columns:repeat(3,minmax(0,1fr))}}

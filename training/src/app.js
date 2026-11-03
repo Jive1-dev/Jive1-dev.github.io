@@ -121,11 +121,14 @@ function buildSteps(day, log){
     if (tr && bi > tr.bi && b.block === "paar") rounds = Math.min(rounds, 2);
     if (tr && bi === tr.bi && !once) rounds = Math.min(rounds, Math.max(tr.r, 2));
     for (let r = 1; r <= rounds; r++) b.uebungen.forEach((u, ui) => {
+      const ov = (log.ov || {})[`${bi}.${ui}`];   // Trainings-Übersicht (Nacht 3): Sätze/Ziel pro Übung, weglassen
+      if (ov && (ov.skip || (ov.sets && r > ov.sets))) return;
       const adj = (S.yearAdj || {})[u.id], ca = typeof COACH !== "undefined" ? COACH.adj(u.id) : null; // ca: Anpassung vom Claude-Coach (B)
       const id = log.swaps[`${bi}.${ui}`] || ca?.stufe || adj?.stufe || u.id;
       const yf = (adj?.f || 1) * (ca?.f || 1);
       let ziel = u.ziel ? Math.round(u.ziel * yf) : u.ziel; if (log.light && ziel) ziel = Math.max(1, Math.round(ziel * .8));
-      const bereich = u.bereich ? u.bereich.map(x => Math.round(x * yf)) : u.bereich;
+      let bereich = u.bereich ? u.bereich.map(x => Math.round(x * yf)) : u.bereich;
+      if (ov && ov.ziel){ ziel = ov.ziel; bereich = null; }
       steps.push({ key:`${bi}.${ui}.${r}`, bi, ui, r, rounds, block:b.block, title:b.titel, id, ziel, bereich, einheit:u.einheit || EX[id]?.einheit || "wdh",
         tempo:u.tempo || null, kg:u.hantelKg || null, text:u.text || null, test: b.block === "test",
         pause: once ? (b.block === "test" ? 90 : 10) : (b.pauseSek || 35) });
@@ -286,6 +289,59 @@ function weekShields(k){
 }
 // Wochenschild: wie viele der 6 Trainingstage diese Woche erledigt sind (Idee B: kein Streak, der bricht)
 function weekCount(k){ const mon = addDays(k, -dayIdx(k)); return DAYS.slice(0, 6).filter((_, i) => S.logs[addDays(mon, i)]?.done).length; }
+// ---------- Trainings-Übersicht vor dem Start (Nacht 3, Wunsch Benaja) ----------
+// Alle Übungen des Tages; antippen → Vorschau, Sätze und Ziel anpassen, heute weglassen, tauschen (ähnliche Übungen mit Figur).
+let OV_OPEN = null;
+function overviewRows(day, log){
+  const by = new Map();
+  buildSteps(day, log).forEach(s => { const key = `${s.bi}.${s.ui}`; const g = by.get(key) || { key, s, n: 0 }; g.n++; by.set(key, g); });
+  (day.plan || []).forEach((b, bi) => b.uebungen.forEach((u, ui) => { const key = `${bi}.${ui}`;
+    if (!by.has(key) && (log.ov || {})[key]?.skip) by.set(key, { key, n: 0, skip: true, s: { bi, ui, id: log.swaps[key] || u.id, ziel: u.ziel, bereich: u.bereich, einheit: u.einheit || EX[u.id]?.einheit || "wdh" } }); }));
+  return [...by.values()].sort((a, b) => a.s.bi - b.s.bi || a.s.ui - b.s.ui);
+}
+const goalText = s => `${s.bereich ? `${s.bereich[0]}–${s.bereich[1]}` : (s.ziel ?? "")}${isSec(s.einheit) ? " Sek" : ""}`;
+function overviewCard(day, log, k){
+  const rows = overviewRows(day, log); let lastBi = -1;
+  return `<div class="card ov" id="ov"><div class="split"><span class="kicker" style="margin:0">Heute im Training</span><span class="small">${rows.filter(r => !r.skip).length} Übungen</span></div>
+    <p class="small" style="margin:4px 0 6px">Antippen: Vorschau, Sätze anpassen oder tauschen.</p>
+    <div class="ov-list">${rows.map(r => { const s = r.s, b = day.plan[s.bi]; let head = "";
+      if (s.bi !== lastBi){ lastBi = s.bi; head = `<div class="ov-h">${esc(b.block === "paar" ? b.titel.replace("Paar", "Supersatz") : b.titel)}</div>`; }
+      const h = history(s.id, k), o = (log.ov || {})[r.key] || {}, ch = o.sets || o.ziel || log.swaps[r.key];
+      return head + `<button class="ov-row${r.skip ? " off" : ""}${ch ? " changed" : ""}" data-ov="${r.key}">${figSVG(s.id, EX[s.id]?.muskeln || [], "fig-thumb")}<span class="ov-n"><b>${esc(exName(s.id))}</b><small>${r.skip ? "heute weggelassen" : `${r.n} × ${goalText(s)}`}${h.last != null && !r.skip ? ` · letztes Mal ${h.last}` : ""}</small></span><span class="ov-go" aria-hidden="true">›</span></button>`; }).join("")}</div>
+    <div id="ovSheet"></div></div>`;
+}
+function bindOverview(day, log, k){
+  $$("[data-ov]").forEach(btn => btn.onclick = () => { OV_OPEN = btn.dataset.ov; openOv(OV_OPEN, true); });
+  if (OV_OPEN && $(`[data-ov="${OV_OPEN}"]`)) openOv(OV_OPEN, false);
+  function refresh(){ const y = scrollY; viewHeute(); mountFigs($("#view")); scrollTo(0, y); }
+  function openOv(key, scroll){
+    const [bi, ui] = key.split(".").map(Number), b = day.plan[bi], u = b.uebungen[ui];
+    const ov = (log.ov ||= {}), o = ov[key] || {}, id = log.swaps[key] || u.id, ex = EX[id] || {};
+    const r = overviewRows(day, log).find(x => x.key === key), unit = ex.einheit || r?.s.einheit || "wdh";
+    const maxSets = (b.block === "aufwaermen" || b.block === "abschluss") ? 1 : Math.max(1, b.runden || 1);
+    const sets = o.sets || r?.n || maxSets, ziel = o.ziel || r?.s.ziel || (r?.s.bereich ? r.s.bereich[1] : 10);
+    const best = (ex.alternativen || EX[u.id]?.alternativen || []).map(x => EX[x]).filter(Boolean);
+    let alts = [...best, ...Object.values(EX).filter(x => x.gruppe === ex.gruppe && !x.gesperrt && !best.includes(x))].filter(x => x.id !== id).slice(0, 6);
+    if (u.id !== id && EX[u.id]) alts = [EX[u.id], ...alts.filter(x => x.id !== u.id)];
+    $$(".ov-row").forEach(x => x.classList.toggle("sel", x.dataset.ov === key));
+    $("#ovSheet").innerHTML = `<div class="ov-sheet"><div class="split"><h3>${esc(ex.name || id)}</h3><button class="icon-btn" id="ovX" aria-label="Schliessen">✕</button></div>
+      ${figSVG(id, ex.muskeln || [])}
+      <div class="ov-ctl"><span>Sätze</span><div class="ov-step"><button class="chip" data-os="-1" aria-label="weniger Sätze">−</button><b class="num">${sets}</b><button class="chip" data-os="1" aria-label="mehr Sätze"${sets >= maxSets ? " disabled" : ""}>+</button></div></div>
+      <div class="ov-ctl"><span>Ziel pro Satz</span><div class="ov-step"><button class="chip" data-oz="-1" aria-label="weniger">−</button><b class="num">${ziel}${isSec(unit) ? " Sek" : ""}</b><button class="chip" data-oz="1" aria-label="mehr">+</button></div></div>
+      <div class="row wrap" style="margin-top:10px"><button class="btn sm" id="ovSkip">${o.skip ? "Wieder aufnehmen" : "Heute weglassen"}</button>${o.sets || o.ziel || o.skip || log.swaps[key] ? `<button class="btn sm ghost" id="ovReset">Wie geplant</button>` : ""}</div>
+      ${alts.length ? `<div class="kicker" style="margin-top:14px">Tauschen gegen</div><div class="ov-alts">${alts.map(x => `<button class="ov-alt" data-oalt="${x.id}">${figSVG(x.id, x.muskeln || [], "fig-thumb")}<span>${x.id === u.id ? "Original: " : ""}${esc(x.name)}</span></button>`).join("")}</div>` : ""}
+    </div>`;
+    mountFigs($("#ovSheet")); if (scroll) $("#ovSheet").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const put = patch => { const n = { ...o, ...patch }; Object.keys(n).forEach(x => n[x] == null && delete n[x]); if (Object.keys(n).length) ov[key] = n; else delete ov[key]; save(); refresh(); };
+    $("#ovX").onclick = () => { OV_OPEN = null; $("#ovSheet").innerHTML = ""; $$(".ov-row").forEach(x => x.classList.remove("sel")); };
+    $$("[data-os]").forEach(x => x.onclick = () => put({ sets: Math.max(1, Math.min(maxSets, sets + Number(x.dataset.os))) }));
+    $$("[data-oz]").forEach(x => x.onclick = () => put({ ziel: Math.max(1, ziel + Number(x.dataset.oz) * (isSec(unit) ? 5 : 1)) }));
+    $("#ovSkip").onclick = () => put({ skip: o.skip ? null : true });
+    if ($("#ovReset")) $("#ovReset").onclick = () => { delete ov[key]; delete log.swaps[key]; save(); refresh(); };
+    $$("[data-oalt]").forEach(x => x.onclick = () => { const a = x.dataset.oalt; if (a === u.id) delete log.swaps[key]; else log.swaps[key] = a; delete (log.ov || {})[key]; save(); toast(`Getauscht: ${EX[a].name}`); refresh(); });
+  }
+}
+
 function viewHeute(){
   const k = today(), { w, week, day, pre } = progDay(k), log = logOf(k), ph = phaseOf(Math.max(1, w));
   const q = dayPick(quotes());
@@ -313,27 +369,20 @@ function viewHeute(){
         <div class="split"><span class="eyebrow">${longDate(k)}</span><span class="eyebrow">${pre ? "Start" : `Woche ${w} · Phase ${ROMAN[PROG._meta.phasen.indexOf(ph)] || ""}`}</span></div>
         <h1 class="title-xl" style="margin-top:8px">${esc(day.name)}</h1>
         <div class="chips" style="margin-top:8px">${(day.muskeln || []).slice(0, 4).map(m => `<span class="mchip">${esc(muscleShort(m))}</span>`).join("")}</div>
-        ${week.typ !== "normal" ? `<p class="hint" style="margin-top:10px">${esc(week.typ === "deload" ? (line("deload") || "Leichte Woche: weniger Runden. Sehnen und Gelenke holen auf.") : (line("testwoche") || "Testwoche: Zeig, was du gewonnen hast."))}</p>` : ""}
-        ${missed ? `<p class="hint" style="margin-top:10px">${esc(line("verpasst"))}</p>` : ""}
-        ${coachTip && !log.done ? `<p class="hint coach-hint" style="margin-top:10px">Claude-Coach: ${esc(coachTip)}</p>` : ""}
-        ${log.done ? "" : `<div style="margin-top:14px">${goBtn}</div>`}
+        ${(() => { const h = missed ? line("verpasst") : coachTip && !log.done ? `Claude-Coach: ${coachTip}` : week.typ !== "normal" ? (week.typ === "deload" ? (line("deload") || "Leichte Woche: weniger Runden. Sehnen und Gelenke holen auf.") : (line("testwoche") || "Testwoche: Zeig, was du gewonnen hast.")) : ""; return h ? `<p class="hint${coachTip && !missed ? " coach-hint" : ""}" style="margin-top:10px">${esc(h)}</p>` : ""; })()}
+                ${log.done ? "" : `<div style="margin-top:14px">${goBtn}</div>`}
       </div>
       ${log.done ? `<div class="card"><div class="kicker">Erledigt</div><h3>Agoge bestanden ✓</h3><p class="muted" style="margin-top:6px">${esc(line("ende"))}</p>
         <div class="row" style="margin-top:12px"><a class="btn sm" href="#bericht">Kampfbericht</a><button class="btn sm" id="again">Nochmal öffnen</button></div></div>` : `
-      <div class="card"><div class="kicker">Schlag deine Zahlen</div><div class="list">
-        ${goals.map(s => { const h = history(s.id, k); const zielT = s.bereich ? `${s.bereich[0]}–${s.bereich[1]}` : s.ziel;
-          const sv = (PROG._meta?.startwerte || {})[s.id];   // Woche 1: Startwert vom Test als Vergleich, solange es kein «letztes Mal» gibt
-          return `<div class="line"><span>${esc(exName(s.id))}</span><b class="num">${h.last != null ? `${h.last} → ${Math.max(h.last + 1, s.ziel || 0)}` : typeof sv === "number" ? `<span class="tbd">Start ${sv} ·</span> ${zielT}` : zielT} ${isSec(s.einheit) ? "Sek" : ""}</b></div>`; }).join("")}
-      </div></div>
-      <div class="card"><div class="kicker">${esc(preQ?.frage || "Was hast du heute schon gemacht?")}</div>
-        <div class="chips" id="pre">${(preQ?.antworten || []).map(a => `<button class="chip" data-pre="${esc(a.text)}" aria-pressed="${a.text === "Nichts" ? !log.pre.length : log.pre.includes(a.text)}">${esc(a.text)}</button>`).join("")}</div>
-        <p class="small" style="margin-top:8px">Bereits Trainiertes bekommt 1 Runde weniger, nie ganz gestrichen.</p></div>
+      ${overviewCard(day, log, k)}
       <div class="card adjust"><div class="kicker">Wie viel heute?</div><div class="seg" role="group" aria-label="Umfang heute">
         <button class="seg-b" id="normal" aria-pressed="${!log.light && !log.short}">Normal<small>alles</small></button>
         <button class="seg-b" id="light" aria-pressed="${!!log.light}">Leichter<small>Muskelkater</small></button>
         <button class="seg-b" id="short" aria-pressed="${!!log.short}">25 Min<small>wenig Zeit</small></button>
-      </div><p class="small" style="margin-top:8px">${log.light && log.short ? "Leichter und kurz: weniger Runden, nur das Wichtigste." : log.light ? "Leichter: weniger Runden, gleiche Übungen." : log.short ? "Kurz: nur die wichtigsten Supersätze, kein Abschluss." : "Mitten im Training kannst du jederzeit kürzen (⋯ Mehr)."}</p></div>
-      <details class="card" ${innerWidth >= 1024 ? "open" : ""}><summary class="kicker" style="margin:0;cursor:pointer">Ablauf · ${mins} Min</summary><div class="timeline" style="margin-top:10px">${timeline(day, log)}</div></details>      </div>`}`;
+      </div><p class="small" style="margin-top:8px">${log.light && log.short ? "Leichter und kurz: weniger Runden, nur das Wichtigste." : log.light ? "Leichter: weniger Runden, gleiche Übungen." : log.short ? "Kurz: nur die wichtigsten Supersätze, kein Abschluss." : "Mitten im Training kannst du jederzeit kürzen (⋯ Mehr)."}</p><details class="pre-q"><summary>${esc(preQ?.frage || "Was hast du heute schon gemacht?")}${log.pre.length ? ` · ${esc(log.pre.join(", "))}` : ""}</summary>
+        <div class="chips" id="pre">${(preQ?.antworten || []).map(a => `<button class="chip" data-pre="${esc(a.text)}" aria-pressed="${a.text === "Nichts" ? !log.pre.length : log.pre.includes(a.text)}">${esc(a.text)}</button>`).join("")}</div>
+        <p class="small" style="margin-top:8px">Bereits Trainiertes bekommt 1 Runde weniger, nie ganz gestrichen.</p></details></div>
+            </div>`}`;
   }
   const yearDone = w > 52 ? `<div class="card hero"><div class="kicker">${S.year ? `Jahr ${S.year}` : "52 Wochen"} geschafft</div><h2>Ein Jahr Disziplin</h2><p class="muted" style="margin-top:6px">Schau unter «Körper», was aus deinen Startwerten geworden ist. Ein neues Jahr beginnt wieder mit Phase I, auf deinem neuen Niveau.</p>
       <button class="btn wide" id="newYear" style="margin-top:10px">Neues Jahr ab nächstem Montag</button></div>` : "";
@@ -349,7 +398,7 @@ function viewHeute(){
     ${welcome}
     ${yearDone}
     ${main}
-    <div class="card"><div class="split"><span class="kicker" style="margin:0">Wochenschild</span><span class="small num">${weekCount(k)} von 6 diese Woche</span></div>
+    <div class="card prog-card"><div class="prog-top"><div><b class="num prog-big">${Object.values(S.logs).filter(l => l.done).length}</b><span class="prog-lbl">Tage trainiert</span></div><div class="prog-wk"><b class="num">${weekCount(k)}<small>/6</small></b><span class="prog-lbl">diese Woche</span></div></div>
       <div style="margin-top:10px">${weekShields(k)}</div>
       <p class="small" style="margin-top:8px">Rang: <b>${esc(r.name)}</b>${r.text ? ` · ${esc(r.text)}` : ""}${r.next ? ` · «${esc(r.next.name)}» nach ${r.next.ab ?? r.next.wochen} Wochen mit mindestens 4 Trainings` : ""}</p></div>
     ${q ? `<div class="quote"><p>«${esc(q.text)}»</p><small>${esc([q.wer, q.quelle || q.stelle].filter(Boolean).join(" · "))}</small></div>` : ""}
@@ -376,9 +425,10 @@ function viewHeute(){
     S.year = (S.year || 1) + 1; S.yearAdj = f; S.settings.start = addDays(k, 7 - dayIdx(k)); save();
     toast(`Jahr ${S.year} startet ${longDate(S.settings.start)}, mit deinen Werten als Start.`); route();
   });
-  $("#go")?.addEventListener("click", () => { log.started ||= Date.now(); save(); location.hash = "#agoge"; });
+  $("#go")?.addEventListener("click", () => { OV_OPEN = null; log.started ||= Date.now(); save(); location.hash = "#agoge"; });
   $("#again")?.addEventListener("click", () => { log.pos = 0; save(); location.hash = "#agoge"; });
   $("#light")?.addEventListener("click", () => { log.light = !log.light; save(); viewHeute(); mountFigs($("#view")); });
+  if ($("#ov")) bindOverview(progDay(k).day, logOf(k), k);
   $("#normal")?.addEventListener("click", () => { log.light = false; log.short = false; save(); viewHeute(); mountFigs($("#view")); });
   $("#short")?.addEventListener("click", () => { log.short = !log.short; save(); viewHeute(); mountFigs($("#view")); });
   $$("#pre .chip").forEach(b => b.addEventListener("click", () => {
