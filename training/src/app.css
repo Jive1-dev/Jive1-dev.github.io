@@ -513,3 +513,15 @@ details.pre-q{margin-top:12px;border-top:1px solid var(--edge);padding-top:8px}
 details.pre-q summary{cursor:pointer;font-size:14px;color:var(--bone-2);min-height:36px;display:flex;align-items:center}
 details.pre-q .chips{margin-top:6px}
 @media (min-width:1024px){.stack > .ov{grid-column:1/-1}.ov-list{grid-template-columns:1fr 1fr;column-gap:16px}.ov-h{grid-column:1/-1}.ov-alts{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* Essen (Nacht 3): Kalorienziel gross, Booster */
+.kcal-big{display:flex;align-items:baseline;gap:8px;margin-top:4px}
+.kcal-big b{font:700 clamp(52px,15vw,68px)/1 var(--display);background:linear-gradient(180deg,var(--bone) 50%,color-mix(in srgb,var(--bone) 60%,var(--bronze)));-webkit-background-clip:text;background-clip:text;color:transparent}
+.kcal-big span{font:600 18px var(--display);letter-spacing:.1em;color:var(--bone-2);text-transform:uppercase}
+.kcal-sub{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px;font-size:14px;color:var(--bone-2)}.kcal-sub b{color:var(--bone)}
+.boost{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.boost-b{display:grid;gap:3px;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--edge);background:linear-gradient(180deg,var(--card-a),var(--card-b));color:inherit;box-shadow:var(--sh);transition:transform .12s var(--ease)}
+.boost-b:active{transform:scale(.97)}
+.boost-b b{font-size:14.5px}.boost-b small{font-size:11.5px;color:var(--bone-3);line-height:1.3}
+.boost-b span{font:700 15px var(--display);color:var(--bronze);margin-top:2px}
+@media (min-width:1024px){.boost{grid-template-columns:repeat(4,minmax(0,1fr))}.stack > .kcal-hero{grid-column:1/-1}}

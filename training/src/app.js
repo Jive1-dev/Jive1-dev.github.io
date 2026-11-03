@@ -890,13 +890,37 @@ function targets(){
   const r50 = v => Math.round(v / 50) * 50, r5 = v => Math.round(v / 5) * 5;
   return { kcal: r50((10 * kg + 6.25 * cm - 5 * alter + 5) * R.aktivitaet + R.plusZunehmen), protein: r5(R.proteinProKg * kg), kg };
 }
+// Kalorien-Booster (Nacht 3, Benaja: «zum Zunehmen zählen Kalorien»). Richtwerte, gerundet.
+const BOOST = [
+  { n: "Shake", wie: "4 dl Vollmilch, 1 Banane, 4 EL Haferflocken, 2 EL Erdnussbutter", kcal: 800 },
+  { n: "Erdnussbutter-Brot", wie: "2 Scheiben Vollkornbrot, 2 EL Erdnussbutter", kcal: 450 },
+  { n: "Handvoll Nüsse", wie: "etwa 50 g gemischte Nüsse", kcal: 300 },
+  { n: "Käsebrot", wie: "2 Scheiben Brot, 2 Scheiben Gruyère", kcal: 400 },
+  { n: "Glas Vollmilch", wie: "3 dl", kcal: 200 },
+  { n: "Datteln", wie: "5 Stück", kcal: 120 },
+  { n: "Löffel Olivenöl", wie: "1 EL über Pasta, Reis, Kartoffeln", kcal: 120 },
+  { n: "Griechischer Joghurt mit Honig", wie: "200 g, 1 EL Honig", kcal: 300 }
+];
+const BOOST_BUY = [
+  { was: "Erdnussbutter", menge: "1 Glas extra" }, { was: "Gemischte Nüsse", menge: "400 g" }, { was: "Datteln oder Rosinen", menge: "250 g" },
+  { was: "Olivenöl", menge: "1 Flasche (hält lange)" }, { was: "Gruyère oder Emmentaler", menge: "250 g" }, { was: "Griechischer Joghurt", menge: "2 × 500 g" }
+];
 function viewEssen(){
   const k = today(), f = (S.food[k] ||= {checks:[], koffein:[]}), t = targets(), N = D.nut;
   const mg = f.koffein.reduce((a, x) => a + x, 0), max = Math.round((N.koffein.maxMgProKg || 3) * t.kg / 5) * 5, late = new Date().getHours() >= (N.koffein.nachUhr || 14);
   $("#view").innerHTML = `<div class="stack">
-    <div><div class="eyebrow">Ohne Kalorienzählen</div><h1 class="title-xl" style="margin-top:6px">Essen</h1></div>
-    <div class="tiles"><div class="tile"><b class="num">${t.protein}<small>g</small></b><span>Protein pro Tag</span></div><div class="tile"><b class="num">≈${t.kcal}</b><span>kcal, nur Richtwert</span></div></div>
-    <p class="small">Aus ${t.kg} kg, ${S.profile.cm} cm, ${S.profile.alter} Jahren. Ziel: +0.25 bis +0.5 kg pro Woche.</p>
+    <div><div class="eyebrow">Zum Zunehmen zählen Kalorien</div><h1 class="title-xl" style="margin-top:6px">Essen</h1></div>
+    ${(() => { const extra = (f.boost || []).reduce((a, x) => a + x, 0), trainDay = !!progDay(k).day.plan && dayIdx(k) !== 6;
+      return `<div class="card hero kcal-hero"><div class="kicker">Dein Ziel pro Tag</div>
+      <div class="kcal-big"><b class="num">≈${t.kcal}</b><span>kcal</span></div>
+      <div class="kcal-sub"><span><b class="num">${t.protein} g</b> Protein</span><span>+0.25 bis +0.5 kg pro Woche</span></div>
+      ${trainDay ? `<p class="hint" style="margin-top:10px">Heute ist Training: iss eher etwas mehr, zum Beispiel ein Booster extra.</p>` : ""}
+      ${extra ? `<p class="small" style="margin-top:8px">Booster heute: <b class="num">+${extra} kcal</b></p>` : ""}
+      <p class="small" style="margin-top:6px">Aus ${t.kg} kg, ${S.profile.cm} cm, ${S.profile.alter} Jahren. Richtwert: Zeigt die Waage nach 2 Wochen nichts, mehr essen.</p></div>`; })()}
+    <div class="card"><div class="split"><span class="kicker" style="margin:0">Kalorien-Booster</span><span class="small">antippen = gegessen</span></div>
+      <p class="small" style="margin:4px 0 8px">Kleine Portion, viele Kalorien. Ideal als Snack oder dazu.</p>
+      <div class="boost">${BOOST.map((b, i) => `<button class="boost-b" data-bo="${i}"><b>${esc(b.n)}</b><small>${esc(b.wie)}</small><span class="num">≈${b.kcal} kcal</span></button>`).join("")}</div>
+      ${(f.boost || []).length ? `<button class="btn sm ghost" id="boUndo" style="margin-top:8px">Letzten Booster zurücknehmen</button>` : ""}</div>
     <div class="card"><div class="kicker">Protein dabei?</div><div class="tiles" style="grid-template-columns:repeat(3,1fr)">${["Morgen","Mittag","Abend"].map(m => `<button class="chip" data-p="${m}" aria-pressed="${(f.prot || []).includes(m)}" style="min-height:56px">${(f.prot || []).includes(m) ? "✓ " : ""}${m}</button>`).join("")}</div>
       <p class="small" style="margin-top:8px">Drei Tipps am Tag reichen. Milch, Quark, Eier, Thon, Poulet, Linsen zählen.</p>
       <details class="more" style="margin-top:10px"><summary>Ganze Checkliste (${f.checks.length}/${N.checkliste.length})</summary>
@@ -906,12 +930,16 @@ function viewEssen(){
       <p class="small" style="margin-top:6px">${mg > max ? "Über der Grenze. Kein Koffein mehr heute, viel Wasser trinken." : late ? `Nach ${N.koffein.nachUhr} Uhr: kein Koffein mehr, sonst schläfst du schlecht.` : esc(N.koffein.text)}</p>
       <div class="chips" style="margin-top:8px">${N.koffein.getraenke.map((g, i) => `<button class="chip" data-k="${i}">+ ${esc(g.name)} (${g.mg}${g.mg > max ? " · über deiner Grenze" : ""})</button>`).join("")}${f.koffein.length ? `<button class="chip" id="kUndo">Rückgängig</button>` : ""}</div></div>
     <div class="card"><div class="kicker">Mahlzeiten ohne Kochen</div><div class="list">${N.mahlzeiten.map(m => `<details class="more"><summary class="plain meal"><span>${esc(m.name)}</span><small>${m.protein} g Protein · ${m.kcal} kcal</small></summary><p class="small" style="margin-top:4px">${esc((m.zutaten || []).join(", "))}${m.hinweis ? ` · ${esc(m.hinweis)}` : ""}${m.preis ? ` · ca. ${m.preis.toFixed(2)} Fr.` : ""}</p></details>`).join("")}</div></div>
+    <div class="card"><div class="kicker">Booster einkaufen</div><div class="list">${BOOST_BUY.map(e => `<div class="line"><span>${esc(e.was)}</span><b class="num">${esc(e.menge)}</b></div>`).join("")}</div>
+      <p class="small" style="margin-top:6px">Zusätzlich zur Wochenliste. Hält lange, passt in die Schultasche.</p></div>
     <div class="card"><div class="kicker">Einkauf pro Woche</div><div class="list">${N.einkauf.proWoche.map(e => `<div class="line"><span>${esc(e.was)}</span><b class="num">${esc(e.menge)}</b></div>`).join("")}</div>${N.einkauf.summeCHF ? `<p class="small" style="margin-top:6px">Ca. ${N.einkauf.summeCHF} Fr. pro Woche (Schätzung).</p>` : ""}</div>
     ${N.nichtNehmen ? `<div class="card"><details class="more"><summary>Nicht nehmen (unter 18)</summary><ul class="steps" style="margin-top:6px">${(Array.isArray(N.nichtNehmen) ? N.nichtNehmen : N.nichtNehmen.liste || []).map(x => `<li>${esc(typeof x === "string" ? x : (x.was || x.text || ""))}${x.warum ? `: ${esc(x.warum)}` : ""}</li>`).join("")}</ul></details></div>` : ""}
   </div>`;
   $$("[data-p]").forEach(b => b.onclick = () => { const m = b.dataset.p; f.prot ||= []; f.prot = f.prot.includes(m) ? f.prot.filter(x => x !== m) : [...f.prot, m]; save(); viewEssen(); });
   $$("[data-c]").forEach(b => b.onclick = () => { const id = b.dataset.c; f.checks = f.checks.includes(id) ? f.checks.filter(x => x !== id) : [...f.checks, id]; save(); viewEssen(); });
   $$("[data-k]").forEach(b => b.onclick = () => { f.koffein.push(N.koffein.getraenke[Number(b.dataset.k)].mg); save(); viewEssen(); });
+  $$("[data-bo]").forEach(b => b.onclick = () => { const x = BOOST[Number(b.dataset.bo)]; (f.boost ||= []).push(x.kcal); save(); toast(`+${x.kcal} kcal: ${x.n}`); viewEssen(); });
+  $("#boUndo")?.addEventListener("click", () => { (f.boost || []).pop(); save(); viewEssen(); });
   $("#kUndo")?.addEventListener("click", () => { f.koffein.pop(); save(); viewEssen(); });
 }
 
