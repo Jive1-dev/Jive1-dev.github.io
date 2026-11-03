@@ -73,12 +73,14 @@ for (let v = 0; v < sc; v++) for (let a = 0; a < 3; a++) sp[v * 3 + a] -= sn[v *
 { const cap = {}; for (let v = 0; v < sc; v++){ if (sreg[v] !== K.hose) continue; const ax = Math.abs(sp[v * 3]), b = Math.round((sp[v * 3 + 1] - minY) / H * 100);
     if (ax > 0.065 && ax < 0.1 && sn[v * 3 + 2] > 0.2) cap[b] = Math.max(cap[b] ?? -1, sp[v * 3 + 2]); }
   for (let v = 0; v < sc; v++){ if (sreg[v] !== K.hose) continue; const ax = Math.abs(sp[v * 3]), b = Math.round((sp[v * 3 + 1] - minY) / H * 100), c = cap[b] ?? cap[b + 1] ?? cap[b - 1];
-    if (ax < 0.065 && c != null && sp[v * 3 + 2] > c + 0.004) sp[v * 3 + 2] = c + 0.004; }
+    const yy = (sp[v * 3 + 1] - minY) / H; if (ax < 0.07 && c != null && (sp[v * 3 + 2] > c - 0.002 || (sn[v * 3 + 2] > 0.1 && yy > 0.46 && yy < 0.535))) sp[v * 3 + 2] = c - 0.004 - ax * ax * 0.8; }
   // Schritt unten: nichts hängt unter die Schritthöhe (wie bei einer Hose)
   const crotch = minY + 0.488 * H;
   for (let v = 0; v < sc; v++){ if (sreg[v] !== K.hose && !(Math.abs(sp[v * 3]) < 0.06 && sp[v * 3 + 1] < crotch && sp[v * 3 + 1] > minY + 0.40 * H)) continue;
     const ax = Math.abs(sp[v * 3]); if (ax < 0.055 && sp[v * 3 + 1] < crotch){ sp[v * 3 + 1] = crotch; sp[v * 3 + 2] = Math.min(sp[v * 3 + 2], 0.06); sreg[v] = K.hose; keep[v] = 1; } } }
 for (let v = 0; v < sc; v++) if (sreg[v] === K.hose) for (let a = 0; a < 3; a++) sp[v * 3 + a] += sn[v * 3 + a] * 0.007;
+// vorne in der Mitte extra glatt (Hose ohne Körperformen)
+for (let it = 0; it < 120; it++){ const np = sp.slice(); for (let v = 0; v < sc; v++){ if (sreg[v] !== K.hose || Math.abs(sp[v * 3]) > 0.075 || sn[v * 3 + 2] < 0) continue; let s2 = [0, 0, 0], c = 0; for (const u of nbr[v]){ for (let a = 0; a < 3; a++) s2[a] += sp[u * 3 + a]; c++; } for (let a = 0; a < 3; a++) np[v * 3 + a] = sp[v * 3 + a] * 0.5 + s2[a] / c * 0.5; } sp.set(np); }
 for (let it = 0; it < 60; it++) for (const f of [0.6, -0.62]){ const np = sp.slice(); for (let v = 0; v < sc; v++){ if (sreg[v] !== K.hose) continue; let s2 = [0, 0, 0], c = 0; for (const u of nbr[v]){ for (let a = 0; a < 3; a++) s2[a] += sp[u * 3 + a]; c++; } for (let a = 0; a < 3; a++) np[v * 3 + a] = sp[v * 3 + a] + f * (s2[a] / c - sp[v * 3 + a]); } sp.set(np); }
 // Sixpack: zwei Säulen, Mittelfurche, drei Querfurchen
 const sstep = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -87,6 +89,14 @@ for (let v = 0; v < sc; v++){ if (sreg[v] !== K.bauch) continue; const ax = Math
   const cs = sstep(0.002, 0.012, ax) * sstep(w, w - 0.014, ax);
   const rs = [0.3, 0.55, 0.78].reduce((m, ui) => m * (1 - 0.85 * Math.exp(-(((u - ui) / 0.045) ** 2))), 1) * sstep(0, 0.08, u) * sstep(1, 0.9, u);
   const bump = 0.008 * cs * rs; for (let a = 0; a < 3; a++) sp[v * 3 + a] += sn[v * 3 + a] * bump; }
+// Normalen aus der verformten Fläche neu (Hose, Bauch, Rücken), sonst zeichnet das Licht die alte Form nach
+{ const acc = new Float32Array(sc * 3);
+  for (let t = 0; t < ss.length; t += 3){ const [a, b, c] = [ss[t], ss[t + 1], ss[t + 2]];
+    const ux = sp[b*3]-sp[a*3], uy = sp[b*3+1]-sp[a*3+1], uz = sp[b*3+2]-sp[a*3+2], vx = sp[c*3]-sp[a*3], vy = sp[c*3+1]-sp[a*3+1], vz = sp[c*3+2]-sp[a*3+2];
+    const nx = uy*vz-uz*vy, ny = uz*vx-ux*vz, nz = ux*vy-uy*vx; for (const i of [a, b, c]){ acc[i*3] += nx; acc[i*3+1] += ny; acc[i*3+2] += nz; } }
+  for (let v = 0; v < sc; v++){ if (sreg[v] !== K.hose && sreg[v] !== K.bauch && sreg[v] !== K.ruecken_breit && sreg[v] !== K.ruecken_unten) continue;
+    const l = Math.hypot(acc[v*3], acc[v*3+1], acc[v*3+2]) || 1; if (acc[v*3]*sn[v*3] + acc[v*3+1]*sn[v*3+1] + acc[v*3+2]*sn[v*3+2] < 0) continue;
+    for (let a = 0; a < 3; a++) sn[v*3+a] = acc[v*3+a] / l; } }
 const base = P.length / 3;
 for (let v = 0; v < sc; v++){ P.push(sp[v * 3], sp[v * 3 + 1], sp[v * 3 + 2]); N.push(sn[v * 3], sn[v * 3 + 1], sn[v * 3 + 2]); R.push(sreg[v]); L.push(0); }
 if (process.env.ONLY !== '1') for (let t = 0; t < ss.length; t += 3) if (keep[ss[t]] || keep[ss[t + 1]] || keep[ss[t + 2]]) I.push(base + ss[t], base + ss[t + 1], base + ss[t + 2]);

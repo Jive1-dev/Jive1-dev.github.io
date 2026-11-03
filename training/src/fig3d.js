@@ -422,7 +422,7 @@ const F3D = (() => {
   // Anatomie-Stil: helles Grau, trainierte Muskeln rot (je mehr, desto kräftiger)
   const LV_COL = [0xc8c5bf, 0xe3a493, 0xdc5a45, 0xc81e12].map(c => new THREE.Color(c).convertSRGBToLinear());
   const SKIN_COL = new THREE.Color(0xbab6b0).convertSRGBToLinear();
-  const HOSE = new THREE.Color(0x3a3836).convertSRGBToLinear();
+  const HOSE = new THREE.Color(0x8a857e).convertSRGBToLinear();
   const LV_WORD = ["noch nicht trainiert", "wenig", "mittel", "viel"];
   let BODY = null;
   function bodyGeometry(){
