@@ -2349,8 +2349,8 @@ function viewBericht(){
     <div class="tiles" style="width:100%"><div class="tile"><b class="num">${dur ? fmt(dur) : "–"}</b><span>Minuten</span></div><div class="tile"><b class="num">${Object.values(log.sets).filter(isHard).length}</b><span>harte Sätze</span></div>
       <div class="tile"><b class="num">${weekCount(k)}/6</b><span>Diese Woche</span></div><div class="tile"><b class="num">${recs.length}</b><span>Rekorde</span></div></div>
     ${recs.length ? `<div class="recs">${recs.map(r => `<div class="rec"><span>${esc(exName(r.id))}</span><b class="num">${r.prev} → ${r.best}</b></div>`).join("")}</div>` : `<p class="muted">${esc(line("ende"))}</p>`}
-    ${typeof COACH !== "undefined" ? COACH.card(k) : ""}
     ${q ? `<div class="quote" style="text-align:left"><p>«${esc(q.text)}»</p><small>${esc([q.wer, q.quelle].filter(Boolean).join(" · "))}</small></div>` : ""}
+    ${typeof COACH !== "undefined" ? COACH.card(k) : ""}
     <div class="card" style="width:100%;text-align:left"><div class="kicker">Heute trainiert</div>${muscleMapSVG(muscleLoad([k]))}</div>
     ${(() => { let nk = addDays(k, 1); if (dayIdx(nk) === 6) nk = addDays(nk, 1); const nd = progDay(nk).day;
       return `<div class="card" style="width:100%;text-align:left"><div class="kicker">${dayIdx(addDays(k, 1)) === 6 ? "Morgen Ruhetag, dann" : "Morgen"}</div><h3>${esc(nd.name)}</h3><p class="muted" style="margin-top:4px">${esc(nd.muskelText || "")} · ${nd.minuten} Min</p></div>`; })()}
