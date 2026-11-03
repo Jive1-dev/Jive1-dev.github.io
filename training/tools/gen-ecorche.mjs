@@ -15,7 +15,7 @@ const part = p => { const b = bin(p.chunk), sl = (o, n) => b.buffer.slice(b.byte
     if (j === undefined){ j = wp.length / 3; map.set(k, j); wp.push(pos[i*3], pos[i*3+1], pos[i*3+2]); wn.push(0, 0, 0); } remap[i] = j; for (let a = 0; a < 3; a++) wn[j*3+a] += nrm[i*3+a]; }
   for (let i = 0; i < wn.length; i += 3){ const l = Math.hypot(wn[i], wn[i+1], wn[i+2]) || 1; for (let a = 0; a < 3; a++) wn[i+a] = Math.round(wn[i+a] / l * 32767); }
   return { pos: new Float32Array(wp), nrm: new Int16Array(wn), idx: Uint32Array.from(idx, i => remap[i]) }; };
-const KEYS = ['', 'brust','schulter_vorne','schulter_seite','schulter_hinten','bizeps','trizeps','unterarm','nacken','ruecken_oben','ruecken_breit','ruecken_unten','bauch','bauch_seite','hueftbeuger','po','bein_vorne','bein_innen','bein_hinten','wade','schienbein','fuss','hose','haut'];
+const KEYS = ['', 'brust','schulter_vorne','schulter_seite','schulter_hinten','bizeps','trizeps','unterarm','nacken','ruecken_oben','ruecken_breit','ruecken_unten','bauch','bauch_seite','hueftbeuger','po','bein_vorne','bein_innen','bein_hinten','wade','schienbein','fuss','hose','haut','haare'];
 const K = Object.fromEntries(KEYS.map((k, i) => [k, i]));
 const RULES = [
   [/pectoralis major/i, 'brust'], [/clavicular part of .* deltoid/i, 'schulter_vorne'], [/acromial part/i, 'schulter_seite'], [/spinal part of .* deltoid/i, 'schulter_hinten'],
@@ -100,6 +100,13 @@ for (let v = 0; v < sc; v++){ if (sreg[v] !== K.bauch) continue; const ax = Math
 const base = P.length / 3;
 for (let v = 0; v < sc; v++){ P.push(sp[v * 3], sp[v * 3 + 1], sp[v * 3 + 2]); N.push(sn[v * 3], sn[v * 3 + 1], sn[v * 3 + 2]); R.push(sreg[v]); L.push(0); }
 if (process.env.ONLY !== '1') for (let t = 0; t < ss.length; t += 3) if (keep[ss[t]] || keep[ss[t + 1]] || keep[ss[t + 2]]) I.push(base + ss[t], base + ss[t + 1], base + ss[t + 2]);
+// Kopfhaare (kurz, dunkel): eigenes Mesh aus dem Datensatz, vereinfacht
+{ const hp = atlas.parts.find(p => p.name === 'Hair of head'); if (hp){ const h = part(hp);
+    const [hs] = MeshoptSimplifier.simplify(h.idx, h.pos, 3, 1800 * 3, 0.01); const [hrm, hc] = MeshoptSimplifier.compactMesh(hs);
+    const hb = P.length / 3, lp = new Float32Array(hc * 3), ln = new Float32Array(hc * 3);
+    for (let o = 0; o < hrm.length; o++){ const q = hrm[o]; if (q === 0xffffffff) continue; for (let a = 0; a < 3; a++){ lp[q * 3 + a] = h.pos[o * 3 + a]; ln[q * 3 + a] = h.nrm[o * 3 + a] / 32767; } }
+    for (let v = 0; v < hc; v++){ P.push(lp[v * 3], lp[v * 3 + 1], lp[v * 3 + 2]); N.push(ln[v * 3], ln[v * 3 + 1], ln[v * 3 + 2]); R.push(K.haare); L.push(0); }
+    for (const t of hs) I.push(hb + t); console.error('Haare Dreiecke', hs.length / 3); } }
 const n = P.length / 3; console.error('Eckpunkte', n, 'Dreiecke', I.length / 3);
 let mn = [1e9, 1e9, 1e9], mx = [-1e9, -1e9, -1e9];
 for (let v = 0; v < n; v++) for (let a = 0; a < 3; a++){ mn[a] = Math.min(mn[a], P[v * 3 + a]); mx[a] = Math.max(mx[a], P[v * 3 + a]); }

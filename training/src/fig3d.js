@@ -298,7 +298,7 @@ const F3D = (() => {
   function anatomyMesh(muscles){
     const B = bodyGeometry(), n = B.reg.length, on = new Set(muscles || []);
     const geo = new THREE.BufferGeometry(), col = new Float32Array(n * 3);
-    for (let v = 0; v < n; v++){ const k = B.keys[B.reg[v]], c = k === "hose" ? HOSE : on.has(k) ? LV_COL[3] : B.layer[v] ? LV_COL[0] : SKIN_COL; col[v * 3] = c.r; col[v * 3 + 1] = c.g; col[v * 3 + 2] = c.b; }
+    for (let v = 0; v < n; v++){ const k = B.keys[B.reg[v]], c = k === "hose" ? HOSE : k === "haare" ? HAIR : on.has(k) ? LV_COL[3] : B.layer[v] ? LV_COL[0] : SKIN_COL; col[v * 3] = c.r; col[v * 3 + 1] = c.g; col[v * 3 + 2] = c.b; }
     if (window.__anaDbg){ const { b0 } = skinWeights(), pal = [0xffffff, 0x3060ff, 0xffd000, 0xff3030, 0x30ff30, 0xff30ff, 0x30ffff, 0xff8000, 0x8000ff, 0x00a080];
       for (let v = 0; v < n; v++){ const c = new THREE.Color(pal[b0[v] % 10]); col[v * 3] = c.r; col[v * 3 + 1] = c.g; col[v * 3 + 2] = c.b; } }
     geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(n * 3), 3)); geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(n * 3), 3));
@@ -439,7 +439,7 @@ const F3D = (() => {
   // Anatomie-Stil: helles Grau, trainierte Muskeln rot (je mehr, desto kräftiger)
   const LV_COL = [0xc8c5bf, 0xe3a493, 0xdc5a45, 0xc81e12].map(c => new THREE.Color(c).convertSRGBToLinear());
   const SKIN_COL = new THREE.Color(0xbab6b0).convertSRGBToLinear();
-  const HOSE = new THREE.Color(0x8a857e).convertSRGBToLinear();
+  const HOSE = new THREE.Color(0x8a857e).convertSRGBToLinear(), HAIR = new THREE.Color(0x3a332d).convertSRGBToLinear();
   const LV_WORD = ["noch nicht trainiert", "wenig", "mittel", "viel"];
   let BODY = null;
   function bodyGeometry(){
@@ -489,7 +489,7 @@ const F3D = (() => {
   function statue(lv){
     const { geo: g0, reg, layer, nb, keys } = bodyGeometry(), n = reg.length, geo = g0.clone();
     let col = new Float32Array(n * 3);
-    for (let v = 0; v < n; v++){ const k = keys[reg[v]], c = k === "hose" ? HOSE : (k === "haut" || !k) ? SKIN_COL : (lv[k] ? LV_COL[lv[k]] : layer[v] ? LV_COL[0] : SKIN_COL); col[v * 3] = c.r; col[v * 3 + 1] = c.g; col[v * 3 + 2] = c.b; }
+    for (let v = 0; v < n; v++){ const k = keys[reg[v]], c = k === "hose" ? HOSE : k === "haare" ? HAIR : (k === "haut" || !k) ? SKIN_COL : (lv[k] ? LV_COL[lv[k]] : layer[v] ? LV_COL[0] : SKIN_COL); col[v * 3] = c.r; col[v * 3 + 1] = c.g; col[v * 3 + 2] = c.b; }
     for (let it = 0; it < 2; it++){ const nx = new Float32Array(n * 3);
       for (let v = 0; v < n; v++){ let r = col[v * 3] * 2, g = col[v * 3 + 1] * 2, b = col[v * 3 + 2] * 2; const L = nb[v];
         let d = 2; for (const u of L){ if (reg[u] !== reg[v]) continue; r += col[u * 3]; g += col[u * 3 + 1]; b += col[u * 3 + 2]; d++; } nx[v * 3] = r / d; nx[v * 3 + 1] = g / d; nx[v * 3 + 2] = b / d; }
@@ -498,7 +498,7 @@ const F3D = (() => {
     const g = new THREE.Group(), body = mesh(geo, STATUE_MAT); body.userData.body = true; g.add(body);
     return g;
   }
-  const muscleOfFace = f => { const { reg, keys } = bodyGeometry(); const c = {}; [f.a, f.b, f.c].forEach(v => { const k = keys[reg[v]]; if (k && k !== "hose" && k !== "haut") c[k] = (c[k] || 0) + 1; });
+  const muscleOfFace = f => { const { reg, keys } = bodyGeometry(); const c = {}; [f.a, f.b, f.c].forEach(v => { const k = keys[reg[v]]; if (k && k !== "hose" && k !== "haut" && k !== "haare") c[k] = (c[k] || 0) + 1; });
     return Object.keys(c).sort((x, y) => c[y] - c[x])[0] || null; };
   function buildMap(lv){
     const scene = new THREE.Scene(); if (ENV) scene.environment = ENV;
