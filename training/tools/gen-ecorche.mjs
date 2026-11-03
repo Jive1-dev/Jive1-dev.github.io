@@ -1,4 +1,5 @@
 // Anatomie-Körper für die Muskelkarte aus BodyParts3D 4.0 (CC BY 4.0), aufbereitet von human-atlas (MIT).
+// Aufruf (Stand 3.11.): node gen-ecorche.mjs <human-atlas/public/models> src/body3d.js 44000 0.14
 // Ebene 0: Haut (Kopf, Hände, Füsse, Bauch, Lat; dort fehlen im Datensatz Muskeln), knapp unter die Muskeln gesenkt.
 // Ebene 1: oberflächliche Muskeln. Pro Eckpunkt: Region (Muskel-Key aus exercises.json).
 import fs from 'node:fs';
