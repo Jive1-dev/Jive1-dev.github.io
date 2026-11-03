@@ -592,6 +592,11 @@ function renderStep(steps, log, k){
       b.insertAdjacentHTML("afterend", `<div class="row" id="feel"><span class="small">Wie war's?</span>${["leicht","gut","hart"].map(f => `<button class="chip grow" data-feel="${f}">${f}</button>`).join("")}</div>`);
       $$("[data-feel]").forEach(c => c.onclick = () => { log.sets[s.key].feel = c.dataset.feel; save(); $$("[data-feel]").forEach(x => x.setAttribute("aria-pressed", x === c)); });
     }
+    // Pause: Figur zeigt schon die nächste Übung (vorbereiten, Gerät holen), Kennzeichen «Gleich»
+    if (next.id !== s.id){ const cur = document.querySelector(".ag-card canvas.fig3d, .ag-card svg.fig");
+      if (cur){ const nz = next.bereich ? `${next.bereich[0]}–${next.bereich[1]}` : (next.ziel ?? ""), wrap = document.createElement("div"); wrap.className = "next-prev";
+        wrap.innerHTML = `<div class="eyebrow" style="margin-bottom:4px">Gleich: ${esc(exName(next.id))}${nz !== "" ? ` · ${nz}${isSec(next.einheit) ? " Sek" : ""}` : ""}</div>${figSVG(next.id, EX[next.id]?.muskeln || [])}`;
+        cur.replaceWith(wrap); mountFigs(wrap); } }
     let left = s.pause; b.classList.add("rest");
     const nn = exName(next.id), short = nn.length > 22 ? nn.slice(0, 21) + "…" : nn;
     const paint = () => { b.innerHTML = `<span>Pause <b class="num">${fmt(left)}</b></span><span class="nx">→ ${esc(short)}</span>`; };
