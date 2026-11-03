@@ -187,8 +187,10 @@ const F3D = (() => {
     // Starke Hüftbeugung: Knie weit nach aussen (Krähe/Frosch: Knie liegen aussen an den Oberarmen, nicht im Bauch)
     const flexOf = i => { if (front || !leg(i)) return 0; const d = n.clone().sub(p).normalize(), t = P(leg(i)[0]).sub(p).normalize(); return 180 - d.angleTo(t) * 180 / Math.PI; };
     const spread = [0, 1].map(i => Math.max(0, Math.min(1, (flexOf(i) - 105) / 45)));
-    const kn = i => leg(i) ? P(leg(i)[0]).add(off(i, HW + spread[i] * (SHW + 3 - HW))) : hip(i).addScaledVector(spine, -0.415 * G);
-    const an = i => leg(i) ? P(leg(i)[1]).add(off(i, HW + spread[i] * (SHW - 1 - HW))) : kn(i).addScaledVector(spine, -0.395 * G);
+    // Sitzend von vorn (Russian Twist): Knie und Füsse kommen nach vorn zur Kamera, sonst knien die Beine zur Seite
+    const seatF = front && p.y < 0.2 * G ? 1 : 0;
+    const kn = i => leg(i) ? P(leg(i)[0]).add(off(i, HW + spread[i] * (SHW + 3 - HW))).add(V(0, seatF * 0.12 * G, seatF * 0.34 * G)) : hip(i).addScaledVector(spine, -0.415 * G);
+    const an = i => leg(i) ? P(leg(i)[1]).add(off(i, HW + spread[i] * (SHW - 1 - HW))).add(V(0, seatF * -0.02 * G, seatF * 0.62 * G)) : kn(i).addScaledVector(spine, -0.395 * G);
     const toe = i => { const L2 = leg(i); if (L2 && L2[2]) return P(L2[2]).add(off(i, HW + spread[i] * (SHW - 1 - HW))).addScaledVector(P(L2[2]).sub(P(L2[1])).normalize(), 2);
       const a = an(i), sh2 = kn(i).sub(a).normalize(), f2 = front ? V(0, 0, 1) : V(-sh2.y, sh2.x, 0).multiplyScalar(-1);
       return a.clone().addScaledVector(f2.dot(fwd) < 0 ? f2.negate() : f2, 0.15 * G).addScaledVector(sh2, -0.05 * G); };
