@@ -470,3 +470,8 @@ details.card[open] > summary::after{content:"▴"}
 details.photo-more figure.photo{margin-top:10px}
 /* Figur auf dem Handy nie unter der festen Leiste (Bitte B a) */
 @media (max-width:1023px){canvas.fig3d{max-height:clamp(170px,calc(100svh - 600px),32vh)}}
+/* B, Nacht 3: Körper */
+.kp-big{display:block;font-size:44px;line-height:1.05;margin-top:2px}
+.kp-big small{font-size:18px;color:var(--bone-2)}
+.kp-up{color:var(--good);font-size:12px}
+.kp-note{border-color:color-mix(in srgb,var(--bronze) 50%,var(--line))}

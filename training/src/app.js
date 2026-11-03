@@ -767,27 +767,45 @@ function weightChart(){
   s += `<polyline class="ln" points="${W.map(p => `${x(p.d)},${y(p.kg)}`).join(" ")}"/>` + W.map((p, i) => `<circle class="${i === W.length - 1 ? "end" : "pt"}" cx="${x(p.d)}" cy="${y(p.kg)}" r="${i === W.length - 1 ? 4.5 : 2.5}"/>`).join("");
   return `<svg class="chart" viewBox="0 0 310 150" role="img" aria-label="Gewichtsverlauf">${s}</svg><p class="small">Bronzenes Band = Ziel +0.25 bis +0.5 kg pro Woche.</p>`;
 }
-function viewKoerper(){
+function viewKoerper(){   // B, Nacht 3: neu aufgebaut (Gewicht gross, Hinweis bei Sprüngen, eine Fortschrittsliste, Masse/Fotos zugeklappt)
   const k = today(), mon = addDays(k, -dayIdx(k)), weekDays = DAYS.map((_, i) => addDays(mon, i));
-  const recs = {}, skipG = new Set(["aufwaermen","dehnen","haltung"]); Object.keys(S.logs).forEach(d => { Object.values(S.logs[d].sets).forEach(s => { if (skipG.has(EX[s.id]?.gruppe)) return; recs[s.id] = Math.max(recs[s.id] || 0, s.v); }); (S.logs[d].extra || []).forEach(e => { recs[e.id] = Math.max(recs[e.id] || 0, e.v); }); });
-  const W = S.body.w, gain = W.length > 1 ? (W[W.length - 1].kg - W[0].kg) : 0;
+  const W = S.body.w, M = S.body.m[S.body.m.length - 1] || {};
   const lastPhoto = S.body.photos[S.body.photos.length - 1], nextPhoto = lastPhoto ? addDays(lastPhoto, 14) : S.settings.start;
-  const M = S.body.m[S.body.m.length - 1] || {};
+  // Gewicht: Mittel der letzten 3 Messungen (eine einzelne Messung schwankt um 1–2 kg)
+  const lw = W[W.length - 1], last3 = lw ? W.slice(-3).filter(x => diffDays(x.d, lw.d) <= 3) : [], avg = last3.length ? last3.reduce((a, x) => a + x.kg, 0) / last3.length : S.profile.kg;
+  const first = W[0], gain = first ? avg - first.kg : 0, R = D.nut.rechnung.zielProWoche || [0.25, 0.5];
+  const wk = first ? diffDays(first.d, k) / 7 : 0, perWeek = first && W.length > 1 && wk >= 2 ? gain / wk : null;   // Trend erst ab 2 Wochen
+  const lastW = W[W.length - 1], prev = lastW ? [...W].reverse().find(x => diffDays(x.d, lastW.d) >= 3) : null, jump = prev ? lastW.kg - prev.kg : 0;
+  const status = perWeek == null ? "Trend ab 2 Wochen Messungen." : perWeek < R[0] ? "Unter dem Ziel: mehr essen, vor allem an Trainingstagen." : perWeek > R[1] + 0.2 ? "Schneller als geplant: Süsses etwas weniger, sonst gleich." : "Im Ziel. Weiter so.";
+  const warn = Math.abs(jump) >= 1.5 ? `<div class="card kp-note"><div class="kicker">${jump < 0 ? "Gewicht gesunken" : "Gewicht gestiegen"} (${jump > 0 ? "+" : ""}${jump.toFixed(1)} kg in ${diffDays(prev.d, lastW.d)} Tagen)</div>
+    <p class="small">So schnell ändert sich der Körper selten. Meist sind es Waage, Tageszeit oder Wasser. <b>3 Tage hintereinander morgens</b> wiegen, gleiche Waage, nach dem WC, vor dem Essen. Es zählt der Durchschnitt.${jump < 0 ? " Mehr Training braucht mehr Essen: an Trainingstagen eine Mahlzeit mehr. Sinkt es trotzdem weiter, mit den Eltern oder dem Arzt reden." : ""}</p></div>` : "";
+  // Fortschritt: Startwert (Test) und bester Wert in einer Liste, nur Kraft und Skills
+  const skipG = new Set(["aufwaermen", "dehnen", "haltung"]), sw = PROG._meta.startwerte || {}, best = {};
+  Object.keys(S.logs).forEach(d => Object.values(S.logs[d].sets).forEach(x => { if (!EX[x.id] || skipG.has(EX[x.id].gruppe)) return; best[x.id] = Math.max(best[x.id] || 0, x.v || 0); }));
+  const ids = [...new Set([...Object.keys(sw).filter(id => EX[id] && typeof sw[id] === "number"), ...Object.keys(best)])];
+  const rows = ids.map(id => {
+      const s0 = typeof sw[id] === "number" ? sw[id] : null, b0 = best[id] ?? null, sek = isSec(EX[id].einheit) ? " Sek" : "";
+      const up = s0 != null && b0 != null && b0 > s0, showB = b0 != null && (s0 == null || b0 >= s0);
+      return { id, up, html: `<div class="line"><span>${esc(exName(id))}</span><b class="num">${s0 != null ? `<span class="tbd">${s0} →</span> ` : ""}${showB ? b0 + sek : `<span class="tbd">${s0 != null ? "Test" : ""}</span>`}${up ? ' <span class="kp-up">▲</span>' : ""}</b></div>` }; })
+    .sort((x, y) => (y.up - x.up) || exName(x.id).localeCompare(exName(y.id)));
   $("#view").innerHTML = `<div class="stack">
     <div><div class="eyebrow">Fortschritt</div><h1 class="title-xl" style="margin-top:6px">Dein Körper</h1></div>
-    <div class="tiles"><div class="tile"><b class="num">${latestKg()}<small>kg</small></b><span>aktuell</span></div><div class="tile"><b class="num">${gain >= 0 ? "+" : ""}${gain.toFixed(1)}<small>kg</small></b><span>seit Start</span></div></div>
-    <div class="card"><div class="kicker">Gewicht</div>${weightQuick()}<div style="margin-top:12px">${weightChart()}</div></div>
-    <div class="card"><div class="kicker">Diese Woche trainiert</div>${muscleMapSVG(muscleLoad(weekDays, true))}<p class="small" style="margin-top:6px">Harte Sätze pro Muskel diese Woche: hellrot unter 6, mittel 6–10, voll ab 10. Grau = diese Woche noch nichts. Schienbein und Füsse laufen nebenbei mit.</p></div>
-    ${beforeAfter()}
-    <div class="card"><div class="kicker">Rekorde</div><div class="list">${Object.keys(recs).length ? Object.entries(recs).sort((a, b) => exName(a[0]).localeCompare(exName(b[0]))).map(([id, v]) => `<div class="line"><span>${esc(exName(id))}</span><b class="num">${v}</b></div>`).join("") : `<p class="small">Noch keine. Nach dem ersten Training stehen sie hier.</p>`}</div></div>
-    <div class="card"><div class="kicker">Masse · einmal im Monat</div>
-      <div class="tiles">${[["arm","Oberarm"],["brust","Brust"],["taille","Taille"],["bein","Oberschenkel"]].map(([kk, l]) => `<label class="lbl">${l} (cm)<input class="field" data-m="${kk}" type="number" step="0.5" inputmode="decimal" value="${M[kk] ?? ""}"></label>`).join("")}</div>
-      <button class="btn wide" id="mSave" style="margin-top:10px">Masse speichern</button>${M.d ? `<p class="small" style="margin-top:6px">Zuletzt: ${longDate(M.d)}</p>` : ""}</div>
-    <div class="card"><div class="kicker">Fotos · alle 2 Wochen</div><p class="muted">${nextPhoto <= k ? "Heute fällig" : `Nächste: ${longDate(nextPhoto)}`}. Gleiches Licht, gleiche Zeit: vorne, seitlich, hinten. Die Fotos bleiben auf deinem Handy.</p>
-      <button class="btn wide" id="pSave" style="margin-top:10px">Fotos gemacht</button></div>
+    <div class="card kp-hero"><div class="split"><div><div class="kicker" style="margin:0">Gewicht</div><b class="num kp-big">${avg.toFixed(1)}<small> kg</small></b></div>
+      <div style="text-align:right"><b class="num">${gain >= 0 ? "+" : ""}${gain.toFixed(1)} kg</b><div class="small">seit Start${perWeek != null ? ` · ${perWeek >= 0 ? "+" : ""}${perWeek.toFixed(2)}/Woche` : ""}</div></div></div>
+      <p class="small" style="margin-top:4px">${status} Ziel: +${R[0]} bis +${R[1]} kg pro Woche.${last3.length > 1 ? ` Mittel der letzten ${last3.length} Messungen.` : ""}</p>
+      <div style="margin-top:10px">${weightChart()}</div><div style="margin-top:10px">${weightQuick()}</div></div>
+    ${warn}
+    <div class="card"><div class="kicker">Diese Woche trainiert</div>${muscleMapSVG(muscleLoad(weekDays, true))}<p class="small" style="margin-top:6px">Rot = trainiert, je kräftiger, desto mehr harte Sätze (voll ab 10). Grau = noch nichts.</p></div>
+    <div class="card"><div class="kicker">Stärker geworden</div>${rows.length ? `<div class="list">${rows.slice(0, 7).map(r => r.html).join("")}</div>${rows.length > 7 ? `<details class="more" style="margin-top:6px"><summary>Alle ${rows.length} Übungen</summary><div class="list">${rows.slice(7).map(r => r.html).join("")}</div></details>` : ""}` : `<p class="muted">Nach dem ersten Training stehen hier deine besten Werte.</p>`}
+      <p class="small" style="margin-top:6px">Grau = Startwert vom Test (1. Nov.), weiss = dein bester Wert. Neu messen in den Testwochen 13, 26, 39, 52.</p></div>
+    <details class="card more-card"><summary class="kicker" style="margin:0;cursor:pointer">Masse und Fotos</summary><div style="margin-top:10px">
+      <p class="small">Masse einmal im Monat, Fotos alle 2 Wochen (${nextPhoto <= k ? "heute fällig" : `nächste ${longDate(nextPhoto)}`}). Fotos bleiben auf deinem Handy.</p>
+      <div class="tiles" style="margin-top:8px">${[["arm", "Oberarm"], ["brust", "Brust"], ["taille", "Taille"], ["bein", "Oberschenkel"]].map(([kk, l]) => `<label class="lbl">${l} (cm)<input class="field" data-m="${kk}" type="number" step="0.5" inputmode="decimal" value="${M[kk] ?? ""}"></label>`).join("")}</div>
+      <button class="btn wide" id="mSave" style="margin-top:10px">Masse speichern</button>${M.d ? `<p class="small" style="margin-top:6px">Zuletzt: ${longDate(M.d)}</p>` : ""}
+      <button class="btn wide" id="pSave" style="margin-top:10px">Fotos gemacht</button></div></details>
   </div>`;
   bindWeight();
-  $("#mSave").onclick = () => { const m = {d:k}; $$("[data-m]").forEach(i => { const v = parseFloat(String(i.value).replace(",", ".")); if (v) m[i.dataset.m] = v; }); S.body.m.push(m); save(); toast("Masse gespeichert"); };
+  $("#mSave").onclick = () => { const m = {d: k}; $$("[data-m]").forEach(i => { const v = parseFloat(String(i.value).replace(",", ".")); if (v) m[i.dataset.m] = v; }); S.body.m.push(m); save(); toast("Masse gespeichert"); };
   $("#pSave").onclick = () => { S.body.photos.push(k); save(); toast("Notiert. Nächste Fotos in 2 Wochen."); viewKoerper(); };
 }
 
