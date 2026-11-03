@@ -109,7 +109,7 @@ const F3D = (() => {
   // ---------- Körper ----------
   const PARTS = ["chest", "pec0", "pec1", "abs", "trap", "belly", "pelvis", "neck", "head", "crest", "delt0", "delt1", "glute",
     "ua0", "el0", "fa0", "hand0", "ua1", "el1", "fa1", "hand1", "th0", "kn0", "sh0", "ft0", "th1", "kn1", "sh1", "ft1", "db0", "db1", "ball"];
-  // Posen mit sehr starker Hüftbeugung (> 150°, z. B. Krähe, Frosch, Tuck-Planche; dazu Tuck-L-Sitz) bleiben vorerst bei der runden Statue:
+  // Posen mit sehr starker Hüftbeugung (> 150°, z. B. Krähe, Frosch, Tuck-Planche) bleiben vorerst bei der runden Statue:
   // dort reisst der Anatomie-Körper noch (abgesprochen mit A, bis zur echten Lösung).
   const DEEP = new Map();
   function deepFlex(id){
@@ -118,7 +118,7 @@ const F3D = (() => {
     figKeys(id).forEach(K => { const S = solve(K), dx = S.n[0] - S.p[0], dy = S.n[1] - S.p[1];
       S.legs.forEach(L => { if (!L) return; const tx = L[0][0] - S.p[0], ty = L[0][1] - S.p[1];
         const a = Math.acos(Math.max(-1, Math.min(1, (dx * tx + dy * ty) / (Math.hypot(dx, dy) * Math.hypot(tx, ty) || 1)))) * 180 / Math.PI; max = Math.max(max, 180 - a); }); });
-    const r = id === "tuckl" || (!FRONT_VIEW.has(id) && max > 150); DEEP.set(id, r); return r;
+    const r = !window.__noFallback && !FRONT_VIEW.has(id) && max > 150; DEEP.set(id, r); return r;
   }
   function buildScene(id, muscles){
     const f = FIGS[id], scene = new THREE.Scene(), body = {}; if (ENV) scene.environment = ENV;
@@ -176,9 +176,12 @@ const F3D = (() => {
       return b.clone().addScaledVector(b.clone().sub(a).normalize(), 0.155 * G); };
     const wr0 = wr; const wrUp = i => { const w = wr0(i); if (w.y < 2.2) w.y = 2.2; return w; };
     const hip = i => p.clone().add(off(i, HW));
-    const kn = i => leg(i) ? P(leg(i)[0]).add(off(i, HW)) : hip(i).addScaledVector(spine, -0.415 * G);
-    const an = i => leg(i) ? P(leg(i)[1]).add(off(i, HW)) : kn(i).addScaledVector(spine, -0.395 * G);
-    const toe = i => { const L2 = leg(i); if (L2 && L2[2]) return P(L2[2]).add(off(i, HW)).addScaledVector(P(L2[2]).sub(P(L2[1])).normalize(), 2);
+    // Starke Hüftbeugung: Knie weit nach aussen (Krähe/Frosch: Knie liegen aussen an den Oberarmen, nicht im Bauch)
+    const flexOf = i => { if (front || !leg(i)) return 0; const d = n.clone().sub(p).normalize(), t = P(leg(i)[0]).sub(p).normalize(); return 180 - d.angleTo(t) * 180 / Math.PI; };
+    const spread = [0, 1].map(i => Math.max(0, Math.min(1, (flexOf(i) - 105) / 45)));
+    const kn = i => leg(i) ? P(leg(i)[0]).add(off(i, HW + spread[i] * (SHW + 3 - HW))) : hip(i).addScaledVector(spine, -0.415 * G);
+    const an = i => leg(i) ? P(leg(i)[1]).add(off(i, HW + spread[i] * (SHW - 1 - HW))) : kn(i).addScaledVector(spine, -0.395 * G);
+    const toe = i => { const L2 = leg(i); if (L2 && L2[2]) return P(L2[2]).add(off(i, HW + spread[i] * (SHW - 1 - HW))).addScaledVector(P(L2[2]).sub(P(L2[1])).normalize(), 2);
       const a = an(i), sh2 = kn(i).sub(a).normalize(), f2 = front ? V(0, 0, 1) : V(-sh2.y, sh2.x, 0).multiplyScalar(-1);
       return a.clone().addScaledVector(f2.dot(fwd) < 0 ? f2.negate() : f2, 0.15 * G).addScaledVector(sh2, -0.05 * G); };
     // Starke Hüftbeugung (Krähe, Frosch): Becken kippt mit, unterer Rücken rundet sich (wie beim echten Körper)
