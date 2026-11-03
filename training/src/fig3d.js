@@ -261,8 +261,8 @@ const F3D = (() => {
   BONES.forEach(b => { b.a = rj(b[1], b[3] || 1); b.b = rj(b[2], b[3] || 1); if (!b[3]){ b.a.x = 0; b.b.x = 0; } b.len = b.a.distanceTo(b.b); b.u = b.b.clone().sub(b.a).normalize(); });
   const bi = (nm, sd) => BONES.findIndex(b => b[0] === nm && (b[3] === sd || !b[3]));
   const ALLOW = { brust: ["upT", "UA", "lowT"], schulter_vorne: ["UA", "upT"], schulter_seite: ["UA", "upT"], schulter_hinten: ["UA", "upT"], ruecken_oben: ["upT", "UA"], ruecken_breit: ["upT", "lowT", "UA"],
-    nacken: ["upT", "head"], bizeps: ["UA", "FA"], trizeps: ["UA", "FA"], unterarm: ["FA", "UA", "HD"], bauch: ["lowT", "upT"], bauch_seite: ["lowT", "upT"], ruecken_unten: ["lowT", "upT"],
-    po: ["lowT", "TH"], hueftbeuger: ["lowT", "TH"], hose: ["lowT", "TH", "upT"], bein_vorne: ["TH", "SHN"], bein_innen: ["TH", "lowT"], bein_hinten: ["TH", "SHN"],
+    nacken: ["upT", "head"], bizeps: ["UA", "FA", "upT"], trizeps: ["UA", "FA", "upT"], unterarm: ["FA", "UA", "HD"], bauch: ["lowT", "upT"], bauch_seite: ["lowT", "upT"], ruecken_unten: ["lowT", "upT"],
+    po: ["lowT", "TH"], hueftbeuger: ["lowT", "TH", "SHN"], hose: ["lowT", "TH", "upT"], bein_vorne: ["TH", "SHN", "lowT"], bein_innen: ["TH", "lowT", "SHN"], bein_hinten: ["TH", "SHN", "lowT"],
     wade: ["SHN", "TH", "FT"], schienbein: ["SHN", "FT"], fuss: ["FT", "SHN"] };
   const TRUNKY = new Set(["brust", "ruecken_oben", "ruecken_breit", "nacken", "bauch", "bauch_seite", "ruecken_unten", "po", "hose"]);
   function segDist(v, b){ const t = Math.max(0, Math.min(b.len, v.clone().sub(b.a).dot(b.u))); return v.distanceTo(b.a.clone().addScaledVector(b.u, t)); }
@@ -291,7 +291,7 @@ const F3D = (() => {
     for (let t = 0; t < idx.length; t += 3) REST_E[t / 3] = Math.max(d(idx[t], idx[t + 1]), d(idx[t + 1], idx[t + 2]), d(idx[t + 2], idx[t]));
     return REST_E;
   }
-  const ANA_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.58, metalness: 0.03, envMapIntensity: 0.4 });
+  const ANA_MAT = fibers(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.58, metalness: 0.03, envMapIntensity: 0.4 }));
   function anatomyMesh(muscles){
     const B = bodyGeometry(), n = B.reg.length, on = new Set(muscles || []);
     const geo = new THREE.BufferGeometry(), col = new Float32Array(n * 3);
@@ -300,6 +300,7 @@ const F3D = (() => {
       for (let v = 0; v < n; v++){ const c = new THREE.Color(pal[b0[v] % 10]); col[v * 3] = c.r; col[v * 3 + 1] = c.g; col[v * 3 + 2] = c.b; } }
     geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(n * 3), 3)); geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(n * 3), 3));
     geo.setAttribute("color", new THREE.BufferAttribute(col, 3)); geo.setIndex(new THREE.BufferAttribute(B.idx.slice(), 1));
+    geo.setAttribute("fib", new THREE.BufferAttribute(B.fib, 1));
     const m = mesh(geo, ANA_MAT); m.frustumCulled = false; skinWeights(); return m;
   }
   const R0_SIDE = new THREE.Quaternion().setFromAxisAngle(V(0, 1, 0), Math.PI / 2), Q1 = new THREE.Quaternion(), Q2 = new THREE.Quaternion();
@@ -456,9 +457,32 @@ const F3D = (() => {
     // Nachbarn für weiche Farbübergänge
     const nb = Array.from({ length: D.n }, () => new Set());
     for (let t = 0; t < idx.length; t += 3){ const [x, y, z] = [idx[t], idx[t + 1], idx[t + 2]]; nb[x].add(y).add(z); nb[y].add(x).add(z); nb[z].add(x).add(y); }
-    BODY = { geo, reg, layer, raw: rawP, nrm, idx, nb: nb.map(s => [...s]), keys: D.keys }; return BODY;
+    // Faserrichtung pro Muskelgruppe und Seite (Hauptachse der Form) → Streifen-Koordinate pro Eckpunkt
+    const fib = new Float32Array(D.n).fill(-1000), groups = new Map();
+    const FIBR = new Set(["bauch", "ruecken_breit", "ruecken_unten"].map(k => D.keys.indexOf(k)));
+    for (let v = 0; v < D.n; v++){ if (!layer[v] && !FIBR.has(reg[v])) continue; const g = reg[v] * 2 + (rawP[v * 3] >= 0 ? 1 : 0); let a = groups.get(g); if (!a) groups.set(g, a = []); a.push(v); }
+    groups.forEach(list => {
+      let mx = 0, my = 0, mz = 0; list.forEach(v => { mx += rawP[v * 3]; my += rawP[v * 3 + 1]; mz += rawP[v * 3 + 2]; }); mx /= list.length; my /= list.length; mz /= list.length;
+      const C = [0, 0, 0, 0, 0, 0, 0, 0, 0]; list.forEach(v => { const d = [rawP[v * 3] - mx, rawP[v * 3 + 1] - my, rawP[v * 3 + 2] - mz]; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) C[i * 3 + j] += d[i] * d[j]; });
+      let f = [0.3, 1, 0.2]; for (let it = 0; it < 30; it++){ const g = [C[0] * f[0] + C[1] * f[1] + C[2] * f[2], C[3] * f[0] + C[4] * f[1] + C[5] * f[2], C[6] * f[0] + C[7] * f[1] + C[8] * f[2]]; const l = Math.hypot(...g) || 1; f = g.map(x => x / l); }
+      list.forEach(v => { const nx = nrm[v * 3], ny = nrm[v * 3 + 1], nz = nrm[v * 3 + 2];
+        let ax = f[1] * nz - f[2] * ny, ay = f[2] * nx - f[0] * nz, az = f[0] * ny - f[1] * nx; const l = Math.hypot(ax, ay, az) || 1;
+        fib[v] = ((rawP[v * 3] - mx) * ax + (rawP[v * 3 + 1] - my) * ay + (rawP[v * 3 + 2] - mz) * az) / l; });
+    });
+    geo.setAttribute("fib", new THREE.BufferAttribute(fib, 1));
+    BODY = { geo, reg, layer, raw: rawP, nrm, idx, fib, nb: nb.map(s => [...s]), keys: D.keys }; return BODY;
   }
-  const STATUE_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.05, envMapIntensity: 0.6 });
+  // Feine Muskelfasern (Streifen quer zur Faserrichtung); blenden bei kleinen Bildern aus, damit nichts flimmert
+  function fibers(m){
+    m.onBeforeCompile = sh => {
+      sh.vertexShader = "attribute float fib;\nvarying float vFib;\n" + sh.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvFib = fib;");
+      sh.fragmentShader = "varying float vFib;\n" + sh.fragmentShader.replace("#include <color_fragment>", `#include <color_fragment>
+        if (vFib > -100.0){ float q = vFib * 260.0; float fw = fwidth(q); float s = 0.5 + 0.5 * sin(q * 6.2831);
+          float k = clamp(1.4 - fw * 2.2, 0.0, 1.0); diffuseColor.rgb *= 1.0 - k * 0.24 * (1.0 - s); }`);
+    };
+    return m;
+  }
+  const STATUE_MAT = fibers(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.05, envMapIntensity: 0.6 }));
   function statue(lv){
     const { geo: g0, reg, layer, nb, keys } = bodyGeometry(), n = reg.length, geo = g0.clone();
     let col = new Float32Array(n * 3);
