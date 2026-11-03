@@ -398,7 +398,7 @@ function viewHeute(){
     ${welcome}
     ${yearDone}
     ${main}
-    <div class="card prog-card"><div class="prog-top"><div><b class="num prog-big">${Object.values(S.logs).filter(l => l.done).length}</b><span class="prog-lbl">Tage trainiert</span></div><div class="prog-wk"><b class="num">${weekCount(k)}<small>/6</small></b><span class="prog-lbl">diese Woche</span></div></div>
+    <div class="card prog-card"><div class="prog-top"><div><b class="num prog-big">${Object.values(S.logs).filter(l => l.done).length}</b><span class="prog-lbl">${Object.values(S.logs).filter(l => l.done).length === 1 ? "Tag" : "Tage"} trainiert</span></div><div class="prog-wk"><b class="num">${weekCount(k)}<small>/6</small></b><span class="prog-lbl">diese Woche</span></div></div>
       <div style="margin-top:10px">${weekShields(k)}</div>
       <p class="small" style="margin-top:8px">Rang: <b>${esc(r.name)}</b>${r.text ? ` · ${esc(r.text)}` : ""}${r.next ? ` · «${esc(r.next.name)}» nach ${r.next.ab ?? r.next.wochen} Wochen mit mindestens 4 Trainings` : ""}</p></div>
     ${q ? `<div class="quote"><p>«${esc(q.text)}»</p><small>${esc([q.wer, q.quelle || q.stelle].filter(Boolean).join(" · "))}</small></div>` : ""}
