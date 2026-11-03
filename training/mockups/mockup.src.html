@@ -1,0 +1,306 @@
+<title>Winter Arc Training</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: oben der Plan in Karten, darunter 6 Handy-Screens nebeneinander (seitlich scrollbar) mit Begründung darunter */
+:root{
+  --bg:#0e0c0a; --surface:#17130f; --raise:#211b16; --line:#33291f; --bone:#ece3d0; --bone-2:#a99d88;
+  --crimson:#b3261e; --on-crimson:#f7efe4; --bronze:#c0904f; --good:#86a862;
+  --display:"Oswald","Arial Narrow",sans-serif; --body:"Barlow",system-ui,sans-serif; color-scheme:dark;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg:#ebe4d6; --surface:#f5efe4; --raise:#fffaf1; --line:#d3c7b2; --bone:#1a1612; --bone-2:#5f5446;
+  --crimson:#a3221b; --on-crimson:#fff8ee; --bronze:#8a6532; --good:#4e7a2f; color-scheme:light}}
+:root[data-theme="light"]{
+  --bg:#ebe4d6; --surface:#f5efe4; --raise:#fffaf1; --line:#d3c7b2; --bone:#1a1612; --bone-2:#5f5446;
+  --crimson:#a3221b; --on-crimson:#fff8ee; --bronze:#8a6532; --good:#4e7a2f; color-scheme:light}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--bone);font-family:var(--body);font-size:16px;line-height:1.45}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 60px}
+h1,h2,h3,.d{font-family:var(--display);text-transform:uppercase;letter-spacing:.02em;line-height:1;margin:0;text-wrap:balance}
+.num{font-variant-numeric:tabular-nums}
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-bottom:2px solid var(--crimson);padding-bottom:14px}
+.lam{width:46px;height:46px;border:2px solid var(--bronze);border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-size:28px;color:var(--bronze)}
+.top h1{font-size:34px;font-weight:700}
+.top .tag{margin-left:auto;font-size:13px;color:var(--bone-2);border:1px solid var(--line);padding:6px 10px;border-radius:4px}
+.themebtn{background:none;border:1px solid var(--line);color:var(--bone);border-radius:4px;height:36px;padding:0 10px;font:inherit;cursor:pointer}
+section{margin-top:30px}
+section>h2{font-size:24px;font-weight:700;color:var(--bronze);margin-bottom:12px}
+.lead{max-width:70ch;color:var(--bone-2);margin:0 0 14px}
+.phases{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.ph{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--crimson);padding:14px;border-radius:4px}
+.ph .rn{font-family:var(--display);font-size:34px;color:var(--crimson);font-weight:700}
+.ph h3{font-size:20px;margin:4px 0}
+.ph p{margin:4px 0 0;font-size:14px;color:var(--bone-2)}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:12px}
+.day{background:var(--surface);border:1px solid var(--line);padding:10px 8px;border-radius:4px;min-width:0}
+.day b{font-family:var(--display);font-size:18px;display:block}
+.day span{font-size:13px;color:var(--bone-2);display:block}
+.day.rest{opacity:.6}
+@media (max-width:700px){.week{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.laws{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;counter-reset:l;padding:0;margin:0;list-style:none}
+.laws li{background:var(--surface);border-left:3px solid var(--bronze);padding:10px 12px;font-size:15px;counter-increment:l}
+.laws li::before{content:"Gesetz " counter(l,upper-roman) " · ";font-family:var(--display);color:var(--bronze)}
+
+/* Handys */
+.phones{display:flex;gap:22px;overflow-x:auto;padding:4px 2px 16px;scroll-snap-type:x mandatory}
+.ph-col{flex:0 0 300px;scroll-snap-align:start}
+.cap{font-family:var(--display);font-size:16px;color:var(--bone-2);margin-bottom:8px}
+.cap b{color:var(--crimson);margin-right:6px}
+.phone{min-height:620px;background:var(--bg);border:1px solid var(--line);border-radius:28px;padding:16px 14px;overflow:hidden;display:flex;flex-direction:column;gap:10px;box-shadow:0 0 0 6px var(--surface)}
+.why{font-size:13px;color:var(--bone-2);margin-top:12px}
+.bar{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--bone-2);font-family:var(--display);letter-spacing:.06em}
+.bar .l{color:var(--bronze);font-size:16px}
+.big{font-size:34px;font-weight:700}
+.sub{font-size:14px;color:var(--bone-2);margin-top:-4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;border:1px solid var(--line);padding:3px 8px;border-radius:3px;color:var(--bone)}
+.chip.on{background:var(--bronze);border-color:var(--bronze);color:var(--bg)}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px}
+.box h4{margin:0 0 6px;font-family:var(--display);font-size:13px;color:var(--bronze);letter-spacing:.06em;font-weight:500}
+.row{display:flex;justify-content:space-between;font-size:14px;gap:8px}
+.row b{font-family:var(--display);font-weight:500}
+.cta{background:var(--crimson);color:var(--on-crimson);border:0;border-radius:6px;min-height:54px;font-family:var(--display);font-size:20px;letter-spacing:.04em;width:100%}
+.ghost{background:none;border:1px solid var(--line);color:var(--bone);border-radius:6px;min-height:42px;font:600 14px var(--body);width:100%}
+.tl{display:grid;grid-template-columns:30px 1fr;gap:3px 8px;font-size:13px}
+.tl i{font-style:normal;color:var(--bone-2);text-align:right}
+.fig{width:100%;height:auto;background:var(--surface);border-radius:8px;display:block}
+.fig polyline{stroke:var(--bone);stroke-width:5;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.fig .head{fill:var(--bone)}.fig .db{fill:var(--bone)}.fig .ball{fill:var(--bone-2)}
+.fig .prop,.fig .ground{stroke:var(--bronze);stroke-width:3;fill:none;opacity:.7}
+.fig .ghost polyline{stroke:var(--crimson)}.fig .ghost .head{fill:var(--crimson)}
+.steps{margin:0;padding-left:18px;font-size:14px;display:grid;gap:2px}
+.step{display:grid;grid-template-columns:52px 1fr 52px;gap:8px}
+.step button{height:52px;border:1px solid var(--line);background:var(--surface);color:var(--bone);border-radius:6px;font:700 26px var(--display)}
+.step div{display:grid;place-items:center;background:var(--raise);border-radius:6px;font:700 30px var(--display)}
+.mini{display:flex;gap:6px}
+.mini .ghost{min-height:40px;font-size:13px}
+.prog{display:flex;gap:3px}.prog i{flex:1;height:4px;background:var(--line);border-radius:2px}.prog i.on{background:var(--crimson)}
+.grid{display:grid;grid-template-columns:22px repeat(13,1fr);gap:3px;align-items:center}
+.grid .rn{font-family:var(--display);font-size:13px;color:var(--crimson)}
+.c{aspect-ratio:1;border-radius:2px;background:var(--raise);border:1px solid var(--line);font-size:8px;display:grid;place-items:center;color:var(--bone-2)}
+.c.d{background:repeating-linear-gradient(45deg,var(--raise) 0 3px,var(--line) 3px 5px)}
+.c.t{background:var(--bronze);color:var(--bg);font-weight:700}
+.c.now{outline:2px solid var(--crimson);outline-offset:1px}
+.legend{display:flex;gap:10px;font-size:11px;color:var(--bone-2);flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:4px}.legend .c{width:12px}
+.lad{display:grid;gap:4px;font-size:13px}
+.lad div{display:grid;grid-template-columns:20px 1fr auto;gap:6px;align-items:center;padding:5px 6px;border-radius:4px}
+.lad .ok{color:var(--good)}.lad .cur{background:var(--raise);border:1px solid var(--crimson)}
+.lad .lock{color:var(--bone-2)}
+.lad em{font-style:normal;font-size:11px;color:var(--bone-2)}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:8px}
+.tile b{display:block;font:700 26px var(--display)}
+.tile span{font-size:11px;color:var(--bone-2);text-transform:uppercase;letter-spacing:.05em}
+.chk{display:grid;gap:4px;font-size:13px}
+.chk div{display:flex;gap:8px;align-items:center}
+.chk i{width:18px;height:18px;border:1.5px solid var(--bone-2);border-radius:3px;flex:none;font-style:normal;display:grid;place-items:center;font-size:12px}
+.chk i.x{background:var(--good);border-color:var(--good);color:var(--bg)}
+.meter{height:8px;background:var(--raise);border-radius:4px;overflow:hidden}.meter i{display:block;height:100%;background:var(--bronze)}
+.ex{font-size:10px;color:var(--bone-2);text-transform:uppercase;letter-spacing:.08em}
+.chart text{fill:var(--bone-2);font:10px var(--body)}
+.chart .gridl{stroke:var(--line)}
+.chart .band{fill:var(--bronze);opacity:.18}
+.chart .ln{stroke:var(--crimson);stroke-width:2;fill:none}
+.chart .pt{fill:var(--crimson)}
+.qs{display:grid;gap:8px;padding:0;margin:0;list-style:none}
+.qs li{background:var(--surface);border:1px solid var(--line);padding:12px;border-radius:4px}
+.status{background:var(--raise);border:1px dashed var(--bronze);padding:12px;border-radius:4px;font-size:14px}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="lam" aria-hidden="true">Λ</div>
+    <h1>Winter Arc · Training</h1>
+    <span class="tag">Mockup v1 · Entwurf zur Beurteilung</span>
+    <button class="themebtn" id="theme" aria-label="Hell oder Dunkel">◐</button>
+  </header>
+
+  <section>
+    <h2>Der Plan · 52 Wochen</h2>
+    <p class="lead">Start Montag 2. November 2026. Vier Phasen à 13 Wochen. Jede 5. Woche ist leichter (Deload), damit Sehnen und Gelenke nachziehen. Am Ende jeder Phase eine Testwoche: dort siehst du schwarz auf weiss, was du gewonnen hast.</p>
+    <div class="phases">
+      <div class="ph"><div class="rn">I</div><h3>Fundament</h3><p>W1–13 · bis Ende Januar · Technik, Handgelenke, Grundkraft, Essen in Griff kriegen. Ziel: 5 Klimmzüge, Handstand frei 10 Sek.</p></div>
+      <div class="ph"><div class="rn">II</div><h3>Aufbau</h3><p>W14–26 · Februar–April · mehr Sätze, Muskeln wachsen am stärksten. 8–10 kg Hanteln. Ziel: Tuck Planche 5 Sek.</p></div>
+      <div class="ph"><div class="rn">III</div><h3>Kraft &amp; Skills</h3><p>W27–39 · Mai–Juli · schwerere Varianten, Krähe zu Handstand, Handstand-Liegestütz an der Wand.</p></div>
+      <div class="ph"><div class="rn">IV</div><h3>Peak</h3><p>W40–52 · August–Oktober · alles zusammen, Höchstwerte, Jahrestest. Danach: Phase I auf neuem Niveau.</p></div>
+    </div>
+    <div class="week">
+      <div class="day"><b>Mo</b><span>Oberkörper A</span><span>Brust · Schulter vorne · Trizeps · Planche</span></div>
+      <div class="day"><b>Di</b><span>Unterkörper A</span><span>Beine vorne · Waden · Bauch</span></div>
+      <div class="day"><b>Mi</b><span>Oberkörper B</span><span>Rücken · Schulter seitlich/hinten · Bizeps · Unterarme</span></div>
+      <div class="day"><b>Do</b><span>Unterkörper B</span><span>Po · Beine hinten · Schienbein · Füsse · Bauch</span></div>
+      <div class="day"><b>Fr</b><span>Oberkörper C</span><span>Skills lang · Brust · Rücken</span></div>
+      <div class="day"><b>Sa</b><span>Ganzkörper</span><span>Sprungkraft · alles leicht dabei</span></div>
+      <div class="day rest"><b>So</b><span>Ruhe</span><span>Wiegen · Fotos alle 2 Wochen</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Die Gesetze</h2>
+    <ul class="laws">
+      <li>Eine Übung nach der anderen. Nie sechs Dinge auf einmal.</li>
+      <li>Jede Übung mit Figur und 3–5 einfachen Schritten.</li>
+      <li>Timer klein im Knopf. Kein neues Fenster, keine Stimme.</li>
+      <li>Vor dem Training: Muskeln, Ziel, Fortschritt. Und: «Was hast du heute schon gemacht?»</li>
+      <li>Max. 60 Min mit Zeitplan. Supersätze, Pausen 30–45 Sek.</li>
+      <li>Geht eine Übung nicht: sofort die leichtere Stufe.</li>
+      <li>Kein Aufgeben. Nur bei Gelenkschmerz oder Schwindel stoppt die App eine Übung.</li>
+      <li>Jede Woche ein bisschen mehr: eine Wiederholung, 1 Sek länger oder schwerere Stufe.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Die Screens</h2>
+    <div class="phones">
+
+      <div class="ph-col"><div class="cap"><b>1</b>Heute</div>
+        <div class="phone">
+          <div class="bar"><span class="l">Λ</span><span class="num">W1 · TAG 1 · PHASE I</span></div>
+          <div class="ex">Montag 2. November</div>
+          <h3 class="big">Oberkörper A</h3>
+          <div class="sub">Drücken · Handstand · Planche</div>
+          <div class="chips"><span class="chip">Brust</span><span class="chip">Schulter vorne</span><span class="chip">Trizeps</span><span class="chip">Bauch</span></div>
+          <div class="box"><h4>ZIEL HEUTE · SCHLAG DEINE ZAHLEN</h4>
+            <div class="row num"><span>Pike am Boden</span><b>4 <small>(letztes Mal 3)</small></b></div>
+            <div class="row num"><span>Tiefe Liegestütze</span><b>7 <small>(6)</small></b></div>
+            <div class="row num"><span>Handstand frei</span><b>6 Sek <small>(5)</small></b></div>
+          </div>
+          <div class="box"><h4>HEUTE SCHON GEMACHT?</h4>
+            <div class="chips"><span class="chip on">Nichts</span><span class="chip">Klimmzüge</span><span class="chip">Liegestütze</span><span class="chip">Beine</span></div>
+          </div>
+          <button class="cta">Beginnen · 60 Min</button>
+          <button class="ghost">Müde oder Muskelkater? Leichte Version</button>
+          <div class="tl num"><i>0</i><span>Aufwärmen</span><i>4</i><span>Skills: Handstand, Planche</span><i>14</i><span>Paar 1 · Pike ↔ Klimmzüge</span><i>24</i><span>Paar 2 · Tiefe LS ↔ Kniebeuge-Sprünge</span><i>32</i><span>…</span></div>
+        </div>
+        <p class="why">Gesetz IV und V: Muskeln, Ziel und Zeitplan auf einen Blick. Die Antwort auf «heute schon gemacht?» passt den Plan an.</p>
+      </div>
+
+      <div class="ph-col"><div class="cap"><b>2</b>Übung</div>
+        <div class="phone">
+          <div class="bar"><span class="num">PAAR 2 · A · RUNDE 2/3</span><span class="num">24:10</span></div>
+          <div class="prog"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></div>
+          <div data-fig="deeppu"></div>
+          <h3 style="font-size:22px">Tiefer Liegestütz</h3>
+          <div class="chips"><span class="chip">Brust</span><span class="chip">Trizeps</span><span class="chip">Schulter vorne</span></div>
+          <ol class="steps" id="steps"></ol>
+          <div class="row num" style="font-size:13px"><span>Letztes Mal <b>6</b></span><span>Ziel <b>7</b></span><span>Rekord <b>6</b></span></div>
+          <div class="step"><button aria-label="weniger">−</button><div class="num">7</div><button aria-label="mehr">+</button></div>
+          <button class="cta">Fertig → Hüftheben</button>
+          <div class="mini"><button class="ghost">Zu schwer? Normaler LS</button><button class="ghost">🎤 Sagen</button></div>
+        </div>
+        <p class="why">Gesetz I–III und VI: eine Übung, Figur bewegt sich, Schritte aus der Übungsdatenbank von Claude B. «Zu schwer» wechselt sofort eine Stufe runter.</p>
+      </div>
+
+      <div class="ph-col"><div class="cap"><b>3</b>Plan</div>
+        <div class="phone">
+          <div class="bar"><span class="l">Λ</span><span>52 WOCHEN</span></div>
+          <h3 class="big">Dein Jahr</h3>
+          <div class="grid" id="grid"></div>
+          <div class="legend"><span><i class="c now"></i>jetzt</span><span><i class="c d"></i>Deload</span><span><i class="c t"></i>Test</span></div>
+          <div class="box"><h4>DIESE WOCHE</h4>
+            <div class="row"><span>Mo</span><b>Oberkörper A</b></div><div class="row"><span>Di</span><b>Unterkörper A</b></div><div class="row"><span>Mi</span><b>Oberkörper B</b></div><div class="row"><span>Do</span><b>Unterkörper B</b></div><div class="row"><span>Fr</span><b>Oberkörper C</b></div><div class="row"><span>Sa</span><b>Ganzkörper</b></div><div class="row"><span>So</span><b>Ruhe</b></div>
+          </div>
+          <div class="box"><h4>JANUAR-CHECK · W13</h4><div style="font-size:13px">Testwoche: Klimmzüge, Handstand, Liegestütze, Gewicht. Vergleich mit heute.</div></div>
+        </div>
+        <p class="why">Das ganze Jahr in einem Blick. Verpasste Tage verschieben sich, nichts wird rot.</p>
+      </div>
+
+      <div class="ph-col"><div class="cap"><b>4</b>Skills</div>
+        <div class="phone">
+          <div class="bar"><span class="l">Λ</span><span>SKILL-LEITERN</span></div>
+          <h4 class="d" style="font-size:20px">Handstand</h4>
+          <div data-fig="hswall"></div>
+          <div class="lad">
+            <div class="ok"><span>✓</span><span>Pike-Halte</span><em>geschafft</em></div>
+            <div class="cur"><span>●</span><span>An der Wand · 3 × 45 Sek</span><em class="num">25 / 45</em></div>
+            <div class="lock"><span>○</span><span>Frei · 3 × 10 Sek</span><em class="num">best 5</em></div>
+            <div class="lock"><span>○</span><span>Frei 30 Sek</span><em></em></div>
+            <div class="lock"><span>○</span><span>Fingerspitzen</span><em></em></div>
+          </div>
+          <h4 class="d" style="font-size:20px">Planche</h4>
+          <div class="lad">
+            <div class="ok"><span>✓</span><span>Frog Stand</span><em>geschafft</em></div>
+            <div class="cur"><span>●</span><span>Planche-Lehne · 3 × 30 Sek</span><em class="num">20 / 30</em></div>
+            <div class="lock"><span>○</span><span>Tuck Planche · 5 × 5 Sek</span><em></em></div>
+            <div class="lock"><span>○</span><span>Fortgeschrittene Tuck</span><em></em></div>
+            <div class="lock"><span>○</span><span>Straddle</span><em></em></div>
+          </div>
+        </div>
+        <p class="why">Jede Stufe mit klarem Test. Schaffst du ihn, schaltet die App die nächste frei.</p>
+      </div>
+
+      <div class="ph-col"><div class="cap"><b>5</b>Körper</div>
+        <div class="phone">
+          <div class="bar"><span class="l">Λ</span><span class="ex">Beispieldaten</span></div>
+          <div class="tiles"><div class="tile"><b class="num">51.6</b><span>kg · Woche 8</span></div><div class="tile"><b class="num">+1.6</b><span>kg seit Start</span></div></div>
+          <svg class="chart" id="chart" viewBox="0 0 272 150" role="img" aria-label="Gewicht über 8 Wochen, Beispieldaten"></svg>
+          <div class="box"><h4>REKORDE</h4>
+            <div class="row num"><span>Klimmzüge</span><b>4 → 6</b></div>
+            <div class="row num"><span>Handstand frei</span><b>5 → 9 Sek</b></div>
+            <div class="row num"><span>Tiefe Liegestütze</span><b>6 → 10</b></div>
+          </div>
+          <div class="box"><h4>MASSE · MONATLICH</h4><div class="row num"><span>Arm</span><b>25.0 cm</b></div><div class="row num"><span>Brust</span><b>82 cm</b></div></div>
+          <div class="box"><h4>FOTOS</h4><div style="font-size:13px">Nächste: So 15.11. Gleiches Licht, vorne, seitlich, hinten. Bleiben auf deinem Handy.</div></div>
+        </div>
+        <p class="why">Wöchentlich wiegen, Ziel +0.25–0.5 kg pro Woche (Band im Diagramm). Rekorde zeigen, dass es wirkt.</p>
+      </div>
+
+      <div class="ph-col"><div class="cap"><b>6</b>Essen</div>
+        <div class="phone">
+          <div class="bar"><span class="l">Λ</span><span>ESSEN HEUTE</span></div>
+          <div class="tiles"><div class="tile"><b class="num">2800</b><span>kcal Ziel</span></div><div class="tile"><b class="num">95 g</b><span>Protein Ziel</span></div></div>
+          <div class="box"><h4>CHECKLISTE</h4>
+            <div class="chk"><div><i class="x">✓</i>Shake am Morgen</div><div><i class="x">✓</i>Znüni: Riegel oder Skyr</div><div><i></i>Zmittag + Milchdrink</div><div><i></i>Shake nach dem Training</div><div><i></i>Znacht: grosse Portion</div><div><i></i>8 h Schlaf · 22:30 ins Bett</div></div>
+          </div>
+          <div class="box"><h4>KOFFEIN HEUTE</h4><div class="meter"><i style="width:57%"></i></div><div class="row num" style="font-size:12px;margin-top:4px"><span>85 mg</span><span>max. 150 mg · nach 14 Uhr nichts</span></div></div>
+          <div class="box"><h4>EINKAUF · MIGROS</h4><div style="font-size:13px">Whey M-Budget · Skyr ×4 · Proteinriegel ×8 · Haferflocken · Bananen · Emmi High Protein ×4</div></div>
+        </div>
+        <p class="why">Ohne Kalorienzählen: Checkliste statt Rechnen. Koffein-Grenze, weil 3 Lattes am Freitag Kopfweh gemacht haben.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Stand der Zusammenarbeit</h2>
+    <div class="status">
+      <b>Claude A:</b> Figuren (89 Übungen inkl. Sprungkraft), Plan, dieser Mockup.<br>
+      <b>Claude B:</b> Übungsdatenbank fertig (84 Übungen, einfache Schritte, Fehler, Sicherheit, Leitern; Tür-Übungen gesperrt). Arbeitet am 52-Wochen-Programm. Prüft diesen Mockup heute Nacht; seine Kritik wird eingearbeitet, bevor gebaut wird.
+    </div>
+  </section>
+
+  <section>
+    <h2>Deine Entscheidung</h2>
+    <ul class="qs">
+      <li><b>1. Design:</b> Passt die Spartan-Richtung (dunkel, Rot, Bronze, Λ)? Oder heller, härter, anders?</li>
+      <li><b>2. Wochenplan:</b> Passen 3× Oberkörper, 2× Unterkörper, 1× Ganzkörper so verteilt?</li>
+      <li><b>3. Start:</b> Montag 2. November?</li>
+      <li><b>Sag «gut»</b>, dann bauen wir heute Nacht die App. Oder schreib, was anders soll.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+/*FIGURES*/
+const STEPS = /*STEPS*/;
+document.getElementById("steps").innerHTML = STEPS.map(s => `<li>${s}</li>`).join("");
+document.querySelectorAll("[data-fig]").forEach(el => { if (el.tagName !== "svg") el.outerHTML = figSVG(el.dataset.fig); });
+mountFigs(document);
+// 52-Wochen-Raster
+const g = document.getElementById("grid"); let h = "";
+["I","II","III","IV"].forEach((rn, r) => { h += `<span class="rn">${rn}</span>`; for (let i = 1; i <= 13; i++){ const w = r*13 + i; const cls = w % 13 === 0 ? "t" : (w % 5 === 0 ? "d" : ""); h += `<i class="c ${cls} ${w===1?"now":""}" title="Woche ${w}">${w%13===0?"T":""}</i>`; } });
+g.innerHTML = h;
+// Gewichtsdiagramm (Beispieldaten), eine Skala für Linie, Band und Achsen
+const W = [50.0,50.2,50.3,50.7,50.9,51.2,51.3,51.6], X0 = 34, X1 = 262, Y0 = 130, Y1 = 12, lo = 49.5, hi = 52.5;
+const x = i => X0 + (X1-X0) * i / 7, y = v => Y0 - (Y0-Y1) * (v-lo) / (hi-lo);
+let s = "";
+[50,51,52].forEach(v => s += `<line class="gridl" x1="${X0}" x2="${X1}" y1="${y(v)}" y2="${y(v)}"/><text x="4" y="${y(v)+3}">${v} kg</text>`);
+s += `<polygon class="band" points="${[0,7].map(i=>`${x(i)},${y(50+0.25*i)}`).join(" ")} ${[7,0].map(i=>`${x(i)},${y(50+0.5*i)}`).join(" ")}"/>`;
+s += `<polyline class="ln" points="${W.map((v,i)=>`${x(i)},${y(v)}`).join(" ")}"/>` + W.map((v,i)=>`<circle class="pt" cx="${x(i)}" cy="${y(v)}" r="${i===7?4:2.5}"/>`).join("");
+[0,4,7].forEach(i => s += `<text x="${x(i)-8}" y="146">W${i+1}</text>`);
+document.getElementById("chart").innerHTML = s;
+document.getElementById("theme").onclick = () => { const r = document.documentElement; const light = r.dataset.theme ? r.dataset.theme === "light" : matchMedia("(prefers-color-scheme: light)").matches; r.dataset.theme = light ? "dark" : "light"; };
+</script>
