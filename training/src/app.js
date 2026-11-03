@@ -713,7 +713,7 @@ function viewBericht(){
   const recs = ids.map(id => { const h = history(id, k); const best = Math.max(...Object.values(log.sets).filter(s => s.id === id).map(s => s.v)); return {id, best, prev: h.best}; }).filter(r => r.prev != null && r.best > r.prev);
   const q = dayPick(quotes(), 7);
   $("#view").innerHTML = `<div class="report">
-    ${logoSVG(96)}
+    ${log.done && typeof HOPLITE_IMG === "string" && HOPLITE_IMG ? `<div class="hop-hero"><img src="${HOPLITE_IMG}" alt="" width="182" height="460"></div>` : logoSVG(96)}
     <div class="eyebrow">Kampfbericht · ${longDate(k)}</div>
     <h1 class="title-xl">${log.done ? "Agoge bestanden" : "Noch nicht fertig"}</h1>
     <div class="tiles" style="width:100%"><div class="tile"><b class="num">${dur ? fmt(dur) : "–"}</b><span>Minuten</span></div><div class="tile"><b class="num">${Object.values(log.sets).filter(isHard).length}</b><span>harte Sätze</span></div>
@@ -963,7 +963,7 @@ function viewSettings(){
     ${Object.entries(S.videoOk || {}).filter(([, ok]) => ok === false).length ? `<div class="card"><div class="kicker">Ausgeblendete Videos</div><div class="list">${Object.entries(S.videoOk).filter(([, ok]) => ok === false).map(([id]) => `<div class="line"><span>${esc(exName(id))}</span><button class="chip" data-vshow="${id}">Wieder zeigen</button></div>`).join("")}</div></div>` : ""}
     <div class="card"><div class="kicker">Neu anfangen</div><button class="btn sm danger" id="reset">Alles löschen</button></div>
     <p class="small">Winter Arc Training · Inhalte von Claude A (App, Design) und Claude B (3D-Körper, Übungen, Programm, Essen, Coach). Keine Medizin: bei Schmerzen oder Unsicherheit Arzt fragen.</p>
-    <p class="small">Logo: «Spartan helmet» von Delapouite, <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>, Lizenz CC BY 3.0 (eingefärbt). Fotos: free-exercise-db, Public Domain. 3D-Körper: <a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/" target="_blank" rel="noopener">BodyParts3D</a> © DBCLS, Lizenz <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (vereinfacht, Kopf ersetzt, eingefärbt, bewegt).</p>
+    <p class="small">Logo: «Spartan helmet» von Delapouite, <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>, Lizenz CC BY 3.0 (eingefärbt). Hoplit im Kampfbericht: 3D-Modell von Sketchfab («Aegis Sentinel», von Benaja geladen), gerendert. Übungs-Puppe: Mixamo «Y Bot», Bewegungen von Mixamo. Fotos: free-exercise-db, Public Domain. 3D-Körper: <a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/" target="_blank" rel="noopener">BodyParts3D</a> © DBCLS, Lizenz <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (vereinfacht, Kopf ersetzt, eingefärbt, bewegt).</p>
   </div>`;
   $("#sSave").onclick = () => {
     P.name = $("#sName").value.trim(); P.alter = Number($("#sAlter").value) || P.alter; P.cm = Number($("#sCm").value) || P.cm;
