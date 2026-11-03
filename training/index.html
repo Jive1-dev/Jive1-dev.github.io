@@ -2468,7 +2468,10 @@ function viewKoerper(){
 function beforeAfter(){
   const sw = PROG._meta.startwerte || {}, k = today();
   const rows = Object.entries(sw).filter(([id, v]) => EX[id] && typeof v === "number").map(([id, v]) => {
-    const h = history(id, addDays(k, 1)); return `<div class="line"><span>${esc(exName(id))}</span><b class="num">${v} → ${h.best ?? `<span class="tbd">offen</span>`}${h.best != null && isSec(EX[id].einheit) ? " Sek" : ""}</b></div>`; });
+    // Trainingssätze liegen absichtlich unter dem Maximaltest: nur Fortschritt zeigen, sonst neutral auf den nächsten Test verweisen
+    const h = history(id, addDays(k, 1)), sek = isSec(EX[id].einheit) ? " Sek" : "", nt = [13, 26, 39, 52].find(w => w >= weekOf(k)) || 52;
+    const right = h.best == null ? `<span class="tbd">offen</span>` : h.best >= v ? `${h.best}${sek}` : `<span class="tbd">Test W${nt}</span>`;
+    return `<div class="line"><span>${esc(exName(id))}</span><b class="num">${v}${h.best != null && h.best < v ? sek : ""} → ${right}</b></div>`; });
   return rows.length ? `<div class="card"><div class="kicker">Start gegen jetzt</div><div class="list">${rows.join("")}</div><p class="small" style="margin-top:6px">Startwerte vom 1. November. In jeder Testwoche (13, 26, 39, 52) misst du neu.</p></div>` : "";
 }
 
