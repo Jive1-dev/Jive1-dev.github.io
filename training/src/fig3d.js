@@ -109,12 +109,23 @@ const F3D = (() => {
   // ---------- Körper ----------
   const PARTS = ["chest", "pec0", "pec1", "abs", "trap", "belly", "pelvis", "neck", "head", "crest", "delt0", "delt1", "glute",
     "ua0", "el0", "fa0", "hand0", "ua1", "el1", "fa1", "hand1", "th0", "kn0", "sh0", "ft0", "th1", "kn1", "sh1", "ft1", "db0", "db1", "ball"];
+  // Posen mit sehr starker Hüftbeugung (> 150°, z. B. Krähe, Frosch, Tuck-Planche; dazu Tuck-L-Sitz) bleiben vorerst bei der runden Statue:
+  // dort reisst der Anatomie-Körper noch (abgesprochen mit A, bis zur echten Lösung).
+  const DEEP = new Map();
+  function deepFlex(id){
+    if (DEEP.has(id)) return DEEP.get(id);
+    let max = 0;
+    figKeys(id).forEach(K => { const S = solve(K), dx = S.n[0] - S.p[0], dy = S.n[1] - S.p[1];
+      S.legs.forEach(L => { if (!L) return; const tx = L[0][0] - S.p[0], ty = L[0][1] - S.p[1];
+        const a = Math.acos(Math.max(-1, Math.min(1, (dx * tx + dy * ty) / (Math.hypot(dx, dy) * Math.hypot(tx, ty) || 1)))) * 180 / Math.PI; max = Math.max(max, 180 - a); }); });
+    const r = id === "tuckl" || (!FRONT_VIEW.has(id) && max > 150); DEEP.set(id, r); return r;
+  }
   function buildScene(id, muscles){
     const f = FIGS[id], scene = new THREE.Scene(), body = {}; if (ENV) scene.environment = ENV;
     const on = new Set(); (muscles || []).forEach(m => (MUSCLE_SEG[m] || []).forEach(s => on.add(s)));
     const segOf = k => k.replace(/[01]$/, "").replace("glute", "hip").replace("pelvis", "belly").replace(/^el$/, "x").replace(/^kn$/, "x")
       .replace(/^pec$/, "chest").replace(/^trap$/, "neck").replace(/^abs$/, "belly");
-    const ana = typeof BODY3D !== "undefined" ? anatomyMesh(muscles) : null; if (ana) scene.add(ana);
+    const ana = typeof BODY3D !== "undefined" && !deepFlex(id) ? anatomyMesh(muscles) : null; if (ana) scene.add(ana);
     PARTS.forEach(k => {
       let o;
       if (ana && !/^db|^ball/.test(k)) return;
@@ -367,7 +378,9 @@ const F3D = (() => {
   // Rahmen aus der echten Figur über die ganze Bewegung (+ Geräte), damit sie das Bild füllt
   function fitBox(st, id){
     const box = new THREE.Box3(), f = FIGS[id], n = figKeys(id).length, T = (n === 2 ? 2 : n) * f.ms, tmp = new THREE.Box3();
-    for (let k = 0; k < 8; k++){ pose(st, figState(id, T * k / 8)); st.ana.geometry.computeBoundingBox(); box.union(st.ana.geometry.boundingBox); }
+    for (let k = 0; k < 8; k++){ pose(st, figState(id, T * k / 8));
+      if (st.ana){ st.ana.geometry.computeBoundingBox(); box.union(st.ana.geometry.boundingBox); }
+      else Object.values(st.body).forEach(o => { if (o.visible){ o.updateMatrixWorld(true); tmp.setFromObject(o); box.union(tmp); } }); }
     if (st.props.children.length){ tmp.setFromObject(st.props); box.union(tmp); }
     return box;
   }
@@ -390,7 +403,7 @@ const F3D = (() => {
     const w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
     const dpr = Math.min(2, window.devicePixelRatio || 1), W = Math.round(w * dpr), H = Math.round(h * dpr);
     if (cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; }
-    if (st.ana && !st.fit) st.fit = fitBox(st, id);
+    if (!st.fit) st.fit = fitBox(st, id);
     pose(st, now == null ? solve(figKeys(id)[0]) : figState(id, now));
     renderer.setSize(W, H, false); if (st.fit) aimFit(id, st.fit, W / H); else aimCamera(id, W / H);
     renderer.render(st.scene, cam);
