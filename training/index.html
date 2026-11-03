@@ -424,6 +424,43 @@ figure.photo.thumb::before{display:none}
 .rank-wrap #saved,body.agoge .rank-wrap #saved{position:absolute;left:auto;right:0;top:50%;bottom:auto;transform:translateY(-50%) scale(.96);white-space:nowrap;border-radius:999px;padding:5px 11px;font-size:12px;background:var(--card-a);border:1px solid color-mix(in srgb,var(--good) 55%,transparent);color:var(--good);box-shadow:var(--sh);transition:opacity .25s var(--ease),transform .25s var(--ease)}
 .rank-wrap #saved.on{transform:translateY(-50%) scale(1)}
 .rank-wrap #saved.warn{border-color:var(--bronze);color:var(--bronze)}
+
+/* Runde 2: Einheiten an Zahlen, Muskelkarte lesbar, kein Wasserzeichen hinter Formularen */
+.tile b small{font-size:.5em;margin-left:3px;color:var(--bone-2);font-weight:500;letter-spacing:.04em}
+.card.hero:has(input,select)::after{display:none}
+.mmap .mm-body *{fill:color-mix(in srgb,var(--bone) 7%,transparent);stroke:color-mix(in srgb,var(--bone) 16%,transparent)}
+.mmap .mm-r{fill:color-mix(in srgb,var(--bone) 16%,transparent);stroke:color-mix(in srgb,var(--bg) 70%,transparent)}
+.mmap .mm-r.s1{fill:color-mix(in srgb,var(--crimson) 45%,color-mix(in srgb,var(--bone) 16%,transparent))}
+.mmap .mm-r.s3{fill:var(--crimson);filter:drop-shadow(0 0 3px color-mix(in srgb,var(--crimson) 70%,transparent))}
+.btn.danger{color:var(--crimson);border-color:color-mix(in srgb,var(--crimson) 45%,transparent)}
+.tbd{font:500 12px var(--body);letter-spacing:.06em;color:var(--bone-3);text-transform:uppercase}
+summary.meal{display:grid!important;gap:2px;padding:6px 0}
+summary.meal small{font-size:12.5px;color:var(--bone-3);font-weight:500}
+.stack a:not(.btn):not(.icon-btn),.small a{color:var(--bronze);text-decoration-color:color-mix(in srgb,var(--bronze) 40%,transparent);text-underline-offset:3px}
+/* Laptop: Tabs als Leiste oben in der Kopfzeile statt unten über dem Inhalt */
+@media (min-width:1024px){
+  .tabs{top:calc(env(safe-area-inset-top,0px) + 9px);bottom:auto;width:auto;padding:4px;border-radius:14px;box-shadow:0 6px 18px -10px rgba(0,0,0,.5),0 1px 0 var(--hair) inset}
+  .tabs .in{display:flex;gap:2px;max-width:none}
+  .tabs a{height:40px;grid-auto-flow:column;gap:8px;padding:0 14px;font-size:12px;border-radius:10px}
+  .tabs a svg{width:18px;height:18px}
+  .tabs a::before{top:0;left:0;width:100%;height:100%;transform:none;border-radius:10px}
+  .tabs a[aria-current="page"]::before{transform:none}
+  .app{padding-bottom:48px}
+  .toast{bottom:28px}
+  body.agoge .tabs{display:none}
+}
+.rank-wrap .rank{transition:opacity .2s var(--ease)}
+.rank-wrap:has(#saved.on) .rank{opacity:0}
+/* Runde 3: Übungs-Screen auf dem Handy: Name und Ziel zuerst, Bild danach und etwas kleiner, damit die Leiste unten nichts Wichtiges verdeckt */
+.ag-card > .eyebrow{order:-5}
+.ag-card > .ag-name{order:-4}
+.ag-card > .goal{order:-3}
+@media (max-width:1023px){
+  .ag-card > figure.photo{aspect-ratio:16/10}
+  canvas.fig3d{max-height:32vh}
+}
+.stepper input{-moz-appearance:textfield;appearance:textfield}
+.stepper input::-webkit-inner-spin-button,.stepper input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 </style>
 <div id="root"></div>
 <noscript>Diese App braucht JavaScript.</noscript>
@@ -846,8 +883,10 @@ const F3D = (() => {
     const on = new Set(); (muscles || []).forEach(m => (MUSCLE_SEG[m] || []).forEach(s => on.add(s)));
     const segOf = k => k.replace(/[01]$/, "").replace("glute", "hip").replace("pelvis", "belly").replace(/^el$/, "x").replace(/^kn$/, "x")
       .replace(/^pec$/, "chest").replace(/^trap$/, "neck").replace(/^abs$/, "belly");
+    const ana = typeof BODY3D !== "undefined" ? anatomyMesh(muscles) : null; if (ana) scene.add(ana);
     PARTS.forEach(k => {
       let o;
+      if (ana && !/^db|^ball/.test(k)) return;
       if (k === "db0" || k === "db1"){
         if (!(f.db || []).includes(+k[2])) return;
         o = new THREE.Group(); const h = mesh(CYL, mat.metal); h.scale.set(0.9, 11, 0.9); h.rotation.x = Math.PI / 2; o.add(h);
@@ -869,18 +908,44 @@ const F3D = (() => {
     const disc = new THREE.Mesh(new THREE.CircleGeometry(Math.max(70, bw0 * 0.55), 64), GLOW); disc.rotation.x = -Math.PI / 2; disc.position.set(bx0 + bw0 / 2, -0.05, 0); scene.add(disc);
     const floor = mesh(new THREE.PlaneGeometry(600, 300), mat.shadow, false); floor.rotation.x = -Math.PI / 2; floor.position.set(100, 0.02, 0); scene.add(floor);
     // Licht: warmes Hauptlicht mit Schatten, bronzenes Gegenlicht, kühles Fülllicht
-    scene.add(new THREE.HemisphereLight(0xfff4e2, 0x1a120c, 0.55));
-    const key = new THREE.DirectionalLight(0xfff1dc, 1.55); key.position.set(60, 190, 160); key.target.position.set(100, 40, 0);
+    scene.add(new THREE.HemisphereLight(0xfff4e2, 0x1a120c, ana ? 0.3 : 0.55));
+    const key = new THREE.DirectionalLight(0xfff1dc, ana ? 1.35 : 1.55); key.position.set(60, 190, 160); key.target.position.set(100, 40, 0);
     key.castShadow = true; key.shadow.mapSize.set(1024, 1024); key.shadow.radius = 4; key.shadow.bias = -0.0008;
     Object.assign(key.shadow.camera, { left: -140, right: 140, top: 150, bottom: -60, near: 10, far: 500 });
     scene.add(key, key.target);
     const rim = new THREE.DirectionalLight(0xd09a55, 1.1); rim.position.set(180, 120, -170); scene.add(rim);
     const fill = new THREE.DirectionalLight(0x9fb4d0, 0.35); fill.position.set(-120, 60, 80); scene.add(fill);
-    return { scene, body, id };
+    return { scene, body, id, ana, props: props3 };
   }
 
   const SH = 9.5, HIP = 5.2;   // halbe Schulter- und Hüftbreite
+  function poseAna(st, S){
+    const { body: B, id } = st, front = FRONT_VIEW.has(id);
+    const off = (i, w) => front ? V(i ? -w : w, 0, 0) : V(0, 0, i ? -w : w);
+    const n = P(S.n), m = P(S.m), p = P(S.p), h = P(S.h), spine = n.clone().sub(p).normalize();
+    const fwd = front ? V(0, 0, 1) : V(spine.y, -spine.x, 0);
+    const SHW = 0.172 * G, HW = 0.085 * G;
+    const arm = i => S.arms[i] || S.arms[0], leg = i => S.legs[i] || S.legs[0];
+    const sh = i => n.clone().add(off(i, SHW)).addScaledVector(spine, -0.055 * G);
+    const el = i => arm(i) ? P(arm(i)[0]).add(off(i, SHW)) : sh(i).addScaledVector(spine, -0.26 * G);
+    const wr = i => arm(i) ? P(arm(i)[1]).add(off(i, SHW)) : el(i).addScaledVector(spine, -0.23 * G);
+    const fi = i => { const a = el(i), b = wr(i);
+      if (b.y < 4){ const hz = h.clone().sub(p); hz.y = 0; if (front || hz.lengthSq() < 1) hz.set(1, 0, 0); return b.clone().addScaledVector(hz.normalize(), 0.13 * G).setY(Math.max(0.6, b.y - 1)); }   // Hand flach am Boden
+      return b.clone().addScaledVector(b.clone().sub(a).normalize(), 0.155 * G); };
+    const wr0 = wr; const wrUp = i => { const w = wr0(i); if (w.y < 2.2) w.y = 2.2; return w; };
+    const hip = i => p.clone().add(off(i, HW));
+    const kn = i => leg(i) ? P(leg(i)[0]).add(off(i, HW)) : hip(i).addScaledVector(spine, -0.415 * G);
+    const an = i => leg(i) ? P(leg(i)[1]).add(off(i, HW)) : kn(i).addScaledVector(spine, -0.395 * G);
+    const toe = i => { const L2 = leg(i); if (L2 && L2[2]) return P(L2[2]).add(off(i, HW)).addScaledVector(P(L2[2]).sub(P(L2[1])).normalize(), 2);
+      const a = an(i), sh2 = kn(i).sub(a).normalize(), f2 = front ? V(0, 0, 1) : V(-sh2.y, sh2.x, 0).multiplyScalar(-1);
+      return a.clone().addScaledVector(f2.dot(fwd) < 0 ? f2.negate() : f2, 0.15 * G).addScaledVector(sh2, -0.05 * G); };
+    const J = { p: () => p, m: () => m, n: () => n, h: () => h, sh, el, wr: wrUp, fi, hip, kn, an, toe };
+    skinPose(st, J, front);
+    [0, 1].forEach(i => { if (B["db" + i] && arm(i)){ const w = wr(i), d = w.clone().sub(el(i)).normalize(); B["db" + i].position.copy(w).addScaledVector(d, 0.07 * G); B["db" + i].rotation.set(0, front ? Math.PI / 2 : 0, 0); } });
+    if (B.ball && S.arms[0]){ const a = wr(0), b2 = wr(1); B.ball.position.copy(a).add(b2).multiplyScalar(0.5).add(V(0, 4, 0)); B.ball.scale.set(7, 7, 7); }
+  }
   function pose(st, S){
+    if (st.ana) return poseAna(st, S);
     const { body: B, id } = st, front = FRONT_VIEW.has(id);
     const off = (i, w) => front ? V(i ? -w : w, 0, 0) : V(0, 0, i ? -w : w);
     const n = P(S.n), m = P(S.m), p = P(S.p), h = P(S.h);
@@ -932,6 +997,85 @@ const F3D = (() => {
     if (B.ball && S.arms[0]){ const a = P(S.arms[0][1]), b2 = P((S.arms[1] || S.arms[0])[1]); B.ball.position.copy(a).add(b2).multiplyScalar(0.5).add(V(0, 4, 0)); B.ball.scale.set(7, 7, 7); }
   }
 
+
+  // ---------- Übungsfigur aus dem Anatomie-Körper (Skinning auf die Posen aus figures.js) ----------
+  // Ruhe-Gelenke in Metern (BodyParts3D, linke Seite x > 0; rechts gespiegelt), aus den Knochen abgeleitet.
+  const RJ = { p: [0, 0.885, -0.015], m: [0, 1.165, -0.03], n: [0, 1.44, -0.03], h: [0, 1.635, 0.005],
+    sh: [0.172, 1.385, -0.025], el: [0.212, 1.125, -0.02], wr: [0.245, 0.893, -0.004], fi: [0.262, 0.74, 0.025],
+    hip: [0.085, 0.885, -0.015], kn: [0.085, 0.47, -0.012], an: [0.072, 0.075, -0.028], toe: [0.088, 0.018, 0.125] };
+  const G = 55;   // Posen-Einheiten pro Meter (Oberschenkel 23 ≈ 0.415 m)
+  const rj = (k, side) => { const v = RJ[k]; return V(side < 0 ? -v[0] : v[0], v[1], v[2]); };
+  // Knochen: [Name, Start, Ende, Seite (0 Mitte, 1 links, -1 rechts), Eltern]
+  const BONES = [["lowT", "p", "m", 0, -1], ["upT", "m", "n", 0, 0], ["head", "n", "h", 0, 1]];
+  [1, -1].forEach(sd => { const b = BONES.length;
+    BONES.push(["UA", "sh", "el", sd, 1], ["FA", "el", "wr", sd, b], ["HD", "wr", "fi", sd, b + 1], ["TH", "hip", "kn", sd, 0], ["SHN", "kn", "an", sd, b + 3], ["FT", "an", "toe", sd, b + 4]); });
+  BONES.forEach(b => { b.a = rj(b[1], b[3] || 1); b.b = rj(b[2], b[3] || 1); if (!b[3]){ b.a.x = 0; b.b.x = 0; } b.len = b.a.distanceTo(b.b); b.u = b.b.clone().sub(b.a).normalize(); });
+  const bi = (nm, sd) => BONES.findIndex(b => b[0] === nm && (b[3] === sd || !b[3]));
+  const ALLOW = { brust: ["upT", "UA", "lowT"], schulter_vorne: ["UA", "upT"], schulter_seite: ["UA", "upT"], schulter_hinten: ["UA", "upT"], ruecken_oben: ["upT", "UA"], ruecken_breit: ["upT", "lowT", "UA"],
+    nacken: ["upT", "head"], bizeps: ["UA", "FA"], trizeps: ["UA", "FA"], unterarm: ["FA", "UA", "HD"], bauch: ["lowT", "upT"], bauch_seite: ["lowT", "upT"], ruecken_unten: ["lowT", "upT"],
+    po: ["lowT", "TH"], hueftbeuger: ["lowT", "TH"], hose: ["lowT", "TH", "upT"], bein_vorne: ["TH", "SHN"], bein_innen: ["TH", "lowT"], bein_hinten: ["TH", "SHN"],
+    wade: ["SHN", "TH", "FT"], schienbein: ["SHN", "FT"], fuss: ["FT", "SHN"] };
+  const TRUNKY = new Set(["brust", "ruecken_oben", "ruecken_breit", "nacken", "bauch", "bauch_seite", "ruecken_unten", "po", "hose"]);
+  function segDist(v, b){ const t = Math.max(0, Math.min(b.len, v.clone().sub(b.a).dot(b.u))); return v.distanceTo(b.a.clone().addScaledVector(b.u, t)); }
+  let SKIN = null;
+  function skinWeights(){
+    if (SKIN) return SKIN;
+    const { raw, reg, keys } = bodyGeometry(), n = reg.length, b0 = new Uint8Array(n), b1 = new Uint8Array(n), w0 = new Float32Array(n), v = V(0, 0, 0), R = 0.045;
+    for (let i = 0; i < n; i++){
+      v.set(raw[i * 3], raw[i * 3 + 1], raw[i * 3 + 2]); const sd = v.x >= 0 ? 1 : -1, k = keys[reg[i]];
+      let names = ALLOW[k];
+      if (!names) names = v.y > 1.42 ? ["head", "upT"] : v.y < 0.12 ? ["FT", "SHN"] : Math.abs(v.x) > 0.17 && v.y < 1.0 ? ["HD", "FA"] : ["upT", "lowT", "UA", "TH"];
+      // weiche Verteilung auf die zwei nächsten erlaubten Knochen (1/d^6), Rumpfmuskeln bleiben bevorzugt am Rumpf
+      const cand = names.map(nm => { const j = bi(nm, BONES.find(b => b[0] === nm)[3] ? sd : 0); let d = segDist(v, BONES[j]) + 0.004;
+        if (TRUNKY.has(k) && /UA|TH/.test(nm)) d *= 2.4; if (/schulter/.test(k || "") && nm === "upT") d *= 1.4; return { j, d }; }).sort((x, y) => x.d - y.d);
+      const best = cand[0].j, other = (cand[1] || cand[0]).j, a1 = 1 / Math.pow(cand[0].d, 6), a2 = cand[1] ? 1 / Math.pow(cand[1].d, 6) : 0, w = a1 / (a1 + a2);
+      b0[i] = best; b1[i] = other; w0[i] = w;
+    }
+    SKIN = { b0, b1, w0 }; return SKIN;
+  }
+  const ANA_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.58, metalness: 0.03, envMapIntensity: 0.4 });
+  function anatomyMesh(muscles){
+    const B = bodyGeometry(), n = B.reg.length, on = new Set(muscles || []);
+    const geo = new THREE.BufferGeometry(), col = new Float32Array(n * 3);
+    for (let v = 0; v < n; v++){ const k = B.keys[B.reg[v]], c = k === "hose" ? HOSE : on.has(k) ? LV_COL[3] : B.layer[v] ? LV_COL[0] : SKIN_COL; col[v * 3] = c.r; col[v * 3 + 1] = c.g; col[v * 3 + 2] = c.b; }
+    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(n * 3), 3)); geo.setAttribute("normal", new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+    geo.setAttribute("color", new THREE.BufferAttribute(col, 3)); geo.setIndex(new THREE.BufferAttribute(B.idx, 1));
+    const m = mesh(geo, ANA_MAT); m.frustumCulled = false; skinWeights(); return m;
+  }
+  const R0_SIDE = new THREE.Quaternion().setFromAxisAngle(V(0, 1, 0), Math.PI / 2), Q1 = new THREE.Quaternion(), Q2 = new THREE.Quaternion();
+  // Pose (Welt-Gelenke) → Matrizen pro Knochen → Eckpunkte
+  function skinPose(st, J, front){
+    const B = bodyGeometry(), { b0, b1, w0 } = skinWeights(), R0 = front ? new THREE.Quaternion() : R0_SIDE, axis = V(0, 0, 1);
+    const L = BONES.map(b => {
+      const sd = b[3], key = s2 => s2 ? (front ? (sd > 0 ? 0 : 1) : (sd > 0 ? 1 : 0)) : 0;   // Seite → Index der Pose
+      const a = J[b[1]](key(sd)), e = J[b[2]](key(sd)), up = e.clone().sub(a), plen = up.length() || 1e-6; up.divideScalar(plen);
+      const ur = b.u.clone().applyQuaternion(R0);
+      // Drehung in der Bewegungsebene (um die Blickachse z), dann Rest ausrichten
+      const ang = Math.atan2(up.y, up.x) - Math.atan2(ur.y, ur.x);
+      Q1.setFromAxisAngle(axis, ang).multiply(R0); const ur2 = b.u.clone().applyQuaternion(Q1);
+      Q2.setFromUnitVectors(ur2, up); const q = Q2.clone().multiply(Q1);
+      const ratio = plen / (b.len * G), m = new THREE.Matrix4().makeRotationFromQuaternion(q);
+      const S = new THREE.Matrix3().set(1 + (ratio - 1) * b.u.x * b.u.x, (ratio - 1) * b.u.x * b.u.y, (ratio - 1) * b.u.x * b.u.z,
+        (ratio - 1) * b.u.y * b.u.x, 1 + (ratio - 1) * b.u.y * b.u.y, (ratio - 1) * b.u.y * b.u.z, (ratio - 1) * b.u.z * b.u.x, (ratio - 1) * b.u.z * b.u.y, 1 + (ratio - 1) * b.u.z * b.u.z);
+      const lin = new THREE.Matrix4().setFromMatrix3(S); lin.premultiply(m); lin.multiplyScalar(G); lin.elements[15] = 1;
+      const ta = b.a.clone().applyMatrix4(lin); lin.setPosition(a.x - ta.x, a.y - ta.y, a.z - ta.z);
+      return { e: lin.elements, r: m.elements };
+    });
+    const pos = st.ana.geometry.attributes.position.array, nr = st.ana.geometry.attributes.normal.array, raw = B.raw, rn = B.nrm, n = b0.length;
+    for (let i = 0; i < n; i++){
+      const x = raw[i * 3], y = raw[i * 3 + 1], z = raw[i * 3 + 2], A = L[b0[i]].e, C = L[b1[i]].e, w = w0[i], u = 1 - w;
+      pos[i * 3] = w * (A[0] * x + A[4] * y + A[8] * z + A[12]) + u * (C[0] * x + C[4] * y + C[8] * z + C[12]);
+      pos[i * 3 + 1] = w * (A[1] * x + A[5] * y + A[9] * z + A[13]) + u * (C[1] * x + C[5] * y + C[9] * z + C[13]);
+      pos[i * 3 + 2] = w * (A[2] * x + A[6] * y + A[10] * z + A[14]) + u * (C[2] * x + C[6] * y + C[10] * z + C[14]);
+      const nx = rn[i * 3], ny = rn[i * 3 + 1], nz = rn[i * 3 + 2], Ra = L[b0[i]].r, Rc = L[b1[i]].r;
+      nr[i * 3] = w * (Ra[0] * nx + Ra[4] * ny + Ra[8] * nz) + u * (Rc[0] * nx + Rc[4] * ny + Rc[8] * nz);
+      nr[i * 3 + 1] = w * (Ra[1] * nx + Ra[5] * ny + Ra[9] * nz) + u * (Rc[1] * nx + Rc[5] * ny + Rc[9] * nz);
+      nr[i * 3 + 2] = w * (Ra[2] * nx + Ra[6] * ny + Ra[10] * nz) + u * (Rc[2] * nx + Rc[6] * ny + Rc[10] * nz);
+    }
+    st.ana.geometry.attributes.position.needsUpdate = true; st.ana.geometry.attributes.normal.needsUpdate = true;
+    st.ana.geometry.computeBoundingSphere();
+  }
+
   // ---------- Kamera und Zeichnen ----------
   const cam = new THREE.PerspectiveCamera(26, 1.39, 5, 2000);
   function aimCamera(id, aspect){
@@ -947,13 +1091,35 @@ const F3D = (() => {
     cam.position.set(cx + Math.sin(yaw) * dist, cy + Math.sin(pitch) * dist, Math.cos(yaw) * dist);
     cam.lookAt(cx, cy - 4, 0);
   }
+  // Rahmen aus der echten Figur über die ganze Bewegung (+ Geräte), damit sie das Bild füllt
+  function fitBox(st, id){
+    const box = new THREE.Box3(), f = FIGS[id], n = figKeys(id).length, T = (n === 2 ? 2 : n) * f.ms, tmp = new THREE.Box3();
+    for (let k = 0; k < 8; k++){ pose(st, figState(id, T * k / 8)); st.ana.geometry.computeBoundingBox(); box.union(st.ana.geometry.boundingBox); }
+    if (st.props.children.length){ tmp.setFromObject(st.props); box.union(tmp); }
+    return box;
+  }
+  const _v = new THREE.Vector3();
+  function aimFit(id, box, aspect){
+    const c = box.getCenter(new THREE.Vector3()), front = FRONT_VIEW.has(id), wall = (FIGS[id].props || []).find(([k]) => k === "wall");
+    const size = box.getSize(new THREE.Vector3()), lying = size.y < size.x * 0.55;
+    const yaw = (front ? -22 : wall && wall[1] > c.x ? -28 : 24) * Math.PI / 180, pitch = (lying ? 18 : 8) * Math.PI / 180;
+    cam.aspect = aspect; cam.fov = 26; cam.updateProjectionMatrix();
+    const dir = V(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch)).normalize();
+    const right = new THREE.Vector3().crossVectors(V(0, 1, 0), dir).normalize(), up = new THREE.Vector3().crossVectors(dir, right);
+    const tv = Math.tan(cam.fov * Math.PI / 360) * 0.9, th = tv * aspect;
+    let dist = 0;
+    for (let i = 0; i < 8; i++){ _v.set(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z).sub(c);
+      const x = _v.dot(right), y = _v.dot(up), z = _v.dot(dir); dist = Math.max(dist, z + Math.abs(x) / th, z + Math.abs(y) / tv); }
+    cam.position.copy(c).addScaledVector(dir, dist); cam.lookAt(c);
+  }
   function draw(item, now){
     const { cv, st, id } = item;
     const w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
     const dpr = Math.min(2, window.devicePixelRatio || 1), W = Math.round(w * dpr), H = Math.round(h * dpr);
     if (cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; }
+    if (st.ana && !st.fit) st.fit = fitBox(st, id);
     pose(st, now == null ? solve(figKeys(id)[0]) : figState(id, now));
-    renderer.setSize(W, H, false); aimCamera(id, W / H);
+    renderer.setSize(W, H, false); if (st.fit) aimFit(id, st.fit, W / H); else aimCamera(id, W / H);
     renderer.render(st.scene, cam);
     const ctx = item.ctx || (item.ctx = cv.getContext("2d")); ctx.clearRect(0, 0, W, H); ctx.drawImage(renderer.domElement, 0, 0);
   }
@@ -972,7 +1138,8 @@ const F3D = (() => {
       const item = { cv, id, st: buildScene(id, mus), big };
       cv.__vis = true; obs && obs.observe(cv);
       items.add(item);
-      requestAnimationFrame(() => draw(item, big && !REDUCED ? performance.now() : null));
+      requestAnimationFrame(() => { draw(item, big && !REDUCED ? performance.now() : null);
+        if (!big && item.st.ana){ item.st.ana.geometry.dispose(); item.st.ana = null; items.delete(item); } });   // kleine Figuren: einmal zeichnen, Speicher frei
     });
   }
 
@@ -980,8 +1147,8 @@ const F3D = (() => {
   // Liest die Stufen 0–3 aus der gezeichneten Karte (svg.mmap, .mm-r[data-m].sN) und färbt echte Muskeln.
   // Echter Körper (BodyParts3D, siehe body3d.js) als Bronzestatue; jede Muskelregion bekommt die Farbe ihrer Trainingsstufe.
   // Anatomie-Stil: helles Grau, trainierte Muskeln rot (je mehr, desto kräftiger)
-  const LV_COL = [0xd2d0cc, 0xe3a493, 0xdc5a45, 0xc81e12].map(c => new THREE.Color(c).convertSRGBToLinear());
-  const SKIN_COL = new THREE.Color(0xc4c1bc).convertSRGBToLinear();
+  const LV_COL = [0xc8c5bf, 0xe3a493, 0xdc5a45, 0xc81e12].map(c => new THREE.Color(c).convertSRGBToLinear());
+  const SKIN_COL = new THREE.Color(0xbab6b0).convertSRGBToLinear();
   const HOSE = new THREE.Color(0x3a3836).convertSRGBToLinear();
   const LV_WORD = ["noch nicht trainiert", "wenig", "mittel", "viel"];
   let BODY = null;
@@ -990,10 +1157,11 @@ const F3D = (() => {
     const D = BODY3D, raw = s => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u.buffer; };
     const qp = new Uint16Array(raw(D.p)), qn = new Int8Array(raw(D.nm)), ib = raw(D.i), reg = new Uint8Array(raw(D.r)), layer = D.l ? new Uint8Array(raw(D.l)) : new Uint8Array(D.n);
     const idx = D.n < 65536 ? new Uint16Array(ib) : new Uint32Array(ib);
-    const pos = new Float32Array(D.n * 3), nrm = new Float32Array(D.n * 3), cx = (D.min[0] + D.max[0]) / 2, cz = (D.min[2] + D.max[2]) / 2;
+    const pos = new Float32Array(D.n * 3), nrm = new Float32Array(D.n * 3), rawP = new Float32Array(D.n * 3), cx = (D.min[0] + D.max[0]) / 2, cz = (D.min[2] + D.max[2]) / 2;
     for (let v = 0; v < D.n; v++) for (let a = 0; a < 3; a++){
       const w = D.min[a] + qp[v * 3 + a] / 65535 * (D.max[a] - D.min[a]);
       pos[v * 3 + a] = (a === 0 ? w - cx : a === 1 ? w - D.min[1] : w - cz) * 100;   // Meter → cm, Füsse auf 0, Mitte auf x = z = 0
+      rawP[v * 3 + a] = w;
       nrm[v * 3 + a] = qn[v * 3 + a] / 127;
     }
     const geo = new THREE.BufferGeometry();
@@ -1002,7 +1170,7 @@ const F3D = (() => {
     // Nachbarn für weiche Farbübergänge
     const nb = Array.from({ length: D.n }, () => new Set());
     for (let t = 0; t < idx.length; t += 3){ const [x, y, z] = [idx[t], idx[t + 1], idx[t + 2]]; nb[x].add(y).add(z); nb[y].add(x).add(z); nb[z].add(x).add(y); }
-    BODY = { geo, reg, layer, nb: nb.map(s => [...s]), keys: D.keys }; return BODY;
+    BODY = { geo, reg, layer, raw: rawP, nrm, idx, nb: nb.map(s => [...s]), keys: D.keys }; return BODY;
   }
   const STATUE_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.05, envMapIntensity: 0.6 });
   function statue(lv){
@@ -1884,7 +2052,7 @@ function renderStep(steps, log, k){
       <h2 class="ag-name">${esc(u.name)}</h2>
       <div class="chips">${(u.muskeln || []).slice(0, 4).map(m => `<span class="mchip">${esc(muscleShort(m))}</span>`).join("")}</div>
       <div class="goal"><b class="num">${esc(goal)}</b><span>${esc(s.test ? (s.text || "") : unitText(s.einheit))}${s.kg ? ` · ${S.settings.hantelKg} kg` : ""}</span></div>
-      ${h.last != null ? `<div class="beat"><span>Letztes Mal <b class="num">${h.last}</b></span><span>Heute? <b class="num">${h.last + 1}</b></span><span>Rekord <b class="num">${h.best}</b></span></div>` : ""}
+      ${h.last != null ? `<div class="beat"><span>Letztes Mal <b class="num">${h.last}</b></span><span>Heute? <b class="num">${h.last + 1}</b></span><span>Rekord <b class="num">${h.best}</b></span></div>` :(() => { const sv = (PROG._meta?.startwerte || {})[s.id]; return typeof sv === "number" ? `<div class="beat"><span>Dein Startwert vom Test <b class="num">${sv}${isSec(u.einheit) ? " Sek" : ""}</b></span><span>Heute schlagen?</span></div>` : ""; })()}
       ${(() => { const n = log.notes?.[s.id] ? { d: k, t: log.notes[s.id] } : lastNote(s.id, k); return n ? `<p class="hint">${n.d === k ? "Deine Notiz heute" : `Deine Notiz vom ${DAYS[dayIdx(n.d)]} ${parse(n.d).getDate()}.${parse(n.d).getMonth() + 1}.`}: ${esc(n.t)}</p>` : ""; })()}
       ${s.tempo ? `<p class="hint">Tempo: ${esc(s.tempo)}</p>` : ""}
       ${u.handgelenk && (log.wrist === "zwickt" || !log.wristTip || log.wristTip === s.key) ? `<p class="hint">${log.wrist === "zwickt" ? "Heute zwicken die Handgelenke: auf die Parallettes oder auf die Fäuste, Handtuch unter die Handballen, weniger weit lehnen. Sticht es: «Schmerz?» tippen." : esc(META.handgelenkTipp)}</p>` : ""}
@@ -2156,7 +2324,7 @@ function viewKoerper(){
   const M = S.body.m[S.body.m.length - 1] || {};
   $("#view").innerHTML = `<div class="stack">
     <div><div class="eyebrow">Fortschritt</div><h1 class="title-xl" style="margin-top:6px">Dein Körper</h1></div>
-    <div class="tiles"><div class="tile"><b class="num">${latestKg()}</b><span>kg aktuell</span></div><div class="tile"><b class="num">${gain >= 0 ? "+" : ""}${gain.toFixed(1)}</b><span>kg seit Start</span></div></div>
+    <div class="tiles"><div class="tile"><b class="num">${latestKg()}<small>kg</small></b><span>aktuell</span></div><div class="tile"><b class="num">${gain >= 0 ? "+" : ""}${gain.toFixed(1)}<small>kg</small></b><span>seit Start</span></div></div>
     <div class="card"><div class="kicker">Gewicht</div>${weightQuick()}<div style="margin-top:12px">${weightChart()}</div></div>
     <div class="card"><div class="kicker">Diese Woche trainiert</div>${muscleMapSVG(muscleLoad(weekDays, true))}<p class="small" style="margin-top:6px">Harte Sätze pro Muskel diese Woche: hellrot unter 6, mittel 6–10, voll ab 10. Graue Muskeln kommen zu kurz.</p></div>
     ${beforeAfter()}
@@ -2176,7 +2344,7 @@ function viewKoerper(){
 function beforeAfter(){
   const sw = PROG._meta.startwerte || {}, k = today();
   const rows = Object.entries(sw).filter(([id, v]) => EX[id] && typeof v === "number").map(([id, v]) => {
-    const h = history(id, addDays(k, 1)); return `<div class="line"><span>${esc(exName(id))}</span><b class="num">${v} → ${h.best ?? "?"}${isSec(EX[id].einheit) ? " Sek" : ""}</b></div>`; });
+    const h = history(id, addDays(k, 1)); return `<div class="line"><span>${esc(exName(id))}</span><b class="num">${v} → ${h.best ?? `<span class="tbd">offen</span>`}${h.best != null && isSec(EX[id].einheit) ? " Sek" : ""}</b></div>`; });
   return rows.length ? `<div class="card"><div class="kicker">Start gegen jetzt</div><div class="list">${rows.join("")}</div><p class="small" style="margin-top:6px">Startwerte vom 1. November. In jeder Testwoche (13, 26, 39, 52) misst du neu.</p></div>` : "";
 }
 
@@ -2191,7 +2359,7 @@ function viewEssen(){
   const mg = f.koffein.reduce((a, x) => a + x, 0), max = Math.round((N.koffein.maxMgProKg || 3) * t.kg), late = new Date().getHours() >= (N.koffein.nachUhr || 14);
   $("#view").innerHTML = `<div class="stack">
     <div><div class="eyebrow">Ohne Kalorienzählen</div><h1 class="title-xl" style="margin-top:6px">Essen</h1></div>
-    <div class="tiles"><div class="tile"><b class="num">${t.kcal}</b><span>kcal pro Tag</span></div><div class="tile"><b class="num">${t.protein} g</b><span>Protein pro Tag</span></div></div>
+    <div class="tiles"><div class="tile"><b class="num">${t.protein}<small>g</small></b><span>Protein pro Tag</span></div><div class="tile"><b class="num">≈${t.kcal}</b><span>kcal, nur Richtwert</span></div></div>
     <p class="small">Aus ${t.kg} kg, ${S.profile.cm} cm, ${S.profile.alter} Jahren. Ziel: +0.25 bis +0.5 kg pro Woche.</p>
     <div class="card"><div class="kicker">Protein dabei?</div><div class="tiles" style="grid-template-columns:repeat(3,1fr)">${["Morgen","Mittag","Abend"].map(m => `<button class="chip" data-p="${m}" aria-pressed="${(f.prot || []).includes(m)}" style="min-height:56px">${(f.prot || []).includes(m) ? "✓ " : ""}${m}</button>`).join("")}</div>
       <p class="small" style="margin-top:8px">Drei Tipps am Tag reichen. Milch, Quark, Eier, Thon, Poulet, Linsen zählen.</p>
@@ -2201,7 +2369,7 @@ function viewEssen(){
       <div class="meter ${mg > max ? "over" : ""}" style="margin-top:8px"><i style="width:${Math.min(100, mg / max * 100)}%"></i></div>
       <p class="small" style="margin-top:6px">${mg > max ? "Über der Grenze. Kein Koffein mehr heute, viel Wasser trinken." : late ? `Nach ${N.koffein.nachUhr} Uhr: kein Koffein mehr, sonst schläfst du schlecht.` : esc(N.koffein.text)}</p>
       <div class="chips" style="margin-top:8px">${N.koffein.getraenke.map((g, i) => `<button class="chip" data-k="${i}">+ ${esc(g.name)} (${g.mg})</button>`).join("")}${f.koffein.length ? `<button class="chip" id="kUndo">Rückgängig</button>` : ""}</div></div>
-    <div class="card"><div class="kicker">Mahlzeiten ohne Kochen</div><div class="list">${N.mahlzeiten.map(m => `<details class="more"><summary class="plain">${esc(m.name)} · ${m.kcal} kcal · ${m.protein} g Protein</summary><p class="small" style="margin-top:4px">${esc((m.zutaten || []).join(", "))}${m.hinweis ? ` · ${esc(m.hinweis)}` : ""}${m.preis ? ` · ca. ${m.preis.toFixed(2)} Fr.` : ""}</p></details>`).join("")}</div></div>
+    <div class="card"><div class="kicker">Mahlzeiten ohne Kochen</div><div class="list">${N.mahlzeiten.map(m => `<details class="more"><summary class="plain meal"><span>${esc(m.name)}</span><small>${m.protein} g Protein · ${m.kcal} kcal</small></summary><p class="small" style="margin-top:4px">${esc((m.zutaten || []).join(", "))}${m.hinweis ? ` · ${esc(m.hinweis)}` : ""}${m.preis ? ` · ca. ${m.preis.toFixed(2)} Fr.` : ""}</p></details>`).join("")}</div></div>
     <div class="card"><div class="kicker">Einkauf pro Woche</div><div class="list">${N.einkauf.proWoche.map(e => `<div class="line"><span>${esc(e.was)}</span><b class="num">${esc(e.menge)}</b></div>`).join("")}</div>${N.einkauf.summeCHF ? `<p class="small" style="margin-top:6px">Ca. ${N.einkauf.summeCHF} Fr. pro Woche (Schätzung).</p>` : ""}</div>
     ${N.nichtNehmen ? `<div class="card"><details class="more"><summary>Nicht nehmen (unter 18)</summary><ul class="steps" style="margin-top:6px">${(Array.isArray(N.nichtNehmen) ? N.nichtNehmen : N.nichtNehmen.liste || []).map(x => `<li>${esc(typeof x === "string" ? x : (x.was || x.text || ""))}${x.warum ? `: ${esc(x.warum)}` : ""}</li>`).join("")}</ul></details></div>` : ""}
   </div>`;
@@ -2224,12 +2392,12 @@ function viewSettings(){
       <label class="lbl">Start des Plans<input class="field" id="sStart" type="date" value="${S.settings.start}"></label>
       <label class="lbl">Aussehen<select class="field" id="sTheme"><option value="">wie das Gerät</option><option value="dark" ${S.settings.theme === "dark" ? "selected" : ""}>Dunkel</option><option value="light" ${S.settings.theme === "light" ? "selected" : ""}>Hell</option></select></label>
     </div><button class="btn wide" id="sSave" style="margin-top:12px">Speichern</button></div>
-    <div class="card"><div class="kicker">Daten sichern</div><p class="small">Alles bleibt in diesem Browser. Sichere ab und zu eine Kopie.</p>
+    <div class="card"><div class="kicker">Daten sichern</div><p class="small">${CLOUD ? "Gesichert in deinem Claude-Konto und in diesem Browser. Eine Kopie als Datei schadet trotzdem nicht." : "Alles bleibt in diesem Browser. Sichere ab und zu eine Kopie."}</p>
       <div class="row wrap" style="margin-top:10px"><button class="btn sm" id="exp">Als Datei sichern</button><button class="btn sm" id="copy">Kopieren</button><label class="btn sm">Datei laden<input type="file" id="imp" accept="application/json" hidden></label></div>
       <textarea class="field" id="io" rows="3" placeholder="Oder hier eine Kopie einfügen und «Einfügen» tippen" style="margin-top:10px"></textarea>
       <button class="btn sm" id="paste" style="margin-top:8px">Einfügen</button></div>
     ${Object.entries(S.videoOk || {}).filter(([, ok]) => ok === false).length ? `<div class="card"><div class="kicker">Ausgeblendete Videos</div><div class="list">${Object.entries(S.videoOk).filter(([, ok]) => ok === false).map(([id]) => `<div class="line"><span>${esc(exName(id))}</span><button class="chip" data-vshow="${id}">Wieder zeigen</button></div>`).join("")}</div></div>` : ""}
-    <div class="card"><div class="kicker">Neu anfangen</div><button class="btn sm" id="reset">Alles löschen</button></div>
+    <div class="card"><div class="kicker">Neu anfangen</div><button class="btn sm danger" id="reset">Alles löschen</button></div>
     <p class="small">Winter Arc Training · Inhalte von Claude A (App, Figuren) und Claude B (Übungen, Programm, Essen). Keine Medizin: bei Schmerzen oder Unsicherheit Arzt fragen.</p>
     <p class="small">Logo: «Spartan helmet» von Delapouite, <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>, Lizenz CC BY 3.0 (eingefärbt). Fotos: free-exercise-db, Public Domain.</p>
   </div>`;
