@@ -30,6 +30,7 @@ const RULES = [
 ];
 // Muskeln sammeln + vereinfachen
 const P = [], N = [], R = [], L = [], I = [];
+const SMALL = new Set(['unterarm','schienbein','nacken']), gridB = new Map();
 const grid = new Map(), CELL = 0.02, gk = (x, y, z) => `${Math.floor(x / CELL)},${Math.floor(y / CELL)},${Math.floor(z / CELL)}`;
 let mt = 0, used = [];
 for (const p of atlas.parts){
@@ -42,7 +43,9 @@ for (const p of atlas.parts){
   for (let o = 0; o < remap.length; o++){ const n = remap[o]; if (n === 0xffffffff) continue; for (let a = 0; a < 3; a++){ lp[n * 3 + a] = m.pos[o * 3 + a]; ln[n * 3 + a] = m.nrm[o * 3 + a] / 32767; } }
   for (let v = 0; v < cnt; v++){ P.push(lp[v * 3], lp[v * 3 + 1], lp[v * 3 + 2]); N.push(ln[v * 3], ln[v * 3 + 1], ln[v * 3 + 2]); R.push(K[r[1]]); L.push(1);
     const key = gk(lp[v * 3], lp[v * 3 + 1], lp[v * 3 + 2]); let a = grid.get(key); if (!a) grid.set(key, a = []); a.push(lp[v * 3], lp[v * 3 + 1], lp[v * 3 + 2], K[r[1]]); }
-  if (process.env.ONLY !== '0') for (const t of s) I.push(base + t); mt += s.length / 3;
+  const small = (process.env.HYBRID && SMALL.has(r[1])) || (process.env.NOFACE && /sternocleidomastoid|splenius/i.test(p.name));   // NOFACE: glatter Hals statt Halsmuskeln
+  if (!small) for (let v = 0; v < cnt; v++){ const key = gk(lp[v * 3], lp[v * 3 + 1], lp[v * 3 + 2]); let a = gridB.get(key); if (!a) gridB.set(key, a = []); a.push(lp[v * 3], lp[v * 3 + 1], lp[v * 3 + 2]); }
+  if (process.env.ONLY !== '0' && !small) for (const t of s) I.push(base + t); mt += s.length / 3;
 }
 console.error('Muskeln', used.length, 'Dreiecke', mt);
 // Haut
@@ -69,13 +72,19 @@ for (let v = 0; v < sc; v++){
   else if (torso && nz < 0.3 && ax > 0.03 && yy > 0.595 && yy < 0.6 + Math.max(0, ax - 0.03) * 1.55 && (nz < -0.05 || ax > 0.1)) r = K.ruecken_breit;
   else if (torso && nz < -0.3 && ax < 0.045 && yy > 0.565 && yy < 0.625) r = K.ruecken_unten;
   if (ax < 0.17 && yy > 0.445 && yy < 0.548 && !(nz < -0.25 && yy < 0.53 && ax > 0.02)) r = K.hose;
-  if (process.env.SKINONLY && !r){ // glatte Haut: Region vom nächsten Muskel darunter
+  if (process.env.HYBRID && !r){ // Haut dort behalten, wo kein grosser Muskel darüber liegt (feine Stränge verschwinden darunter)
+    const x = sp[v*3], y = sp[v*3+1], z = sp[v*3+2], cx = Math.floor(x / CELL), cy = Math.floor(y / CELL), cz = Math.floor(z / CELL); let bB = 1e9;
+    for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (let k = -1; k <= 1; k++){ const a = gridB.get(`${cx+i},${cy+j},${cz+k}`); if (!a) continue;
+      for (let q = 0; q < a.length; q += 3){ const d = (a[q]-x)**2 + (a[q+1]-y)**2 + (a[q+2]-z)**2; if (d < bB) bB = d; } }
+    if (bB > 0.016 * 0.016){ r = -1; if (bB < 0.035 * 0.035) sink[v] = 0.005 * (1 - (Math.sqrt(bB) - 0.016) / 0.019); }   // Haut behalten; am Muskelrand leicht absenken (kein Flackern)
+  }
+  if ((process.env.SKINONLY && !r) || r === -1){ r = 0; // glatte Haut: Region vom nächsten Muskel darunter
     const x = sp[v*3], y = sp[v*3+1], z = sp[v*3+2]; let bd = 0.045 * 0.045; const cx = Math.floor(x / CELL), cy = Math.floor(y / CELL), cz = Math.floor(z / CELL);
     for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) for (let k = -2; k <= 2; k++){ const a = grid.get(`${cx+i},${cy+j},${cz+k}`); if (!a) continue;
       for (let q = 0; q < a.length; q += 4){ const d = (a[q]-x)**2 + (a[q+1]-y)**2 + (a[q+2]-z)**2; if (d < bd){ bd = d; r = a[q+3]; } } }
     if (!r) r = K.haut; }
   sreg[v] = r; keep[v] = r ? 1 : 0;
-  sink[v] = r === K.bauch ? 0.004 : r === K.ruecken_breit || r === K.ruecken_unten ? 0.006 : r === K.hose ? 0.002 : 0;
+  sink[v] = Math.max(sink[v], r === K.bauch ? 0.004 : r === K.ruecken_breit || r === K.ruecken_unten ? 0.006 : r === K.hose ? 0.002 : 0);
 }
 for (let v = 0; v < sc; v++) if (!keep[v]){ for (const u of nbr[v]) if (keep[u] && sreg[u]){ sreg[v] = sreg[u]; break; } }
 for (let it = 0; it < 4; it++){ const nx = new Float32Array(sc); for (let v = 0; v < sc; v++){ let s = sink[v] * 2, c = 2; for (const u of nbr[v]){ s += sink[u]; c++; } nx[v] = s / c; } sink.set(nx); }
@@ -110,7 +119,7 @@ for (let v = 0; v < sc; v++){ if (sreg[v] !== K.bauch) continue; const ax = Math
     for (let a = 0; a < 3; a++) sn[v*3+a] = acc[v*3+a] / l; } }
 const base = P.length / 3;
 for (let v = 0; v < sc; v++){ P.push(sp[v * 3], sp[v * 3 + 1], sp[v * 3 + 2]); N.push(sn[v * 3], sn[v * 3 + 1], sn[v * 3 + 2]); R.push(sreg[v]); L.push(0); }
-const headCut = v => process.env.NOFACE && (sp[v*3+1] - minY) / H > 0.888;
+const headCut = v => process.env.NOFACE && (sp[v*3+1] - minY) / H > 0.852;
 if (process.env.ONLY !== '1') for (let t = 0; t < ss.length; t += 3) if ((keep[ss[t]] || keep[ss[t + 1]] || keep[ss[t + 2]]) && !(headCut(ss[t]) && headCut(ss[t+1]) && headCut(ss[t+2]))) I.push(base + ss[t], base + ss[t + 1], base + ss[t + 2]);
 // Puppenkopf statt Gesicht (Gesicht + Löcher bei Augen/Mund wirkten unheimlich): glattes Ei, unten zum Kinn schmaler
 if (process.env.NOFACE){
@@ -127,6 +136,12 @@ if (process.env.NOFACE){
       const nx = sx / r[0], ny = sy / r[1], nz = sz / r[2], l = Math.hypot(nx, ny, nz) || 1;
       P.push(x, y, z); N.push(nx / l, ny / l, nz / l); R.push(K.haut); L.push(0); } }
   for (let j = 0; j < NV; j++) for (let i = 0; i < NU; i++){ const a = hb + j * (NU + 1) + i, b = a + NU + 1; I.push(a, b, a + 1, a + 1, b, b + 1); }
+  // Puppenhals: glatter, leicht konischer Zylinder vom Schulteransatz bis in den Kopf (deckt Schnittkante und Halsmuskeln ab)
+  const y0 = minY + 0.815 * H, y1 = c[1] - r[1] * 0.35, nb2 = P.length / 3, NS = 18, NA = 32, cz = c[2] - 0.012;
+  for (let j = 0; j <= NS; j++){ const t = j / NS, y = y0 + (y1 - y0) * t, rr = 1 + 0.35 * Math.pow(1 - t, 2.2);   // unten breiter (Trapez-Ansatz)
+    for (let i = 0; i <= NA; i++){ const ph = 2 * Math.PI * i / NA, sx = Math.sin(ph), sz = Math.cos(ph);
+      P.push(c[0] + 0.058 * rr * sx, y, cz + 0.06 * rr * sz); N.push(sx, 0, sz); R.push(K.haut); L.push(0); } }
+  for (let j = 0; j < NS; j++) for (let i = 0; i < NA; i++){ const a = nb2 + j * (NA + 1) + i, b = a + NA + 1; I.push(a, b, a + 1, a + 1, b, b + 1); }
 }
 // Kopfhaare (kurz, dunkel): eigenes Mesh aus dem Datensatz, vereinfacht
 { const hp = process.env.NOFACE ? null : atlas.parts.find(p => p.name === 'Hair of head'); if (hp){ const h = part(hp);
