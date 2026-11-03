@@ -454,3 +454,5 @@ summary.meal small{font-size:12.5px;color:var(--bone-3);font-weight:500}
 .stepper input::-webkit-inner-spin-button,.stepper input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 details.card > summary::after{margin-left:8px;content:"▾"}
 details.card[open] > summary::after{content:"▴"}
+#done.rest{gap:8px}
+#done.rest .nx{font-size:.72em;letter-spacing:.04em}
