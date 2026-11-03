@@ -2638,19 +2638,19 @@
       ],
       "ziel": "Starke Seiten am Bauch, schützt den Rücken.",
       "schritte": [
-        "Leg dich auf die Seite, Ellbogen unter der Schulter.",
+        "Leg dich auf die Seite, Hand unter der Schulter, Arm gestreckt.",
         "Füsse übereinander.",
-        "Hüfte hoch, Körper gerade.",
+        "Hüfte hoch, Körper gerade, oberer Arm zeigt nach oben.",
         "Halten, dann Seite wechseln."
       ],
       "fehler": [
         "Hüfte sinkt ab.",
         "Oberkörper kippt nach vorne."
       ],
-      "sicherheit": "Kaum Risiko.",
+      "sicherheit": "Zwickt das Handgelenk: auf den Unterarm gehen (Ellbogen unter der Schulter).",
       "leichter": null,
       "schwerer": null,
-      "leichterTipp": "Unteres Knie am Boden lassen.",
+      "leichterTipp": "Auf den Unterarm gehen oder unteres Knie am Boden lassen.",
       "schwererTipp": "Oberes Bein hochheben.",
       "alternativen": []
     },
