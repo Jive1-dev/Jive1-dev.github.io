@@ -1,5 +1,5 @@
 // Anatomie-Körper für die Muskelkarte aus BodyParts3D 4.0 (CC BY 4.0), aufbereitet von human-atlas (MIT).
-// Aufruf (Stand 3.11.): node gen-ecorche.mjs <human-atlas/public/models> src/body3d.js 44000 0.14
+// Aufruf (Stand 3.11.): NOFACE=1 node gen-ecorche.mjs <human-atlas/public/models> src/body3d.js 44000 0.14  (NOFACE: Puppenkopf statt Gesicht, ohne Haare)
 // Ebene 0: Haut (Kopf, Hände, Füsse, Bauch, Lat; dort fehlen im Datensatz Muskeln), knapp unter die Muskeln gesenkt.
 // Ebene 1: oberflächliche Muskeln. Pro Eckpunkt: Region (Muskel-Key aus exercises.json).
 import fs from 'node:fs';
@@ -53,6 +53,11 @@ const sp = new Float32Array(sc * 3), sn = new Float32Array(sc * 3);
 for (let o = 0; o < srm.length; o++){ const n = srm[o]; if (n === 0xffffffff) continue; for (let a = 0; a < 3; a++){ sp[n * 3 + a] = sk.pos[o * 3 + a]; sn[n * 3 + a] = sk.nrm[o * 3 + a] / 32767; } }
 let minY = 1e9, maxY = -1e9; for (let v = 0; v < sc; v++){ minY = Math.min(minY, sp[v * 3 + 1]); maxY = Math.max(maxY, sp[v * 3 + 1]); } const H = maxY - minY;
 const nbr = Array.from({ length: sc }, () => new Set()); for (let t = 0; t < ss.length; t += 3){ const [a, b, c] = [ss[t], ss[t + 1], ss[t + 2]]; nbr[a].add(b).add(c); nbr[b].add(a).add(c); nbr[c].add(a).add(b); }
+if (process.env.NOFACE){ // Puppenkopf: Gesicht und Ohren glätten
+  for (let it = 0; it < 160; it++) for (const f of [0.6, -0.61]){ const np = sp.slice(); for (let v = 0; v < sc; v++){ const yy = (sp[v*3+1]-minY)/H; const wgt = Math.max(0, Math.min(1, (yy - 0.868) / 0.03)); if (!wgt) continue;
+    let s2 = [0,0,0], c = 0; for (const u of nbr[v]){ for (let a = 0; a < 3; a++) s2[a] += sp[u*3+a]; c++; } for (let a = 0; a < 3; a++) np[v*3+a] = sp[v*3+a] + wgt * f * (s2[a]/c - sp[v*3+a]); } sp.set(np); }
+  const acc = new Float32Array(sc*3); for (let t = 0; t < ss.length; t += 3){ const [a,b,c] = [ss[t],ss[t+1],ss[t+2]]; const ux=sp[b*3]-sp[a*3],uy=sp[b*3+1]-sp[a*3+1],uz=sp[b*3+2]-sp[a*3+2],vx=sp[c*3]-sp[a*3],vy=sp[c*3+1]-sp[a*3+1],vz=sp[c*3+2]-sp[a*3+2]; const n=[uy*vz-uz*vy,uz*vx-ux*vz,ux*vy-uy*vx]; for (const i of [a,b,c]) for (let k=0;k<3;k++) acc[i*3+k]+=n[k]; }
+  for (let v = 0; v < sc; v++){ if ((sp[v*3+1]-minY)/H < 0.86) continue; const l = Math.hypot(acc[v*3],acc[v*3+1],acc[v*3+2]) || 1; const d = acc[v*3]*sn[v*3]+acc[v*3+1]*sn[v*3+1]+acc[v*3+2]*sn[v*3+2]; const sg = d < 0 ? -1 : 1; for (let k=0;k<3;k++) sn[v*3+k] = sg*acc[v*3+k]/l; } }
 const sreg = new Uint8Array(sc), sink = new Float32Array(sc), keep = new Uint8Array(sc);
 for (let v = 0; v < sc; v++){
   const x = sp[v * 3], y = sp[v * 3 + 1], yy = (y - minY) / H, ax = Math.abs(x), nz = sn[v * 3 + 2], torso = ax < 0.16;
@@ -64,6 +69,11 @@ for (let v = 0; v < sc; v++){
   else if (torso && nz < 0.3 && ax > 0.03 && yy > 0.595 && yy < 0.6 + Math.max(0, ax - 0.03) * 1.55 && (nz < -0.05 || ax > 0.1)) r = K.ruecken_breit;
   else if (torso && nz < -0.3 && ax < 0.045 && yy > 0.565 && yy < 0.625) r = K.ruecken_unten;
   if (ax < 0.17 && yy > 0.445 && yy < 0.548 && !(nz < -0.25 && yy < 0.53 && ax > 0.02)) r = K.hose;
+  if (process.env.SKINONLY && !r){ // glatte Haut: Region vom nächsten Muskel darunter
+    const x = sp[v*3], y = sp[v*3+1], z = sp[v*3+2]; let bd = 0.045 * 0.045; const cx = Math.floor(x / CELL), cy = Math.floor(y / CELL), cz = Math.floor(z / CELL);
+    for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) for (let k = -2; k <= 2; k++){ const a = grid.get(`${cx+i},${cy+j},${cz+k}`); if (!a) continue;
+      for (let q = 0; q < a.length; q += 4){ const d = (a[q]-x)**2 + (a[q+1]-y)**2 + (a[q+2]-z)**2; if (d < bd){ bd = d; r = a[q+3]; } } }
+    if (!r) r = K.haut; }
   sreg[v] = r; keep[v] = r ? 1 : 0;
   sink[v] = r === K.bauch ? 0.004 : r === K.ruecken_breit || r === K.ruecken_unten ? 0.006 : r === K.hose ? 0.002 : 0;
 }
@@ -100,9 +110,26 @@ for (let v = 0; v < sc; v++){ if (sreg[v] !== K.bauch) continue; const ax = Math
     for (let a = 0; a < 3; a++) sn[v*3+a] = acc[v*3+a] / l; } }
 const base = P.length / 3;
 for (let v = 0; v < sc; v++){ P.push(sp[v * 3], sp[v * 3 + 1], sp[v * 3 + 2]); N.push(sn[v * 3], sn[v * 3 + 1], sn[v * 3 + 2]); R.push(sreg[v]); L.push(0); }
-if (process.env.ONLY !== '1') for (let t = 0; t < ss.length; t += 3) if (keep[ss[t]] || keep[ss[t + 1]] || keep[ss[t + 2]]) I.push(base + ss[t], base + ss[t + 1], base + ss[t + 2]);
+const headCut = v => process.env.NOFACE && (sp[v*3+1] - minY) / H > 0.888;
+if (process.env.ONLY !== '1') for (let t = 0; t < ss.length; t += 3) if ((keep[ss[t]] || keep[ss[t + 1]] || keep[ss[t + 2]]) && !(headCut(ss[t]) && headCut(ss[t+1]) && headCut(ss[t+2]))) I.push(base + ss[t], base + ss[t + 1], base + ss[t + 2]);
+// Puppenkopf statt Gesicht (Gesicht + Löcher bei Augen/Mund wirkten unheimlich): glattes Ei, unten zum Kinn schmaler
+if (process.env.NOFACE){
+  let mn2 = [1e9,1e9,1e9], mx2 = [-1e9,-1e9,-1e9];
+  for (let v = 0; v < sc; v++){ if ((sp[v*3+1]-minY)/H < 0.875) continue; for (let a = 0; a < 3; a++){ mn2[a] = Math.min(mn2[a], sp[v*3+a]); mx2[a] = Math.max(mx2[a], sp[v*3+a]); } }
+  const c = mn2.map((m, a) => (m + mx2[a]) / 2), r = mn2.map((m, a) => (mx2[a] - m) / 2);
+  r[0] *= 0.86; r[2] *= 0.82; c[1] += 0.004; c[2] -= 0.004;    // Ohren/Nase nicht mitzählen
+  const NU = 40, NV = 28, hb = P.length / 3;
+  for (let j = 0; j <= NV; j++){ const th = Math.PI * j / NV, sy = Math.cos(th), ring = Math.sin(th);
+    const taper = sy < 0 ? 1 - 0.28 * Math.pow(-sy, 1.6) : 1;    // Kinn
+    for (let i = 0; i <= NU; i++){ const ph = 2 * Math.PI * i / NU, sx = ring * Math.sin(ph), sz = ring * Math.cos(ph);
+      const fz = sz > 0 ? 1 + 0.06 * sz : 1;                       // Gesicht leicht nach vorn
+      const x = c[0] + r[0] * sx * taper, y = c[1] + r[1] * sy, z = c[2] + r[2] * sz * taper * fz;
+      const nx = sx / r[0], ny = sy / r[1], nz = sz / r[2], l = Math.hypot(nx, ny, nz) || 1;
+      P.push(x, y, z); N.push(nx / l, ny / l, nz / l); R.push(K.haut); L.push(0); } }
+  for (let j = 0; j < NV; j++) for (let i = 0; i < NU; i++){ const a = hb + j * (NU + 1) + i, b = a + NU + 1; I.push(a, b, a + 1, a + 1, b, b + 1); }
+}
 // Kopfhaare (kurz, dunkel): eigenes Mesh aus dem Datensatz, vereinfacht
-{ const hp = atlas.parts.find(p => p.name === 'Hair of head'); if (hp){ const h = part(hp);
+{ const hp = process.env.NOFACE ? null : atlas.parts.find(p => p.name === 'Hair of head'); if (hp){ const h = part(hp);
     const [hs] = MeshoptSimplifier.simplify(h.idx, h.pos, 3, 1800 * 3, 0.01); const [hrm, hc] = MeshoptSimplifier.compactMesh(hs);
     const hb = P.length / 3, lp = new Float32Array(hc * 3), ln = new Float32Array(hc * 3);
     for (let o = 0; o < hrm.length; o++){ const q = hrm[o]; if (q === 0xffffffff) continue; for (let a = 0; a < 3; a++){ lp[q * 3 + a] = h.pos[o * 3 + a]; ln[q * 3 + a] = h.nrm[o * 3 + a] / 32767; } }
