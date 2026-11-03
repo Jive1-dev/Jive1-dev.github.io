@@ -176,7 +176,10 @@ for (const ph of PHASEN){
       plan.push({ block: "abschluss", titel: "Abschluss", min: MIN_COOL, uebungen: (COOL[tag] || COOL[art]).split(" ").map(id => ({ id, ziel: EX.get(id).einheit.startsWith("sek") ? 30 : 10, einheit: EX.get(id).einheit })) });
       const minuten = plan.reduce((s, b) => s + b.min, 0);
       if (minuten > 60) zeitFehler.push(`W${w} ${tag}: ${minuten} Min`);
-      const muskelSet = [...new Set(plan.filter(b => b.block === "paar").flatMap(b => b.uebungen.flatMap(u => EX.get(u.id).muskeln)))];
+      // Muskeln nach Trainingsmenge sortiert (Hauptmuskel zählt den Satz ganz, Nebenmuskeln halb), damit die ersten Chips stimmen
+      const menge = new Map();
+      plan.filter(b => b.block === "paar").forEach(b => b.uebungen.forEach(u => EX.get(u.id).muskeln.forEach((m, i) => menge.set(m, (menge.get(m) || 0) + b.runden * (i === 0 ? 1 : 0.5)))));
+      const muskelSet = [...menge.entries()].sort((a, b) => b[1] - a[1]).map(([m]) => m);
       tage.push({ tag, name, muskeln: muskelSet, muskelText, minuten, plan });
     }
     const fokus = typ === "test" ? "Testwoche: messen, was du geschafft hast. Danach startet die nächste Phase."
