@@ -1341,6 +1341,14 @@ const F3D = (() => {
     renderer.setSize(W, H, false); renderer.render(it.st.scene, mcam);
     const ctx = it.ctx || (it.ctx = cv.getContext("2d")); ctx.clearRect(0, 0, W, H); ctx.drawImage(renderer.domElement, 0, 0);
   }
+  // Welche Übungen dieser Woche trainieren den Muskel als Hauptmuskel? (bis 3, aus dem Plan)
+  function trainedBy(m){
+    try {
+      const wk = progWeek(Math.max(1, weekOf(today()))), seen = new Set();
+      wk.tage.forEach(t => (t.plan || []).forEach(b => { if (b.block !== "paar" && b.block !== "skills") return; b.uebungen.forEach(u => { if ((EX[u.id]?.muskeln || [])[0] === m) seen.add(exName(u.id)); }); }));
+      const l = [...seen].slice(0, 3); return l.length ? ` · diese Woche mit: ${l.join(", ")}` : "";
+    } catch (e) { return ""; }
+  }
   function upgradeMaps(root){
     if (typeof BODY3D === "undefined") return;
     root.querySelectorAll("svg.mmap").forEach(svg => {
@@ -1366,7 +1374,7 @@ const F3D = (() => {
         drawMap(it); ray.setFromCamera(ndc, mcam);
         const hit = ray.intersectObjects(it.st.groups, true).find(h => h.object.userData.body);
         const m = hit && hit.face ? muscleOfFace(hit.face) : null;
-        tip.textContent = m ? `${muscleShort(m)}: ${LV_WORD[lv[m] || 0]}` : "Tipp auf einen Muskel";
+        tip.textContent = m ? `${muscleShort(m)}: ${LV_WORD[lv[m] || 0]}${trainedBy(m)}` : "Tipp auf einen Muskel";
       });
       mapItems.add(it); requestAnimationFrame(() => drawMap(it));
     });
