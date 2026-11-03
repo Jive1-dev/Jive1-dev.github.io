@@ -1440,7 +1440,10 @@ const COACH = (() => {
       Object.entries(log.notes || {}).forEach(([id, t]) => { if (ex[id]) ex[id].notizen.push(t); }); });
     const planned = days.map(d => { const { day } = progDay(d); return { tag: d, training: day.name, gemacht: !!S.logs[d]?.done, minuten: day.minuten }; });
     return { woche: weekOf(k), phase: phaseOf(Math.max(1, weekOf(k))).name, tage: planned, uebungen: Object.values(ex),
-      gewicht: (S.body.w || []).slice(-6).map(x => ({ tag: x.d, kg: x.kg })), aktiveAnpassungen: S.coachAdj || {}, profil: { alter: S.profile.alter, kg: latestKg() } };
+      gewicht: (S.body.w || []).slice(-6).map(x => ({ tag: x.d, kg: x.kg })), aktiveAnpassungen: S.coachAdj || {}, profil: { alter: S.profile.alter, kg: latestKg() },
+      // Muskelaufbau: harte Sätze pro Muskel (Hauptmuskel 1, Nebenmuskeln ½, wie die Muskelkarte) und Essen (Häkchen der Protein-Checkliste pro Tag)
+      saetzeProMuskel: typeof muscleSets === "function" ? Object.fromEntries(Object.entries(muscleSets(days)).map(([m, n]) => [muscleShort(m), Math.round(n * 2) / 2])) : {},
+      essen: days.map(d => ({ tag: d, checklisteErledigt: (S.food?.[d]?.checks || []).length, von: (D.nut?.checkliste || []).length })) };
   }
   const RULES = `Du bist der Trainings-Coach in einer Calisthenics-App für einen 16-jährigen Anfänger (ca. 50 kg, will Muskeln aufbauen, Skills: Handstand, Planche). Er trainiert zuhause, 6 Tage pro Woche, max. 60 Min.
 Werte das heutige Training aus und schlage Anpassungen für die nächsten Male vor. Regeln:
@@ -1454,7 +1457,7 @@ Antworte NUR mit diesem JSON:
 {"auswertung":"2-4 kurze Sätze","gut":["bis 3 kurze Punkte, was gut war"],"anpassungen":[{"id":"übungs-id","aktion":"ziel|leichter|schwerer","ziel":12,"grund":"1 kurzer Satz"}],"naechstesMal":"1 Satz, worauf er nächstes Mal achten soll","warnung":null}`;
   const isWeekKey = k => /^W/.test(k);
   const prompt = k => isWeekKey(k)
-    ? RULES.replace("Werte das heutige Training aus", "Werte die ganze Trainingswoche aus (Wochenbericht am Ruhetag)").replace("2-4 kurze Sätze", "3-5 kurze Sätze zur Woche: was lief, was stagniert, wie oft trainiert") .replace("1 Satz, worauf er nächstes Mal achten soll", "1 Satz: Fokus für nächste Woche")
+    ? RULES.replace("Werte das heutige Training aus", "Werte die ganze Trainingswoche aus (Wochenbericht am Ruhetag)").replace("2-4 kurze Sätze", "3-5 kurze Sätze zur Woche: was lief, was stagniert, wie oft trainiert, welche Muskeln unter 10 harten Sätzen blieben (Ziel 10-20 pro Muskel und Woche; Schienbein, Füsse, Oberschenkel innen sind absichtlich wenig), ob das Gewicht im Ziel liegt (+0.25 bis +0.5 kg pro Woche) und ob er genug gegessen hat (Checkliste)") .replace("1 Satz, worauf er nächstes Mal achten soll", "1 Satz: Fokus für nächste Woche")
       + "\n\nDaten der Woche (JSON):\n" + JSON.stringify(reportWeek(k.slice(1)))
     : RULES + "\n\nDaten des Trainings (JSON):\n" + JSON.stringify(report(k));
 
