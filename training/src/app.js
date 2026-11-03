@@ -327,10 +327,11 @@ function viewHeute(){
       <div class="card"><div class="kicker">${esc(preQ?.frage || "Was hast du heute schon gemacht?")}</div>
         <div class="chips" id="pre">${(preQ?.antworten || []).map(a => `<button class="chip" data-pre="${esc(a.text)}" aria-pressed="${a.text === "Nichts" ? !log.pre.length : log.pre.includes(a.text)}">${esc(a.text)}</button>`).join("")}</div>
         <p class="small" style="margin-top:8px">Bereits Trainiertes bekommt 1 Runde weniger, nie ganz gestrichen.</p></div>
-      <div class="row wrap">
-        <button class="btn ghost sm grow" id="light" aria-pressed="${log.light}">${log.light ? "✓ Leichte Version" : "Muskelkater? Leichte Version"}</button>
-        <button class="btn ghost sm grow" id="short" aria-pressed="${!!log.short}">${log.short ? "✓ Nur 25 Min" : "Wenig Zeit? Nur 25 Min"}</button>
-      </div>
+      <div class="card adjust"><div class="kicker">Wie viel heute?</div><div class="seg" role="group" aria-label="Umfang heute">
+        <button class="seg-b" id="normal" aria-pressed="${!log.light && !log.short}">Normal<small>alles</small></button>
+        <button class="seg-b" id="light" aria-pressed="${!!log.light}">Leichter<small>Muskelkater</small></button>
+        <button class="seg-b" id="short" aria-pressed="${!!log.short}">25 Min<small>wenig Zeit</small></button>
+      </div><p class="small" style="margin-top:8px">${log.light && log.short ? "Leichter und kurz: weniger Runden, nur das Wichtigste." : log.light ? "Leichter: weniger Runden, gleiche Übungen." : log.short ? "Kurz: nur die wichtigsten Supersätze, kein Abschluss." : "Mitten im Training kannst du jederzeit kürzen (⋯ Mehr)."}</p></div>
       <details class="card"><summary class="kicker" style="margin:0;cursor:pointer">Ablauf · ${mins} Min</summary><div class="timeline" style="margin-top:10px">${timeline(day, log)}</div></details>      </div>`}`;
   }
   const yearDone = w > 52 ? `<div class="card hero"><div class="kicker">${S.year ? `Jahr ${S.year}` : "52 Wochen"} geschafft</div><h2>Ein Jahr Disziplin</h2><p class="muted" style="margin-top:6px">Schau unter «Körper», was aus deinen Startwerten geworden ist. Ein neues Jahr beginnt wieder mit Phase I, auf deinem neuen Niveau.</p>
@@ -377,6 +378,7 @@ function viewHeute(){
   $("#go")?.addEventListener("click", () => { log.started ||= Date.now(); save(); location.hash = "#agoge"; });
   $("#again")?.addEventListener("click", () => { log.pos = 0; save(); location.hash = "#agoge"; });
   $("#light")?.addEventListener("click", () => { log.light = !log.light; save(); viewHeute(); mountFigs($("#view")); });
+  $("#normal")?.addEventListener("click", () => { log.light = false; log.short = false; save(); viewHeute(); mountFigs($("#view")); });
   $("#short")?.addEventListener("click", () => { log.short = !log.short; save(); viewHeute(); mountFigs($("#view")); });
   $$("#pre .chip").forEach(b => b.addEventListener("click", () => {
     const t = b.dataset.pre;
@@ -486,7 +488,7 @@ function renderStep(steps, log, k){
       <div class="eyebrow">${esc(s.block === "paar" ? "Supersatz" : s.title)}${s.rounds > 1 ? ` · Runde ${s.r} von ${s.rounds}` : ""}</div>
       ${s.block === "skills" && s.r === 1 && s.ui === 0 ? `<p class="hint">Skills: ${s.rounds} kurze Runden, die Übungen abwechselnd. Kurz, frisch und sauber lernt man Skills am schnellsten.</p>` : ""}
       ${u.handgelenk && s.block !== "aufwaermen" && log.wrist == null ? `<div class="card"><div class="kicker">Handgelenke heute?</div><div class="row"><button class="chip grow" data-wr="ok">Gut</button><button class="chip grow" data-wr="zwickt">Zwickt</button></div></div>` : ""}
-      ${typeof hasPhoto === "function" && hasPhoto(s.id) ? photoBox(s.id) : figSVG(s.id, u.muskeln || [])}
+      ${figSVG(s.id, u.muskeln || [])}
       <h2 class="ag-name">${esc(u.name)}</h2>
       <div class="chips">${(u.muskeln || []).slice(0, 4).map(m => `<span class="mchip">${esc(muscleShort(m))}</span>`).join("")}</div>
       <div class="goal"><b class="num">${esc(goal)}</b><span>${esc(s.test ? (s.text || "") : unitText(s.einheit))}${s.kg ? ` · ${S.settings.hantelKg} kg` : ""}</span></div>
@@ -497,6 +499,7 @@ function renderStep(steps, log, k){
       ${(() => { const f = feelHist(s.id, k); return f.length >= 2 && f.every(x => x === "leicht") && u.schwerer && EX[u.schwerer] ? `<div class="beat"><span>Zweimal «leicht». Bereit für <b>${esc(EX[u.schwerer].name)}</b>?</span><button class="chip" id="harder">Ja</button></div>` : ""; })()}
       ${(() => { const ca = typeof COACH !== "undefined" ? COACH.adj(s.id) : null; return ca?.grund ? `<p class="hint coach-hint">Claude-Coach hat das angepasst: ${esc(ca.grund)}</p>` : ""; })()}
       <details class="more howto" ${h.last == null ? "open" : ""}><summary>So geht's</summary><ol class="steps">${(u.schritte || []).map(t => `<li>${glossify(t)}</li>`).join("")}</ol></details>
+      ${typeof hasPhoto === "function" && hasPhoto(s.id) ? `<details class="more photo-more"><summary>Echtes Foto ansehen</summary>${photoBox(s.id)}</details>` : ""}
       <details class="more"><summary>Fehler vermeiden</summary><ul class="steps" style="margin-top:6px">${(u.fehler || []).map(t => `<li>${esc(t)}</li>`).join("")}</ul>${u.sicherheit ? `<p class="small" style="margin-top:6px">${esc(u.sicherheit)}</p>` : ""}</details>
       ${vid && (S.videoOk || {})[s.id] !== false ? `<div id="vidSlot"><button class="btn wide" id="vid">${ICON.play}Video ansehen${vid.kanal ? ` · ${esc(vid.kanal)}` : ""}</button>${(S.videoOk || {})[s.id] ? "" : `<p class="small" style="margin-top:4px">Aus einer Suche, von uns noch nicht angeschaut (englisch).</p>`}</div>` : ""}
       ${showKg ? `<div class="row small"><span>Hanteln</span><button class="chip" id="kgm">−</button><b class="num" id="kgv">${S.settings.hantelKg} kg</b><button class="chip" id="kgp">+</button></div>` : ""}
@@ -710,7 +713,7 @@ function viewPlan(){
     const dk = addDays(mon, Number(b.dataset.day));
     $("#dayDetail").innerHTML = `<div class="card"><div class="kicker">${DAYS_LONG[Number(b.dataset.day)]} · ${t.minuten} Min</div><h3>${esc(t.name)}</h3>
       ${dk <= today() ? `<a class="btn wide" style="margin-top:10px" href="#bericht-${dk}">${S.logs[dk]?.done ? "Werte ansehen und korrigieren" : "Werte nachtragen"}</a>` : ""}<div class="list" style="margin-top:10px">
-      ${t.plan.map(bl => `<div><div class="eyebrow">${esc(bl.block === "paar" ? bl.titel.replace("Paar", "Supersatz") : bl.titel)}${bl.runden > 1 ? ` · ${bl.runden} Mal` : ""}</div>${bl.uebungen.map(u => `<div class="pline">${typeof hasPhoto === "function" && hasPhoto(u.id) ? photoBox(u.id, "thumb") : figSVG(u.id, EX[u.id]?.muskeln || [], "fig-thumb")}<span>${esc(exName(u.id))}</span><b class="num">${u.bereich ? `${u.bereich[0]}–${u.bereich[1]}` : (u.ziel ?? "")} ${isSec(u.einheit) ? "Sek" : ""}</b></div>`).join("")}</div>`).join("")}
+      ${t.plan.map(bl => `<div><div class="eyebrow">${esc(bl.block === "paar" ? bl.titel.replace("Paar", "Supersatz") : bl.titel)}${bl.runden > 1 ? ` · ${bl.runden} Mal` : ""}</div>${bl.uebungen.map(u => `<div class="pline">${figSVG(u.id, EX[u.id]?.muskeln || [], "fig-thumb")}<span>${esc(exName(u.id))}</span><b class="num">${u.bereich ? `${u.bereich[0]}–${u.bereich[1]}` : (u.ziel ?? "")} ${isSec(u.einheit) ? "Sek" : ""}</b></div>`).join("")}</div>`).join("")}
     </div></div>`;
     mountFigs($("#dayDetail"));
     $("#dayDetail").scrollIntoView({behavior:"smooth", block:"start"});

@@ -456,3 +456,15 @@ details.card > summary::after{margin-left:8px;content:"▾"}
 details.card[open] > summary::after{content:"▴"}
 #done.rest{gap:8px}
 #done.rest .nx{font-size:.72em;letter-spacing:.04em}
+
+/* «Wie viel heute?»: ein Ort für leichter / kürzer (statt zwei loser Knöpfe, Kritik B 13) */
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;border-radius:14px;background:color-mix(in srgb,var(--bg) 55%,transparent);border:1px solid var(--edge)}
+.seg-b{min-height:54px;border:0;border-radius:10px;background:transparent;font:600 15px var(--body);color:var(--bone-2);display:grid;place-content:center;gap:1px;transition:background .2s var(--ease),color .2s,transform .12s var(--ease)}
+.seg-b small{font-size:11px;font-weight:500;color:var(--bone-3);letter-spacing:.02em}
+.seg-b[aria-pressed="true"]{background:linear-gradient(180deg,var(--card-a),var(--card-b));color:var(--bone);box-shadow:var(--sh),0 0 0 1px color-mix(in srgb,var(--bronze) 50%,transparent) inset}
+.seg-b[aria-pressed="true"] small{color:var(--bronze)}
+.seg-b:active{transform:scale(.97)}
+@media (min-width:1024px){.stack > .adjust{grid-column:auto}}
+details.photo-more figure.photo{margin-top:10px}
+/* Figur auf dem Handy nie unter der festen Leiste (Bitte B a) */
+@media (max-width:1023px){canvas.fig3d{max-height:clamp(170px,calc(100svh - 600px),32vh)}}
