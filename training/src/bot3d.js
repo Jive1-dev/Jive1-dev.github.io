@@ -104,7 +104,9 @@ const BOT3D = (() => {
         aim(s + "Arm", dirOf(S.n, e)); aim(s + "ForeArm", fd);
         aim(s + "Hand", w[1] > 104 && !front ? V(fwd.x >= 0 ? 1 : -1, -0.15, 0).normalize() : fd);   // Stütz: Hand flach
       } else { aim(s + "Arm", up.clone().negate()); aim(s + "ForeArm", up.clone().negate()); }
-      if (L){ const [k, a, t] = L; aim(s + "UpLeg", dirOf(S.p, k)); aim(s + "Leg", dirOf(k, a));
+      if (L && front && S.p[1] >= 96){ // sitzend von vorn (Rumpfdrehen): Knie hoch nach vorn, Unterschenkel runter zum Boden
+        const lx = i ? 0.18 : -0.18; aim(s + "UpLeg", V(lx, 0.6, 0.8).normalize()); aim(s + "Leg", V(lx * 0.3, -0.62, 0.78).normalize()); aim(s + "Foot", V(0, -0.2, 1).normalize()); aim(s + "ToeBase", V(0, 0, 1));
+      } else if (L){ const [k, a, t] = L; aim(s + "UpLeg", dirOf(S.p, k)); aim(s + "Leg", dirOf(k, a));
         let fd; if (t) fd = dirOf(a, t); else { const sh = dirOf(k, a); fd = front ? V(0, 0, 1) : V(-sh.y, sh.x, 0); if (fd.dot(fwd) < 0) fd.negate(); fd.add(sh.multiplyScalar(0.25)).normalize(); }
         aim(s + "Foot", fd); aim(s + "ToeBase", fd); }
     });
@@ -267,10 +269,13 @@ const BOT3D = (() => {
   }
   function frame(st, w, h){
     const bb = st.box, c = bb.getCenter(V()), s = bb.getSize(V());
-    const dir = st.front ? V(0.22, 0.16, 1).normalize() : V(0.3, 0.2, 1).normalize();
-    cam.aspect = w / h; cam.fov = 30; cam.updateProjectionMatrix();
+    // liegende Posen etwas von oben, damit man den Körper sieht (B, Nacht 3)
+    const lying = s.y < 0.55 * s.x;
+    const dir = st.front ? V(0.22, 0.16, 1).normalize() : lying ? V(0.3, 0.55, 1).normalize() : V(0.3, 0.2, 1).normalize();
+    // längere Brennweite + Mindestabstand: kompakte Posen (Krähe, Frosch) wirken sonst verzerrt
+    cam.aspect = w / h; cam.fov = 24; cam.updateProjectionMatrix();
     const vf = cam.fov * Math.PI / 360, hf = Math.atan(Math.tan(vf) * cam.aspect);
-    const need = Math.max((s.y / 2) / Math.tan(vf), (Math.max(s.x, s.z * 0.6) / 2) / Math.tan(hf)) * 1.12 + Math.max(s.x, s.z) * 0.3;
+    const need = Math.max(3.2, Math.max((s.y / 2) / Math.tan(vf), (Math.max(s.x, s.z * 0.6) / 2) / Math.tan(hf)) * 1.1 + Math.max(s.x, s.z) * 0.25);
     cam.position.copy(c).addScaledVector(dir, need); cam.lookAt(c);
     sunL.position.copy(c).add(V(1.6, 4, 2.4)); sunL.target.position.copy(c); sunL.target.updateMatrixWorld();
   }
