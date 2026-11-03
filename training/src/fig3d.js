@@ -32,6 +32,11 @@ const F3D = (() => {
     ball: new THREE.MeshStandardMaterial({ color: 0x3b3430, roughness: 0.7 }),
     shadow: new THREE.ShadowMaterial({ opacity: 0.38 })
   };
+  const GREY = {
+    skin: new THREE.MeshStandardMaterial({ color: 0xc8c5bf, roughness: 0.58, metalness: 0.03 }), skinFar: new THREE.MeshStandardMaterial({ color: 0x9d9a94, roughness: 0.62, metalness: 0.03 }),
+    muscle: new THREE.MeshStandardMaterial({ color: 0xc81e12, roughness: 0.5, metalness: 0.03 }), muscleFar: new THREE.MeshStandardMaterial({ color: 0x8e150c, roughness: 0.55, metalness: 0.03 })
+  };  Object.values(GREY).forEach(m => m.color.convertSRGBToLinear());
+
   const SPH = new THREE.SphereGeometry(1, 40, 28);
   // Weicher Bronzeschimmer am Boden (unbeleuchtet, läuft nach aussen aus)
   const GLOW = (() => {
@@ -134,13 +139,15 @@ const F3D = (() => {
         o = new THREE.Group(); const h = mesh(CYL, mat.metal); h.scale.set(0.9, 11, 0.9); h.rotation.x = Math.PI / 2; o.add(h);
         [-5, 5].forEach(z => { const pl = mesh(CYL, mat.metal); pl.scale.set(3.6, 2.4, 3.6); pl.rotation.x = Math.PI / 2; pl.position.z = z; o.add(pl); });
       } else if (k === "crest"){
+        if (typeof BODY3D !== "undefined") return;
         o = mesh(SPH, mat.crest);
       } else if (k === "ball"){
         if (!f.k.some(s => s.ball)) return; o = mesh(SPH, mat.ball);
       } else {
         const far = /1$/.test(k) && !FRONT_VIEW.has(id);
         const m = on.has(segOf(k)) || (k.startsWith("delt") && on.has("delt"));
-        o = mesh(SPH, m ? (far ? mat.muscleFar : mat.muscle) : (far ? mat.skinFar : mat.skin));
+        const G2 = typeof BODY3D !== "undefined";   // neben Anatomie-Figuren: gleiches mattes Grau statt Bronze
+        o = mesh(SPH, m ? (far ? (G2 ? GREY.muscleFar : mat.muscleFar) : (G2 ? GREY.muscle : mat.muscle)) : (far ? (G2 ? GREY.skinFar : mat.skinFar) : (G2 ? GREY.skin : mat.skin)));
       }
       body[k] = o; scene.add(o);
     });
@@ -150,8 +157,9 @@ const F3D = (() => {
     const disc = new THREE.Mesh(new THREE.CircleGeometry(Math.max(70, bw0 * 0.55), 64), GLOW); disc.rotation.x = -Math.PI / 2; disc.position.set(bx0 + bw0 / 2, -0.05, 0); scene.add(disc);
     const floor = mesh(new THREE.PlaneGeometry(600, 300), mat.shadow, false); floor.rotation.x = -Math.PI / 2; floor.position.set(100, 0.02, 0); scene.add(floor);
     // Licht: warmes Hauptlicht mit Schatten, bronzenes Gegenlicht, kühles Fülllicht
-    scene.add(new THREE.HemisphereLight(0xfff4e2, 0x1a120c, ana ? 0.3 : 0.55));
-    const key = new THREE.DirectionalLight(0xfff1dc, ana ? 1.35 : 1.55); key.position.set(60, 190, 160); key.target.position.set(100, 40, 0);
+    const matte = typeof BODY3D !== "undefined";
+    scene.add(new THREE.HemisphereLight(0xfff4e2, 0x1a120c, matte ? 0.3 : 0.55));
+    const key = new THREE.DirectionalLight(0xfff1dc, matte ? 1.35 : 1.55); key.position.set(60, 190, 160); key.target.position.set(100, 40, 0);
     key.castShadow = true; key.shadow.mapSize.set(1024, 1024); key.shadow.radius = 4; key.shadow.bias = -0.0008;
     Object.assign(key.shadow.camera, { left: -140, right: 140, top: 150, bottom: -60, near: 10, far: 500 });
     scene.add(key, key.target);
@@ -211,7 +219,7 @@ const F3D = (() => {
     // Spartaner-Helmkamm: zeigt, wo vorne ist (Kopf oben, von der Stirn nach hinten)
     const hf = front ? V(0, 0, 1) : V(hd.y, -hd.x, 0);
     const top = hc.clone().addScaledVector(hd, 6.2);
-    placeSeg(B.crest, top.clone().addScaledVector(hf, 5.5).addScaledVector(hd, 1.5), top.clone().addScaledVector(hf, -11).addScaledVector(hd, -2.5), front ? 9 : 3.2, 9, 1.2, front ? WX : WZ);
+    if (B.crest) placeSeg(B.crest, top.clone().addScaledVector(hf, 5.5).addScaledVector(hd, 1.5), top.clone().addScaledVector(hf, -11).addScaledVector(hd, -2.5), front ? 9 : 3.2, 9, 1.2, front ? WX : WZ);
     const glOff = p.clone().sub(m).normalize();
     // Po: hinter der Hüfte (Gegenrichtung zur Blickrichtung). Blickrichtung ≈ senkrecht zur Wirbelsäule in der Bildebene.
     const spine = n.clone().sub(p).normalize(); const fwd = front ? V(0, 0, 1) : V(spine.y, -spine.x, 0);
