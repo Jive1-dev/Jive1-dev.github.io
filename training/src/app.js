@@ -892,10 +892,10 @@ function targets(){
 }
 // Kalorien-Booster (Nacht 3, Benaja: «zum Zunehmen zählen Kalorien»). Richtwerte, gerundet.
 const BOOST = [
-  { n: "Shake", wie: "4 dl Vollmilch, 1 Banane, 4 EL Haferflocken, 2 EL Erdnussbutter", kcal: 800 },
-  { n: "Erdnussbutter-Brot", wie: "2 Scheiben Vollkornbrot, 2 EL Erdnussbutter", kcal: 450 },
+  { n: "Shake", wie: "4 dl Vollmilch, 1 Banane, 4 EL Haferflocken, 2 EL Erdnussbutter", kcal: 700 },
+  { n: "Erdnussbutter-Brot", wie: "2 Scheiben Vollkornbrot, 2 EL Erdnussbutter", kcal: 380 },
   { n: "Handvoll Nüsse", wie: "etwa 50 g gemischte Nüsse", kcal: 300 },
-  { n: "Käsebrot", wie: "2 Scheiben Brot, 2 Scheiben Gruyère", kcal: 400 },
+  { n: "Käsebrot", wie: "2 Scheiben Brot, 2 Scheiben Gruyère", kcal: 370 },
   { n: "Glas Vollmilch", wie: "3 dl", kcal: 200 },
   { n: "Datteln", wie: "5 Stück", kcal: 120 },
   { n: "Löffel Olivenöl", wie: "1 EL über Pasta, Reis, Kartoffeln", kcal: 120 },
