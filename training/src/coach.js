@@ -28,7 +28,7 @@ const COACH = (() => {
     const kg = (S.body.w || []).slice(-4).map(x => ({ tag: x.d, kg: x.kg }));
     return {
       tag: k, woche: w, phase: ph.name, training: day.name, geplanteMinuten: day.minuten, gebrauchteMinuten: dur,
-      fertig: !!log.done, leichteVersion: !!log.light, nur25Min: !!log.short, gekuerzt: !!log.trim,
+      fertig: !!log.done, leichteVersion: !!log.light, kurzMin: typeof shortMin === "function" ? shortMin(log) : (log.short ? 25 : null), gekuerzt: !!log.trim,
       vorherGemacht: log.pre || [], uebungen: Object.values(ex), gewicht: kg, trainingsDieseWoche: weekCount(k),
       profil: { alter: S.profile.alter, kg: latestKg(), cm: S.profile.cm }
     };

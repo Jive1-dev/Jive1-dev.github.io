@@ -533,3 +533,7 @@ details.pre-q .chips{margin-top:6px}
 /* Puppe immer im dunklen Studio (helle Puppe braucht Kontrast, auch im hellen Modus) */
 canvas.fig3d.bot{background:radial-gradient(120% 95% at 50% 105%,#3d342b,#1c1813 70%)}
 .ov-row canvas.fig3d.bot,.ov-alt canvas.fig3d.bot,canvas.fig3d.bot.fig-thumb{background:radial-gradient(120% 95% at 50% 105%,#3d342b,#1c1813 70%)}
+
+/* Kurz-Version (11.11.) */
+.light-tog{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13.5px;color:var(--bone-2)}
+.light-tog input{width:18px;height:18px;accent-color:var(--bronze)}

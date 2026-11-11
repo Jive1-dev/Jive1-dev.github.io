@@ -58,14 +58,18 @@ const meta = {
     wand: "Wand",
     stuhl: "stabiler Stuhl ohne Rollen",
     zwei_stuehle: "zwei stabile Stühle ohne Rollen",
-    parallettes: "Parallettes",
+    parallettes: "Parallettes oder Liegestütz-Griffe",
     brett: "Liegestützbrett",
     stange: "Klimmzugstange",
     hanteln: "Hanteln (2 × 5 kg, später 8–10 kg)",
     ball: "6-kg-Ball",
     treppe: "Treppenstufe",
     moebel: "schweres Möbel zum Festhalten (Sofa, Bett)",
-    tuer: "Tür (gesperrt, Benaja will keine Tür-Übungen)"
+    tuer: "Tür (gesperrt, Benaja will keine Tür-Übungen)",
+    bauchroller: "Bauchroller",
+    band: "Achter-Expander (Band mit zwei Griffen)",
+    griff: "Handtrainer und Finger-Strecker",
+    seil: "Springseil"
   },
   glossar: {
     "Wiederholung": "Die Bewegung einmal ganz machen. 10 Wiederholungen = 10 Mal.",
@@ -701,6 +705,49 @@ x("hangknee", "Knieheben hängend", "bauch", ["bauch", "hueftbeuger", "unterarm"
   ["Mit Schwung.", "Beine fallen lassen."],
   "Stange vorher prüfen.", "kneeraise", null,
   { ohneFigur: true, figurErsatz: "hang" });
+
+/* ---------- Neues Material (11.11., Claude A): Bauchroller, Expander, Grip-Set, Springseil ---------- */
+x("abroll", "Bauchroller kniend", "bauch", ["bauch", "ruecken_breit", "schulter_vorne"], "wdh", ["bauchroller", "boden"],
+  "Einer der stärksten Bauchreize ohne Stange. Macht den Rumpf fest für Handstand und Klimmzüge.",
+  ["Knie auf ein Handtuch, Hände am Roller unter den Schultern.", "Bauch fest, Po anspannen, Rücken leicht rund.", "Langsam nach vorne rollen, nur so weit, wie der Rücken nicht durchhängt.", "Mit dem Bauch zurückziehen."],
+  ["Rücken hängt durch: weniger weit rollen.", "Po geht beim Zurückrollen zuerst hoch: Hüfte und Rumpf bewegen sich zusammen."],
+  "Am Anfang nur halb rausrollen. Zieht es im unteren Rücken: kürzer rollen.", "hollowt", null,
+  { leichterTipp: "Gegen eine Wand rollen: die Wand stoppt dich dort, wo es noch sicher ist.", schwererTipp: "Weiter raus und vorne 1 Sek halten." });
+
+x("bandrow", "Band-Rudern sitzend", "ziehen", ["ruecken_oben", "ruecken_breit", "bizeps"], "wdh", ["band", "boden"],
+  "Rücken und Haltung. Gleicht die Liegestütze aus, auch ohne Stange.",
+  ["Setz dich auf den Boden, Beine gestreckt.", "Expander um die Fusssohlen, in jeder Hand einen Griff.", "Aufrecht sitzen, Arme gestreckt nach vorne.", "Griffe zum Bauch ziehen, Ellbogen nah am Körper nach hinten.", "Schulterblätter zusammen, 1 Sek halten, langsam zurück."],
+  ["Oberkörper schaukelt nach hinten: aufrecht bleiben, nur die Arme ziehen.", "Schultern zu den Ohren: Schultern tief und nach hinten."],
+  "Band vorher auf Risse prüfen und gut um die Füsse legen, damit es nicht wegschnellt.", null, "row",
+  { leichterTipp: "Knie leicht beugen, dann ist das Band lockerer.", schwererTipp: "Oben 2 Sek halten, 3 Sek zurück." });
+
+x("bandpd", "Band-Zug über dem Kopf", "ziehen", ["ruecken_breit", "ruecken_oben", "schulter_hinten"], "wdh", ["band"],
+  "Trainiert den breiten Rücken ohne Stange, wie ein kleiner Klimmzug. Gut für die Haltung.",
+  ["Steh gerade, je eine Hand an einem Griff, Arme gestreckt über dem Kopf.", "Band auseinanderziehen, bis es gespannt ist.", "Ellbogen nach unten und hinten ziehen, bis die Hände auf Schulterhöhe sind.", "Schulterblätter zusammen und runter, kurz halten, langsam zurück nach oben."],
+  ["Hohlkreuz: Bauch fest, Rippen unten.", "Kopf schiebt nach vorne: Kopf bleibt zwischen den Armen."],
+  "Band vorher auf Risse prüfen. Nicht vor dem Gesicht ziehen, falls ein Griff abrutscht.", null, null,
+  { leichterTipp: "Nur halb runterziehen.", schwererTipp: "Unten 2 Sek halten, 3 Sek zurück nach oben." });
+
+x("grip", "Handtrainer drücken", "arme", ["unterarm", "finger"], "wdh_seite", ["griff"],
+  "Starker Griff. Hilft später beim Hängen und bei Klimmzügen.",
+  ["Handtrainer in eine Hand, Arm locker angewinkelt.", "Ganz zudrücken, bis sich die Griffe berühren.", "1 Sek zu halten.", "Langsam aufgehen lassen, nicht aufschnappen."],
+  ["Zu schwer eingestellt, nur halb zu: leichter einstellen und ganz schliessen.", "Handgelenk knickt ab: Handgelenk gerade halten."],
+  "Höchstens 2 bis 3 Mal pro Woche. Zieht es am Ellbogen: ein paar Tage Pause.", null, null,
+  { leichterTipp: "Den Handtrainer leichter einstellen.", schwererTipp: "Schwerer einstellen oder 3 Sek zu halten." });
+
+x("fingerext", "Finger öffnen gegen das Band", "arme", ["unterarm", "finger"], "wdh_seite", ["griff"],
+  "Trainiert die Gegenseite vom Griff. Schützt Ellbogen und Handgelenke.",
+  ["Finger-Strecker über die Finger ziehen, Schlaufen an den Fingerspitzen.", "Finger zusammen wie ein Schnabel.", "Alle Finger weit aufspreizen.", "1 Sek offen halten, langsam zurück."],
+  ["Nur halb öffnen: ganz aufspreizen.", "Zu schnell: langsam zurück."],
+  "Kaum Risiko. Immer nach dem Handtrainer machen.", null, null,
+  { leichterTipp: "Weniger Finger in die Schlaufen.", schwererTipp: "Offen 2 Sek halten." });
+
+x("seil", "Seilspringen", "aufwaermen", ["wade", "fuss"], "sek", ["seil"],
+  "Macht schnell warm und die Füsse flink. Kurz halten: lange Runden verbrauchen Kalorien, die du zum Zunehmen brauchst.",
+  ["Seil hinter den Fersen, Griffe locker auf Hüfthöhe.", "Seil aus den Handgelenken drehen, nicht aus den Armen.", "Kleine Sprünge auf den Fussballen, Knie leicht weich.", "Hängt das Seil: einfach weiter."],
+  ["Zu hoch springen: 2 bis 3 cm reichen.", "Arme kreisen gross: Ellbogen nah am Körper, nur die Handgelenke drehen."],
+  "Auf Teppich oder Matte, nicht direkt auf Fliesen. Genug Platz um dich herum.", null, null,
+  { leichterTipp: "Ohne Seil hüpfen, nur die Bewegung.", schwererTipp: "Abwechselnd links und rechts wie beim Laufen." });
 
 /* ---------- Ausgabe ---------- */
 // Alternativen zum Tauschen (B, Nacht 3): bis 4 ähnliche Übungen. Gleiche Art (Kraft / Skill-Leiter / Beweglichkeit),

@@ -205,6 +205,53 @@ const BOT3D = (() => {
     }
     return { g, surf };
   }
+  // ---------- Geräte in der Hand (11.11.): Bauchroller, Expander, Handtrainer, Finger-Strecker, Springseil ----------
+  const RUBBER = new THREE.MeshStandardMaterial({ color: 0x1d1d1f, roughness: 0.8 }), FOAM = new THREE.MeshStandardMaterial({ color: 0x2a2a2c, roughness: 0.95 });
+  const BANDM = new THREE.MeshStandardMaterial({ color: 0x9a3b2c, roughness: 0.55 });
+  function tubeBetween(pts, r, mat, old){
+    if (old){ old.geometry.dispose(); }
+    const m = old || new THREE.Mesh(undefined, mat);
+    m.geometry = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), Math.max(8, pts.length * 2), r, 8, false); m.castShadow = true; return m;
+  }
+  function handProp(kind){
+    const g = new THREE.Group(), o = { kind, g };
+    if (kind === "wheel"){
+      [-0.035, 0.035].forEach(z => { const w = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.022, 12, 32), RUBBER); w.position.z = z; w.castShadow = true; g.add(w);
+        const d = cyl(0.07, 0.018, FOAM, "z"); d.position.z = z; g.add(d); });
+      g.add(cyl(0.012, 0.42, METAL, "z")); [-0.15, 0.15].forEach(z => { const h = cyl(0.02, 0.1, FOAM, "z"); h.position.z = z; g.add(h); });
+    } else if (kind === "gripper" || kind === "ring"){
+      if (kind === "gripper"){ [0.035, -0.035].forEach((x, i) => { const h = box(0.028, 0.11, 0.03, FOAM, x, -0.04, 0); h.rotation.z = i ? -0.18 : 0.18; o["h" + i] = h; g.add(h); });
+        const sp = new THREE.Mesh(new THREE.TorusGeometry(0.022, 0.006, 8, 16), METAL); sp.position.y = 0.025; sp.rotation.y = Math.PI / 2; g.add(sp);
+      } else { const t = new THREE.Mesh(new THREE.TorusGeometry(0.04, 0.012, 10, 24), RUBBER); t.rotation.y = Math.PI / 2; o.t = t; g.add(t); }
+    } else if (kind === "bandHands" || kind === "bandFeet"){
+      o.handles = [0, 1].map(() => { const h = cyl(0.018, 0.11, FOAM, "z"); g.add(h); return h; });
+    }
+    return o;
+  }
+  function updateHandProp(st, now){
+    const hp = st.hp; if (!hp) return;
+    const hand = s => W(s + "Hand").lerp(W(s + "HandMiddle1"), 0.6), L = hand("Left"), Rh = hand("Right");
+    const ph = ((now % st.per) / st.per);
+    if (hp.kind === "wheel"){ const c = L.clone().add(Rh).multiplyScalar(0.5); c.y = Math.max(c.y, 0.097); hp.g.position.copy(c); hp.g.rotation.z = -c.x / 0.097; }
+    else if (hp.kind === "gripper" || hp.kind === "ring"){
+      hp.g.position.copy(Rh); const sq = 0.5 - 0.5 * Math.cos(ph * Math.PI * 2);   // 0 offen .. 1 zu
+      if (hp.h0){ hp.h0.rotation.z = 0.18 - 0.16 * sq; hp.h1.rotation.z = -0.18 + 0.16 * sq; hp.h0.position.x = 0.035 - 0.012 * sq; hp.h1.position.x = -0.035 + 0.012 * sq; }
+      if (hp.t){ const s = 1 + 0.25 * sq; hp.t.scale.set(s, s, 1); }
+    } else if (hp.kind === "bandHands" || hp.kind === "bandFeet"){
+      hp.handles[0].position.copy(L); hp.handles[1].position.copy(Rh);
+      let pts;
+      if (hp.kind === "bandHands"){ const m = L.clone().add(Rh).multiplyScalar(0.5); pts = [L, m.add(V(0, -0.02, -0.03)), Rh]; }
+      else { const fL = W("LeftToeBase"), fR = W("RightToeBase"), mid = fL.clone().add(fR).multiplyScalar(0.5).add(V(0.05, 0.02, 0));
+        pts = [L, L.clone().lerp(fL, 0.5).add(V(0, -0.01, 0)), fL.clone().add(V(0.04, 0, 0)), mid, fR.clone().add(V(0.04, 0, 0)), Rh.clone().lerp(fR, 0.5).add(V(0, -0.01, 0)), Rh]; }
+      hp.tube = tubeBetween(pts, 0.007, BANDM, hp.tube); if (!hp.tube.parent) hp.g.add(hp.tube);
+    } else if (hp.kind === "rope"){
+      const th = ph * Math.PI * 2, dir = V(Math.sin(th), -Math.cos(th), 0), R0 = Math.max(0.5, (L.y + Rh.y) / 2 + 0.03), pts = [];
+      const zL = Math.sign(L.z - Rh.z || 1) * 0.3;
+      for (let i = 0; i <= 24; i++){ const u = i / 24, b = Math.sin(Math.PI * u);
+        pts.push(L.clone().lerp(Rh, u).add(V(0, 0, (u < 0.5 ? zL : -zL) * b * 0.2)).addScaledVector(dir, R0 * b)); }
+      hp.tube = tubeBetween(pts, 0.006, RUBBER, hp.tube); if (!hp.tube.parent) hp.g.add(hp.tube);
+    }
+  }
   // 2D-Kontaktpunkte und ihre Puppen-Knochen
   const CONTACTS = S => [
     ...[0, 1].flatMap(i => { const A = S.arms[i] || S.arms[0]; return A ? [{ p: A[1], k: i ? "LeftHand" : "RightHand", r: 0.03 }] : []; }),
@@ -246,6 +293,7 @@ const BOT3D = (() => {
     // Hanteln und Ball (bewegen sich mit den Händen)
     st.db = (f.db || []).map(i => ({ i, g: dumbbell() }));
     if (S0.ball){ st.ball = new THREE.Mesh(new THREE.SphereGeometry(0.11, 24, 16), BALLM); st.ball.castShadow = true; }
+    if (f.hp) st.hp = handProp(f.hp);
     // Kamera: Rahmen aus mehreren Momenten
     const bb = new THREE.Box3();
     for (let i = 0; i < 8; i++){ poseAt(st, i / 8 * st.per); for (const k in tb) bb.expandByPoint(W(k)); }
@@ -266,6 +314,7 @@ const BOT3D = (() => {
     (st.db || []).forEach(d => { const s = d.i ? "Left" : "Right", a = W(s + "Hand"), b = W(s + "HandMiddle1");
       d.g.position.copy(a.lerp(b, 1.05)); d.g.rotation.set(0, 0, 0); });
     if (st.ball){ st.ball.position.copy(W("LeftHandMiddle1").add(W("RightHandMiddle1")).multiplyScalar(0.5)); }
+    updateHandProp(st, now);
   }
   function frame(st, w, h){
     const bb = st.box, c = bb.getCenter(V()), s = bb.getSize(V());
@@ -286,7 +335,7 @@ const BOT3D = (() => {
     const pr = Math.min(2, devicePixelRatio || 1);
     if (cv.width !== Math.round(w * pr)){ cv.width = Math.round(w * pr); cv.height = Math.round(h * pr); }
     R.setPixelRatio(pr); R.setSize(w, h, false);
-    paint(it.mus); propGroup.clear(); it.st.props.forEach(p => propGroup.add(p.g)); (it.st.db || []).forEach(d => propGroup.add(d.g)); if (it.st.ball) propGroup.add(it.st.ball);
+    paint(it.mus); propGroup.clear(); it.st.props.forEach(p => propGroup.add(p.g)); (it.st.db || []).forEach(d => propGroup.add(d.g)); if (it.st.ball) propGroup.add(it.st.ball); if (it.st.hp) propGroup.add(it.st.hp.g);
     poseAt(it.st, now == null ? it.st.per * 0.5 : now);
     frame(it.st, w, h); R.render(scene, cam);
     const cx = cv.getContext("2d"); cx.clearRect(0, 0, cv.width, cv.height); cx.drawImage(R.domElement, 0, 0, cv.width, cv.height);

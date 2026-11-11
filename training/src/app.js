@@ -102,6 +102,43 @@ const muscleShort = k => (META.muskeln[k] || k).split(" (")[0];
 const unitText = (u, n) => ({wdh:"Wiederholungen", wdh_seite:"pro Seite", sek:"Sekunden", sek_seite:"Sek pro Seite", versuche:"Versuche"}[u] || META.einheiten[u] || u);
 const isSec = u => u === "sek" || u === "sek_seite";
 
+// Kurz-Version (11.11., Benaja: «meistens nur eine halbe Stunde»): Ziel 30 oder 20 Min.
+// log.short: undefined = Standard aus den Einstellungen, false = ganzer Plan, 20/30 = Minuten (true von früher = 30)
+// S.settings.dauer: undefined = noch nie gewählt -> 30 (Benaja trainiert meistens 30 Min), null = ganzer Plan
+const stdDauer = () => S.settings.dauer === undefined ? 30 : S.settings.dauer;
+const shortMin = log => { const v = log.short === undefined ? (log.started || log.done ? null : stdDauer() || null) : log.short; return v === true ? 30 : v || null; };
+function blockSec(b, rounds){
+  const Z = PROG._meta.zeitmodell || {sekProWdh:3, sekProWdhMitTempo:6, pauseSek:35, wechselSek:30};
+  const once = b.block === "aufwaermen" || b.block === "abschluss" || b.block === "test";
+  const per = b.uebungen.reduce((a, u) => { const z = u.ziel || 10, e = u.einheit || EX[u.id]?.einheit || "wdh";
+    const work = isSec(e) ? z : e === "versuche" ? z * 15 : z * (u.tempo ? Z.sekProWdhMitTempo : Z.sekProWdh);
+    return a + work * (String(e).includes("seite") ? 2 : 1) + (once ? (b.block === "test" ? 90 : 10) : (b.pauseSek || Z.pauseSek)); }, 0);
+  return (once ? 1 : rounds) * per + (b.block === "paar" ? Z.wechselSek : 0);
+}
+// Kürzen bis zur Zielzeit: Abschluss weg, Skills 2 Runden, Paare von hinten auf 2 Runden, Skills 1 Runde, hinterste Paare weg (mind. 2), Skills weg
+function shortCut(day, target){
+  const plan = day.plan || [], cut = {};
+  const r = (b, bi) => cut[bi] ?? ((b.block === "aufwaermen" || b.block === "abschluss" || b.block === "test") ? 1 : (b.runden || 1));
+  const raw = () => plan.reduce((a, b, bi) => a + (r(b, bi) ? blockSec(b, r(b, bi)) : 0), 0) / 60;
+  const k = day.minuten ? day.minuten / Math.max(1, raw()) : 1, est = () => raw() * k;   // auf die Plan-Minuten geeicht (inkl. Umbau, Trinken)
+  if (!target) return { cut, min: Math.round(est()) };
+  const idx = t => plan.map((b, i) => b.block === t ? i : -1).filter(i => i >= 0), pairs = idx("paar"), sk = idx("skills");
+  const steps = [
+    ...pairs.filter(i => /Zugabe/.test(plan[i].titel || "")).map(i => () => cut[i] = 0),
+    ...idx("abschluss").map(i => () => cut[i] = 0),
+    ...sk.map(i => () => cut[i] = Math.min(r(plan[i], i), 2)),
+    ...[...pairs].reverse().map(i => () => cut[i] = Math.min(r(plan[i], i), 2)),
+    ...sk.map(i => () => cut[i] = 1),
+    // welches Paar wegfällt, wechselt jede Woche (Paar 1 bleibt immer), damit bei «immer 30 Min» keine Übung ganz verschwindet
+    ...(() => { const rest = pairs.filter(i => !/Zugabe/.test(plan[i].titel || "")).slice(1).reverse(), wk = Math.max(0, PROG.wochen.findIndex(w => w.tage.includes(day)));
+      const rot = rest.length ? wk % rest.length : 0, order = [...rest.slice(rot), ...rest.slice(0, rot)];
+      return order.slice(0, Math.max(0, pairs.length - 2)).map(i => () => cut[i] = 0); })(),
+    ...sk.map(i => () => cut[i] = 0)
+  ];
+  for (const f of steps){ if (est() <= target) break; f(); }
+  return { cut, min: Math.round(est()) };
+}
+
 // Ablauf eines Tages: eine Übung nach der anderen (Regel 1)
 function buildSteps(day, log){
   const steps = [];
@@ -109,15 +146,17 @@ function buildSteps(day, log){
   const preGroups = new Set(pre.filter(a => log.pre.includes(a.text)).flatMap(a => a.gruppen));
   let pairs = 0, after = 0;
   const cut = yearCut(day), tr = log.trim; // tr: mitten im Training gekürzt ab Block tr.bi (Nacht 2, A3)
+  const sc = shortCut(day, shortMin(log)).cut;
   (day.plan || []).forEach((b, bi) => {
     if (b.block === "paar") pairs++;
-    if (log.short && ((b.block === "paar" && pairs > 2) || b.block === "abschluss")) return; // «Nur 25 Min» (Idee B6)
+    if (sc[bi] === 0) return; // Kurz-Version: Block fällt weg
     if (tr && bi > tr.bi){ if (b.block === "abschluss" || b.block === "skills") return; if (b.block === "paar" && ++after > 2) return; }
     const once = b.block === "aufwaermen" || b.block === "abschluss" || b.block === "test";
     let rounds = once ? 1 : (b.runden || 1);
     if (!once && log.light) rounds = Math.max(1, rounds - 1);
     if (b.block === "paar" && preGroups.size && b.uebungen.some(u => preGroups.has(EX[log.swaps[`${bi}.${b.uebungen.indexOf(u)}`] || u.id]?.gruppe))) rounds = Math.max(1, rounds - 1);
     if (cut[bi] != null) rounds = Math.min(rounds, cut[bi]);
+    if (sc[bi] != null) rounds = Math.min(rounds, sc[bi]);
     if (tr && bi > tr.bi && b.block === "paar") rounds = Math.min(rounds, 2);
     if (tr && bi === tr.bi && !once) rounds = Math.min(rounds, Math.max(tr.r, 2));
     for (let r = 1; r <= rounds; r++) b.uebungen.forEach((u, ui) => {
@@ -356,7 +395,7 @@ function viewHeute(){
       <div class="card"><div class="kicker">Morgen</div><h3>${esc(next.name)}</h3><p class="muted">${esc(next.muskelText || "")} · ${next.minuten} Min</p></div>`;
   } else {
     const steps = buildSteps(day, log);
-    const mins = log.short ? Math.min(25, day.minuten) : log.light ? Math.round(day.minuten * .8) : day.minuten;
+    const sm = shortMin(log), mins = sm ? Math.min(shortCut(day, sm).min, day.minuten) : log.light ? Math.round(day.minuten * .8) : day.minuten;
     const goals = [...new Map(steps.filter(s => s.block === "paar" || s.block === "skills").map(s => [s.id, s])).values()].slice(0, 3);
     const preQ = PROG._meta.vorDemTraining;
     // Schlauer Heute-Screen (B): Start oben, Claude-Tipp, verpasster Tag freundlich, Ziele statt doppelter Fortschrittszeile
@@ -376,10 +415,12 @@ function viewHeute(){
         <div class="row" style="margin-top:12px"><a class="btn sm" href="#bericht">Kampfbericht</a><button class="btn sm" id="again">Nochmal öffnen</button></div></div>` : `
       ${overviewCard(day, log, k)}
       <div class="card adjust"><div class="kicker">Wie viel heute?</div><div class="seg" role="group" aria-label="Umfang heute">
-        <button class="seg-b" id="normal" aria-pressed="${!log.light && !log.short}">Normal<small>alles</small></button>
-        <button class="seg-b" id="light" aria-pressed="${!!log.light}">Leichter<small>Muskelkater</small></button>
-        <button class="seg-b" id="short" aria-pressed="${!!log.short}">25 Min<small>wenig Zeit</small></button>
-      </div><p class="small" style="margin-top:8px">${log.light && log.short ? "Leichter und kurz: weniger Runden, nur das Wichtigste." : log.light ? "Leichter: weniger Runden, gleiche Übungen." : log.short ? "Kurz: nur die wichtigsten Supersätze, kein Abschluss." : "Mitten im Training kannst du jederzeit kürzen (⋯ Mehr)."}</p><details class="pre-q"><summary>${esc(preQ?.frage || "Was hast du heute schon gemacht?")}${log.pre.length ? ` · ${esc(log.pre.join(", "))}` : ""}</summary>
+        <button class="seg-b" id="normal" aria-pressed="${!sm}">Alles<small>${day.minuten} Min</small></button>
+        <button class="seg-b" id="s30" aria-pressed="${sm === 30}">30 Min<small>normaler Tag</small></button>
+        <button class="seg-b" id="s20" aria-pressed="${sm === 20}">20 Min<small>müde Tage</small></button>
+      </div>
+      <label class="light-tog"><input type="checkbox" id="light" ${log.light ? "checked" : ""}> Leichter (Muskelkater, sehr müde)</label>
+      <p class="small" style="margin-top:8px">${sm === 30 ? "30 Min: alle wichtigen Übungen, dafür meist 2 statt 3 Runden. Reicht zum Muskelaufbau, wenn die letzten Wiederholungen schwer sind." : sm === 20 ? "20 Min: die wichtigsten Paare, 2 Runden. Besser als auslassen." : "Ganzer Plan. Mitten im Training kannst du jederzeit kürzen (⋯ Mehr)."}</p><details class="pre-q"><summary>${esc(preQ?.frage || "Was hast du heute schon gemacht?")}${log.pre.length ? ` · ${esc(log.pre.join(", "))}` : ""}</summary>
         <div class="chips" id="pre">${(preQ?.antworten || []).map(a => `<button class="chip" data-pre="${esc(a.text)}" aria-pressed="${a.text === "Nichts" ? !log.pre.length : log.pre.includes(a.text)}">${esc(a.text)}</button>`).join("")}</div>
         <p class="small" style="margin-top:8px">Bereits Trainiertes bekommt 1 Runde weniger, nie ganz gestrichen.</p></details></div>
             </div>`}`;
@@ -425,12 +466,14 @@ function viewHeute(){
     S.year = (S.year || 1) + 1; S.yearAdj = f; S.settings.start = addDays(k, 7 - dayIdx(k)); save();
     toast(`Jahr ${S.year} startet ${longDate(S.settings.start)}, mit deinen Werten als Start.`); route();
   });
-  $("#go")?.addEventListener("click", () => { OV_OPEN = null; log.started ||= Date.now(); save(); location.hash = "#agoge"; });
+  $("#go")?.addEventListener("click", () => { OV_OPEN = null; if (log.short === undefined) log.short = shortMin(log) || false; log.started ||= Date.now(); save(); location.hash = "#agoge"; });
   $("#again")?.addEventListener("click", () => { log.pos = 0; save(); location.hash = "#agoge"; });
-  $("#light")?.addEventListener("click", () => { log.light = !log.light; save(); viewHeute(); mountFigs($("#view")); });
+  $("#light")?.addEventListener("change", () => { log.light = $("#light").checked; save(); viewHeute(); mountFigs($("#view")); });
   if ($("#ov")) bindOverview(progDay(k).day, logOf(k), k);
-  $("#normal")?.addEventListener("click", () => { log.light = false; log.short = false; save(); viewHeute(); mountFigs($("#view")); });
-  $("#short")?.addEventListener("click", () => { log.short = !log.short; save(); viewHeute(); mountFigs($("#view")); });
+  const setShort = v => { log.short = v; save(); viewHeute(); mountFigs($("#view")); };
+  $("#normal")?.addEventListener("click", () => setShort(false));
+  $("#s30")?.addEventListener("click", () => setShort(30));
+  $("#s20")?.addEventListener("click", () => setShort(20));
   $$("#pre .chip").forEach(b => b.addEventListener("click", () => {
     const t = b.dataset.pre;
     if (t === "Nichts") log.pre = []; else log.pre = log.pre.includes(t) ? log.pre.filter(x => x !== t) : [...log.pre, t];
@@ -440,10 +483,10 @@ function viewHeute(){
   if (typeof COACH !== "undefined" && $("#coachCard")) COACH.weekBind(k);
 }
 function timeline(day, log = {}){
-  let t = 0, pairs = 0;
-  return (day.plan || []).map(b => {
+  let t = 0, pairs = 0; const sc = shortCut(day, shortMin(log)).cut;
+  return (day.plan || []).map((b, bi) => {
     if (b.block === "paar") pairs++;
-    if (log.short && ((b.block === "paar" && pairs > 2) || b.block === "abschluss")) return "";
+    if (sc[bi] === 0) return "";
     const title = b.block === "paar" ? `Supersatz ${pairs}` : b.titel;
     const row = `<i>${t}</i><span><b>${esc(title)}</b> · ${b.uebungen.map(u => esc(exName(u.id))).join(" + ")}</span>`; t += b.min || 0; return row; }).join("") + `<i>${t}</i><span>Fertig</span>`;
 }
@@ -518,8 +561,9 @@ function renderStep(steps, log, k){
   stopTimers(); lockScreen();
   const i = log.pos, s = steps[i], u = EX[s.id] || {name: exName(s.id), schritte:[], muskeln:[], fehler:[]};
   const h = history(s.id, k), next = steps[i + 1];
+  if (log.short === undefined) log.short = shortMin(log) || false;   // Kurz-Version beim Start festhalten
   const started = log.started || Date.now(); log.started = started;
-  const planMin = log.short ? Math.min(25, progDay(k).day.minuten) : progDay(k).day.minuten;
+  const planMin = shortMin(log) ? Math.min(shortMin(log), progDay(k).day.minuten) : progDay(k).day.minuten;
   const fullLen = log.trim ? buildSteps(progDay(k).day, { ...log, trim: null }).length : steps.length;
   const perStep = planMin * 60 / fullLen, remainMin = (steps.length - i) * perStep / 60;
   const endAt = new Date(Date.now() + remainMin * 6e4);
@@ -570,7 +614,7 @@ function renderStep(steps, log, k){
           <button class="btn" id="note">Notiz schreiben</button>
           <button class="btn" id="prev" ${i === 0 ? "disabled" : ""}>Eine zurück</button>
           <button class="btn" id="skip">Überspringen</button>
-          ${!log.trim && !log.short && steps.length - i > 8 && s.block !== "aufwaermen" ? `<button class="btn wide" id="trim">Wenig Zeit? Rest kürzen</button>` : log.trim ? `<p class="small" style="grid-column:1/-1;text-align:center">Gekürzt: nur noch das Wichtigste.</p>` : ""}
+          ${!log.trim && !shortMin(log) && steps.length - i > 8 && s.block !== "aufwaermen" ? `<button class="btn wide" id="trim">Wenig Zeit? Rest kürzen</button>` : log.trim ? `<p class="small" style="grid-column:1/-1;text-align:center">Gekürzt: nur noch das Wichtigste.</p>` : ""}
         </div>
       </div>
     </div>`;
@@ -954,6 +998,7 @@ function viewSettings(){
       <label class="lbl">Grösse (cm)<input class="field" id="sCm" type="number" inputmode="numeric" value="${P.cm}"></label>
       <label class="lbl">Hanteln (kg)<input class="field" id="sKg" type="number" step="0.5" inputmode="decimal" value="${S.settings.hantelKg}"></label>
       <label class="lbl">Start des Plans<input class="field" id="sStart" type="date" value="${S.settings.start}"></label>
+      <label class="lbl">Training normal<select class="field" id="sDauer"><option value="">ganzer Plan (45–60 Min)</option><option value="30" ${stdDauer() === 30 ? "selected" : ""}>30 Min</option><option value="20" ${stdDauer() === 20 ? "selected" : ""}>20 Min</option></select></label>
       <label class="lbl">Aussehen<select class="field" id="sTheme"><option value="">wie das Gerät</option><option value="dark" ${S.settings.theme === "dark" ? "selected" : ""}>Dunkel</option><option value="light" ${S.settings.theme === "light" ? "selected" : ""}>Hell</option></select></label>
     </div><button class="btn wide" id="sSave" style="margin-top:12px">Speichern</button></div>
     <div class="card"><div class="kicker">Daten sichern</div><p class="small">${CLOUD ? "Gesichert in deinem Claude-Konto und in diesem Browser. Eine Kopie als Datei schadet trotzdem nicht." : "Alles bleibt in diesem Browser. Sichere ab und zu eine Kopie."}</p>
@@ -968,6 +1013,7 @@ function viewSettings(){
   $("#sSave").onclick = () => {
     P.name = $("#sName").value.trim(); P.alter = Number($("#sAlter").value) || P.alter; P.cm = Number($("#sCm").value) || P.cm;
     S.settings.hantelKg = parseFloat($("#sKg").value) || S.settings.hantelKg; S.settings.start = $("#sStart").value || S.settings.start; S.settings.theme = $("#sTheme").value || null;
+    S.settings.dauer = Number($("#sDauer").value) || null;
     save(); applyTheme(); toast("Gespeichert");
   };
   const dump = () => JSON.stringify(S, null, 1);

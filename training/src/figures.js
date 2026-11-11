@@ -170,6 +170,13 @@ const FIGS = {
   kneeraise:{ms:1500, k:[{S:[50,106,0], ar:[[70,110,1]], lg:[[128,104,1,-10]]}, {S:[50,106,0], ar:[[70,110,1]], lg:[[96,82,-1,-60]]}]},
   legraise:{ms:1700, k:[{S:[50,106,0], ar:[[70,110,1]], lg:[[128,102,1,-10]]}, {S:[50,106,0], ar:[[70,110,1]], lg:[[96,62,1,-90]]}]},
   dragon: {ms:2600, asym:0.25, k:[{S:[44,104,-80], ar:[[30,106,1]], toe:-90}, {S:[44,104,-14], ar:[[30,106,1]], toe:-20}]},
+  // Neues Material (11.11.): hp = Gerät in der Hand (bot3d.js zeichnet es)
+  abroll: {ms:2000, hp:"wheel", k:[{p:[86,88], t:-28, ar:[[118,100,1]], lg:[[62,108,-1,180]]}, {p:[100,95], t:-11, ar:[[158,100,1]], lg:[[62,108,-1,180]]}]},
+  bandrow:{ms:1600, hp:"bandFeet", k:[{p:[88,104], t:-84, ar:[[122,84,1]], lg:[[133,106,1,-80]]}, {p:[88,104], t:-90, ar:[[96,88,1]], lg:[[133,106,1,-80]]}]},
+  bandpd: {ms:1700, hp:"bandHands", k:[{...ST, ar:[[88,-1,-1],[112,-1,1]], lg:LEGS_F}, {...ST, ar:[[78,22,-1],[122,22,1]], lg:LEGS_F}]},
+  grip:   {ms:1100, hp:"gripper", k:[{...ST, ar:[[119,50,1],[101,64,1]], lg:LEGS_S}, {...ST, ar:[[118,49,1],[101,64,1]], lg:LEGS_S}]},
+  fingerext:{ms:1300, hp:"ring", k:[{...ST, ar:[[119,50,1],[101,64,1]], lg:LEGS_S}, {...ST, ar:[[118,48,1],[101,64,1]], lg:LEGS_S}]},
+  seil:   {ms:420, hp:"rope", k:[{p:[100,65], t:-90, ar:[[109,64,1]], lg:[[100,109,-1,50]]}, {p:[100,68], t:-90, ar:[[109,66,1]], lg:[[100,109,-1,50]]}]},
   twist:  {ms:1300, k:[{p:[100,104], t:-90, ar:[[86,92,1],[90,92,-1]], lg:[[92,98,1,null],[108,98,-1,null]], ball:1}, {p:[100,104], t:-90, ar:[[110,92,1],[114,92,-1]], lg:[[92,98,1,null],[108,98,-1,null]], ball:1}]}
 };
 
@@ -181,7 +188,7 @@ function figKeys(id){
 // ---------- Körper-Darstellung v2 ----------
 // Statt Strichen ein Körper mit Volumen: Rumpf, Arme, Beine als runde Glieder mit Umriss.
 // Die arbeitenden Muskeln einer Übung leuchten rot. Die abgewandte Körperseite ist dunkler (Tiefe).
-const FRONT_VIEW = new Set(["circles","wallangel","lat","dbpress","cossack","twist","sideplank"]);   // B: Seitstütz von vorne (seitlich liegend sieht man nur so)
+const FRONT_VIEW = new Set(["circles","wallangel","lat","dbpress","cossack","twist","sideplank","bandpd"]);   // B: Seitstütz von vorne (seitlich liegend sieht man nur so)
 const SEG_W = {chest:16, belly:13, neck:6, ua:8.5, fa:6.5, th:11.5, sh:8.5, ft:5};
 const MUSCLE_SEG = {
   brust:["chest"], schulter_vorne:["chest","delt"], schulter_seite:["delt"], schulter_hinten:["delt","chest"],
