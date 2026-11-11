@@ -88,8 +88,10 @@ const V = {
 };
 
 // Neues Material ab Woche 3 (11.11., Claude A; Benaja hat Bauchroller, Expander, Grip-Set, Springseil bekommen).
-// Woche 1–2 bleibt wie trainiert, damit die Einträge zu den Übungen passen.
+// Ab Mi 11.11. (Woche 2, Mi), Benaja wollte es gleich heute. Mo/Di Woche 2 und Woche 1 bleiben wie trainiert.
 const NEU_AB = 3;
+const TAG_NR = { Mo: 0, Di: 1, Mi: 2, Do: 3, Fr: 4, Sa: 5, So: 6 };
+const neu = (w, tag) => w >= NEU_AB || (w === 2 && TAG_NR[tag] >= 2);
 const NEU = {
   // Bauch am Mo: Bauchroller statt Hohlkörper (Hohlkörper bleibt Di und Sa)
   Mo: [[/hollowt?:\d+>\d+/, { F: "abroll:5>10", A: "abroll:8>12", K: "abroll:10>14", P: "abroll:12>15" }],
@@ -99,9 +101,9 @@ const NEU = {
   Mi: [[/reary:\d+>\d+(?= \| (pikecomp|hangknee))/, { F: "bandrow:12>18", A: "bandrow:14>20", K: "bandrow:15>20", P: "bandrow:15>20" }]]
 };
 // Grip-Zugabe Mi und Fr (2 Runden, am Schluss, fällt beim Kürzen zuerst weg)
-const GRIP = { F: "grip:10>15 | fingerext:12>20", A: "grip:12>18 | fingerext:15>20", K: "grip:15>20 | fingerext:15>25", P: "grip:15>20 | fingerext:15>25" };
+const GRIP = { F: "grip:8>12 | fingerext:10>15", A: "grip:12>18 | fingerext:15>20", K: "grip:15>20 | fingerext:15>25", P: "grip:15>20 | fingerext:15>25" };
 function mitMaterial(vt, tag, phase, w){
-  if (w < NEU_AB) return vt;
+  if (!neu(w, tag)) return vt;
   const p = vt.p.map(x => (NEU[tag] || []).reduce((acc, [re, by]) => acc.replace(re, by[phase]), x));
   if (tag === "Mi" || tag === "Fr") p.push(GRIP[phase] + ":grip");
   return { ...vt, p };
@@ -161,10 +163,12 @@ for (const ph of PHASEN){
       if (tag === "So"){ tage.push({ tag, name, minuten: 0, hinweis: "Ruhetag. Spazieren, Velo fahren oder Dehnen ist gut, muss aber nicht." }); continue; }
       const vt = mitMaterial(V[ph.key][tag], tag, ph.key, w), art = ART[tag];
       const plan = [];
-      plan.push({ block: "aufwaermen", titel: "Aufwärmen", min: MIN_WARM, uebungen: (w >= NEU_AB ? WARM_NEU : WARM)[art].split(" ").map(id => ({ id, ziel: id === "seil" ? 60 : EX.get(id).einheit.startsWith("sek") ? 30 : 10, einheit: EX.get(id).einheit })) });
+      plan.push({ block: "aufwaermen", titel: "Aufwärmen", min: MIN_WARM, uebungen: (neu(w, tag) ? WARM_NEU : WARM)[art].split(" ").map(id => ({ id, ziel: id === "seil" ? 60 : EX.get(id).einheit.startsWith("sek") ? 30 : 10, einheit: EX.get(id).einheit })) });
       const skills = vt.sk.split(" ").map(parseSlot);
-      plan.push({ block: "skills", titel: "Skills", min: vt.skMin || MIN_SKILL, runden: 3, pauseSek: 45,
-        hinweis: "3 kurze Runden, die zwei Skills abwechselnd. Frisch und sauber lernt man Skills am schnellsten. Geht eine Stufe nicht: leichtere nehmen.",
+      // Skills ab Mi Woche 2: 2 Runden statt 3 (Benaja 11.11.: «sehr anstrengend»). Zu Beginn, solange du frisch bist.
+      const skR = neu(w, tag) ? 2 : 3;
+      plan.push({ block: "skills", titel: "Skills", min: Math.round((vt.skMin || MIN_SKILL) * skR / 3), runden: skR, pauseSek: 45,
+        hinweis: `${skR} kurze Runden, die Skills abwechselnd. Frisch und sauber lernt man Skills am schnellsten. Geht eine Stufe nicht: leichtere nehmen.`,
         uebungen: skills.map(s => item(s, k, ph, false)) });
       let paare = vt.p.map(s => { const g = s.endsWith(":grip"), q = (g ? s.slice(0, -5) : s).split("|").map(parseSlot); q.grip = g; return q; });
       let tests = null;
@@ -178,7 +182,7 @@ for (const ph of PHASEN){
         if (typ !== "normal" || p.grip) runden = 2;
         return { runden, grip: p.grip, uebungen: p.map(s => item(s, k, ph, typ === "deload")) };
       });
-      const rundeSek = q => arbeitSek(q.uebungen[0].id, q.uebungen[0].ziel, q.uebungen[0].tempo) + arbeitSek(q.uebungen[1].id, q.uebungen[1].ziel, q.uebungen[1].tempo) + 2 * PAUSE;
+      const rundeSek = q => arbeitSek(q.uebungen[0].id, q.uebungen[0].ziel, q.uebungen[0].tempo) + arbeitSek(q.uebungen[1].id, q.uebungen[1].ziel, q.uebungen[1].tempo) + 2 * (q.grip ? 20 : PAUSE);
       const minPaar = q => Math.ceil((q.runden * rundeSek(q) + WECHSEL) / 60);
       const fest = plan.reduce((s, b) => s + b.min, 0) + MIN_COOL;
       const gekuerzt = [];
@@ -194,7 +198,7 @@ for (const ph of PHASEN){
         if (dreier){ dreier.runden--; gekuerzt.push("runde"); continue; }
         break;
       }
-      pb.forEach((q, i) => plan.push({ block: "paar", titel: q.grip ? "Griff (Zugabe)" : `Paar ${i + 1}`, min: minPaar(q), runden: q.runden, pauseSek: PAUSE, uebungen: q.uebungen }));
+      pb.forEach((q, i) => plan.push({ block: "paar", titel: q.grip ? "Griff (Zugabe)" : `Paar ${i + 1}`, min: minPaar(q), runden: q.runden, pauseSek: q.grip ? 20 : PAUSE, uebungen: q.uebungen }));
       plan.push({ block: "abschluss", titel: "Abschluss", min: MIN_COOL, uebungen: (COOL[tag] || COOL[art]).split(" ").map(id => ({ id, ziel: EX.get(id).einheit.startsWith("sek") ? 30 : 10, einheit: EX.get(id).einheit })) });
       const minuten = plan.reduce((s, b) => s + b.min, 0);
       if (minuten > 60) zeitFehler.push(`W${w} ${tag}: ${minuten} Min`);

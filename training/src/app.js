@@ -115,7 +115,7 @@ function blockSec(b, rounds){
     return a + work * (String(e).includes("seite") ? 2 : 1) + (once ? (b.block === "test" ? 90 : 10) : (b.pauseSek || Z.pauseSek)); }, 0);
   return (once ? 1 : rounds) * per + (b.block === "paar" ? Z.wechselSek : 0);
 }
-// Kürzen bis zur Zielzeit: Abschluss weg, Skills 2 Runden, Paare von hinten auf 2 Runden, Skills 1 Runde, hinterste Paare weg (mind. 2), Skills weg
+// Kürzen bis zur Zielzeit: Abschluss weg, Skills 2 Runden, Paare auf 2 Runden, Griff-Zugabe 1 Runde, ein Paar weg, Skills 1 Runde, weitere Paare weg (mind. 2), Zugabe weg, Skills weg
 function shortCut(day, target){
   const plan = day.plan || [], cut = {};
   const r = (b, bi) => cut[bi] ?? ((b.block === "aufwaermen" || b.block === "abschluss" || b.block === "test") ? 1 : (b.runden || 1));
@@ -123,16 +123,21 @@ function shortCut(day, target){
   const k = day.minuten ? day.minuten / Math.max(1, raw()) : 1, est = () => raw() * k;   // auf die Plan-Minuten geeicht (inkl. Umbau, Trinken)
   if (!target) return { cut, min: Math.round(est()) };
   const idx = t => plan.map((b, i) => b.block === t ? i : -1).filter(i => i >= 0), pairs = idx("paar"), sk = idx("skills");
+  const zu = pairs.filter(i => /Zugabe/.test(plan[i].titel || ""));   // Griff-Zugabe: kurz behalten (neues Material), fällt erst spät weg
   const steps = [
-    ...pairs.filter(i => /Zugabe/.test(plan[i].titel || "")).map(i => () => cut[i] = 0),
     ...idx("abschluss").map(i => () => cut[i] = 0),
     ...sk.map(i => () => cut[i] = Math.min(r(plan[i], i), 2)),
     ...[...pairs].reverse().map(i => () => cut[i] = Math.min(r(plan[i], i), 2)),
-    ...sk.map(i => () => cut[i] = 1),
+    ...zu.map(i => () => cut[i] = 1),
     // welches Paar wegfällt, wechselt jede Woche (Paar 1 bleibt immer), damit bei «immer 30 Min» keine Übung ganz verschwindet
     ...(() => { const rest = pairs.filter(i => !/Zugabe/.test(plan[i].titel || "")).slice(1).reverse(), wk = Math.max(0, PROG.wochen.findIndex(w => w.tage.includes(day)));
       const rot = rest.length ? wk % rest.length : 0, order = [...rest.slice(rot), ...rest.slice(0, rot)];
-      return order.slice(0, Math.max(0, pairs.length - 2)).map(i => () => cut[i] = 0); })(),
+      return order.slice(0, 1).map(i => () => cut[i] = 0); })(),
+    ...sk.map(i => () => cut[i] = 1),   // Skills: 2 Runden bleiben, solange es geht (Benaja: «zwei Sätze»)
+    ...(() => { const rest = pairs.filter(i => !zu.includes(i)).slice(1).reverse(), wk = Math.max(0, PROG.wochen.findIndex(w => w.tage.includes(day)));
+      const rot = rest.length ? wk % rest.length : 0, order = [...rest.slice(rot), ...rest.slice(0, rot)];
+      return order.slice(1, Math.max(1, pairs.length - zu.length - 2)).map(i => () => cut[i] = 0); })(),
+    ...zu.map(i => () => cut[i] = 0),
     ...sk.map(i => () => cut[i] = 0)
   ];
   for (const f of steps){ if (est() <= target) break; f(); }
