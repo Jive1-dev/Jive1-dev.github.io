@@ -1,0 +1,20 @@
+const fs=require("fs");
+const src=fs.readFileSync(__dirname+"/../../src/figures.js","utf8");
+const m=src.slice(src.indexOf("const FIGS"),src.indexOf("const REDUCED"));
+const figs=[...m.matchAll(/^\s+(\w+):\s*\{ms/gm)].map(x=>x[1]);
+const d=JSON.parse(fs.readFileSync(__dirname+"/../exercises.json","utf8"));
+const by=new Map(d.uebungen.map(u=>[u.id,u]));const err=[],warn=[];
+figs.forEach(f=>{if(!by.has(f))err.push("fehlt: "+f)});
+d.uebungen.forEach(u=>{if(u.ohneFigur&&u.figurErsatz&&!figs.includes(u.figurErsatz))err.push("ersatzfigur "+u.id)});
+d.uebungen.forEach(u=>{if(!figs.includes(u.id)&&!u.ohneFigur)err.push("keine Figur: "+u.id);
+ if(!u.gesperrt){if(u.schritte.length<3||u.schritte.length>5)err.push("schritte "+u.id);if(u.fehler.length!==2)err.push("fehler "+u.id);}
+ ["leichter","schwerer","ersatz"].forEach(k=>{if(u[k]&&!by.has(u[k]))err.push(k+" unbekannt "+u.id)});
+ u.muskeln.forEach(mu=>{if(!d._meta.muskeln[mu])err.push("muskel "+mu+" "+u.id)});
+ u.material.forEach(mu=>{if(!d._meta.material[mu])err.push("material "+mu+" "+u.id)});
+ if(!d._meta.einheiten[u.einheit])err.push("einheit "+u.id);if(!d._meta.gruppen[u.gruppe])err.push("gruppe "+u.id);
+ if(u.leichter&&by.get(u.leichter).schwerer!==u.id)warn.push(`${u.id}.leichter=${u.leichter}, aber ${u.leichter}.schwerer=${by.get(u.leichter).schwerer}`);
+ if(u.schwerer&&by.get(u.schwerer).leichter!==u.id)warn.push(`${u.id}.schwerer=${u.schwerer}, aber ${u.schwerer}.leichter=${by.get(u.schwerer).leichter}`);
+ [u.schritte,u.fehler].flat().forEach(s=>{if(s.split(" ").length>16)warn.push("lang: "+u.id+": "+s)});
+});
+const txt=JSON.stringify(d);if(txt.includes("ß"))err.push("ß gefunden");
+console.log("Figuren",figs.length,"Einträge",d.uebungen.length);console.log("FEHLER",err);console.log("WARN\n"+warn.join("\n"));

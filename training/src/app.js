@@ -1,0 +1,1048 @@
+// ---------- Winter Arc Training: App ----------
+// Daten kommen von Claude B (training/data/*.json) und werden beim Bauen als WA_DATA eingesetzt.
+// Gespeichert im Browser (localStorage) und, im Claude-Artefakt, zusätzlich im Cloud-Speicher (db, pro Nutzer). Export/Import als JSON.
+
+const D = WA_DATA;
+const EX = Object.fromEntries(D.ex.uebungen.map(u => [u.id, u]));
+const META = D.ex._meta;
+const PROG = D.prog;
+const VIDEOS = D.videos || {};
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = s => { s = Math.max(0, Math.round(s)); return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0"); };
+const DAYS = ["Mo","Di","Mi","Do","Fr","Sa","So"];
+const DAYS_LONG = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
+const MONTHS = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+
+// ---------- Datum ----------
+const dkey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const parse = k => { const [y,m,d] = k.split("-").map(Number); return new Date(y, m-1, d); };
+const addDays = (k, n) => { const d = parse(k); d.setDate(d.getDate() + n); return dkey(d); };
+const today = () => dkey(new Date());
+const dayIdx = k => (parse(k).getDay() + 6) % 7;
+const diffDays = (a, b) => Math.round((parse(b) - parse(a)) / 864e5);
+const longDate = k => { const d = parse(k); return `${DAYS_LONG[dayIdx(k)]} ${d.getDate()}. ${MONTHS[d.getMonth()]}`; };
+
+// ---------- Speicher ----------
+const KEY = "winterarc.training.v1";
+const fresh = () => ({ v:1, profile:{name:"", kg:50, cm:165, alter:16}, settings:{start:"2026-11-02", hantelKg:5, theme:null},
+  logs:{}, body:{w:[], m:[], photos:[]}, skills:{}, food:{}, custom:[] });
+let S = fresh();
+try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(fresh(), JSON.parse(raw)); } catch(e) {}
+S._st ||= {};
+// Teile für die Cloud-Sicherung: «core» (alles ausser Trainings) + ein Teil pro Trainingstag (je < 256 KB)
+const parts = () => { const { logs, _st, ...core } = S, p = { core: JSON.stringify(core) }; for (const k in logs) p["log-" + k] = JSON.stringify(logs[k]); return p; };
+let SNAP = parts(); const DIRTY = new Set(); let CLOUD = null, pushT = null, BOOT = true; // BOOT: Cloud-Stand noch nicht geladen, nichts als «neuer» markieren
+const save = () => {
+  S._st ||= {}; const p = parts(), now = Date.now();
+  if (!BOOT){
+    let ch = false;
+    for (const id in p) if (p[id] !== SNAP[id]){ S._st[id] = now; DIRTY.add(id); ch = true; }
+    if (ch && !CLOUD) flashSaved("✓ gespeichert");
+    for (const id in SNAP) if (p[id] == null) DIRTY.add(id); // gelöscht (z. B. «Alles löschen»)
+    SNAP = p;
+  }
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {}
+  if (CLOUD){ clearTimeout(pushT); pushT = setTimeout(push, 1200); }
+};
+let pushing = false;
+async function push(){
+  if (!CLOUD || pushing) return; pushing = true;
+  try { for (const id of [...DIRTY]){ DIRTY.delete(id);
+    try { if (SNAP[id] == null) await CLOUD.doc(id).delete(); else await CLOUD.doc(id).set({ json: SNAP[id], t: S._st[id] || Date.now() }); } catch(e){ DIRTY.add(id); throw e; } }
+    flashSaved("✓ gesichert"); }
+  catch(e) { flashSaved("Nur auf dem Gerät gespeichert", true); } finally { pushing = false; }
+}
+// Beim Öffnen: Stand aus der Cloud holen (falls der Browser-Speicher leer ist oder älter), danach automatisch mitspeichern
+async function cloudInit(){
+  try {
+    if (!window.claude?.use) return;
+    const [db, user] = await Promise.all([claude.use("db"), claude.use("user")]);
+    if (!db || !user) return;
+    const uid = await user.id(); if (!uid) return;
+    const col = db.collection("data/users/" + uid);
+    const snap = await Promise.race([col.get(), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 10000))]);
+    let changed = false; const seen = new Set();
+    snap.docs.forEach(d => { const x = d.data() || {}; seen.add(d.id); if (typeof x.json !== "string") return;
+      if ((x.t || 0) > (S._st[d.id] || 0)){
+        try { const v = JSON.parse(x.json);
+          if (d.id === "core") S = Object.assign(fresh(), v, { logs: S.logs, _st: S._st });
+          else if (d.id.startsWith("log-")) S.logs[d.id.slice(4)] = v;
+          S._st[d.id] = x.t; changed = true; } catch(e) {}
+      } else if ((S._st[d.id] || 0) > (x.t || 0)) DIRTY.add(d.id);
+    });
+    SNAP = parts(); Object.keys(SNAP).forEach(id => { if (!seen.has(id)) DIRTY.add(id); });
+    CLOUD = col;
+    if (changed){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} applyTheme(); route(); toast("Stand geladen"); }
+    push();
+  } catch(e) {} finally { if (BOOT){ BOOT = false; SNAP = parts(); } }
+}
+// kleine Anzeige in der Kopfzeile (über dem Rang): Benaja sieht, dass nichts verloren geht, ohne dass sie Inhalt verdeckt
+let svT = null;
+function flashSaved(text, warn = false){
+  let el = document.getElementById("saved");
+  if (!el){ el = document.createElement("div"); el.id = "saved"; el.setAttribute("role", "status"); }
+  const home = document.getElementById("rankWrap") || document.body; if (el.parentNode !== home) home.appendChild(el);
+  el.textContent = text; el.className = warn ? "warn on" : "on";
+  clearTimeout(svT); svT = setTimeout(() => el.classList.remove("on"), 1800);
+}
+addEventListener("pagehide", () => push());
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") push(); });
+const logOf = k => (S.logs[k] ||= {done:false, light:false, pre:[], swaps:{}, sets:{}, extra:[]});
+
+// ---------- Programm ----------
+function weekOf(k){ return Math.floor(diffDays(S.settings.start, k) / 7) + 1; }
+function progWeek(w){ if (w < 1) w = 1; if (w > 52) w = 40 + ((w - 53) % 13); return PROG.wochen[w - 1]; }
+function progDay(k){ const w = weekOf(k); return { w, week: progWeek(w), day: progWeek(w).tage[dayIdx(k)], pre: w < 1 }; }
+function phaseOf(w){ const ph = PROG._meta.phasen; return ph.find(p => w >= p.von && w <= p.bis) || ph[ph.length - 1]; }
+const ROMAN = ["I","II","III","IV"];
+const exName = id => EX[id]?.name || (S.custom.find(c => c.id === id) || {}).name || id;
+const muscleShort = k => (META.muskeln[k] || k).split(" (")[0];
+const unitText = (u, n) => ({wdh:"Wiederholungen", wdh_seite:"pro Seite", sek:"Sekunden", sek_seite:"Sek pro Seite", versuche:"Versuche"}[u] || META.einheiten[u] || u);
+const isSec = u => u === "sek" || u === "sek_seite";
+
+// Kurz-Version (11.11., Benaja: «meistens nur eine halbe Stunde»): Ziel 30 oder 20 Min.
+// log.short: undefined = Standard aus den Einstellungen, false = ganzer Plan, 20/30 = Minuten (true von früher = 30)
+// S.settings.dauer: undefined = noch nie gewählt -> 30 (Benaja trainiert meistens 30 Min), null = ganzer Plan
+const stdDauer = () => S.settings.dauer === undefined ? 30 : S.settings.dauer;
+const shortMin = log => { const v = log.short === undefined ? (log.started || log.done ? null : stdDauer() || null) : log.short; return v === true ? 30 : v || null; };
+function blockSec(b, rounds){
+  const Z = PROG._meta.zeitmodell || {sekProWdh:3, sekProWdhMitTempo:6, pauseSek:35, wechselSek:30};
+  const once = b.block === "aufwaermen" || b.block === "abschluss" || b.block === "test";
+  const per = b.uebungen.reduce((a, u) => { const z = u.ziel || 10, e = u.einheit || EX[u.id]?.einheit || "wdh";
+    const work = isSec(e) ? z : e === "versuche" ? z * 15 : z * (u.tempo ? Z.sekProWdhMitTempo : Z.sekProWdh);
+    return a + work * (String(e).includes("seite") ? 2 : 1) + (once ? (b.block === "test" ? 90 : 10) : (b.pauseSek || Z.pauseSek)); }, 0);
+  return (once ? 1 : rounds) * per + (b.block === "paar" ? Z.wechselSek : 0);
+}
+// Kürzen bis zur Zielzeit: Abschluss weg, Skills 2 Runden, Paare auf 2 Runden, Griff-Zugabe 1 Runde, ein Paar weg, Skills 1 Runde, weitere Paare weg (mind. 2), Zugabe weg, Skills weg
+function shortCut(day, target){
+  const plan = day.plan || [], cut = {};
+  const r = (b, bi) => cut[bi] ?? ((b.block === "aufwaermen" || b.block === "abschluss" || b.block === "test") ? 1 : (b.runden || 1));
+  const raw = () => plan.reduce((a, b, bi) => a + (r(b, bi) ? blockSec(b, r(b, bi)) : 0), 0) / 60;
+  const k = day.minuten ? day.minuten / Math.max(1, raw()) : 1, est = () => raw() * k;   // auf die Plan-Minuten geeicht (inkl. Umbau, Trinken)
+  if (!target) return { cut, min: Math.round(est()) };
+  const idx = t => plan.map((b, i) => b.block === t ? i : -1).filter(i => i >= 0), pairs = idx("paar"), sk = idx("skills");
+  const zu = pairs.filter(i => /Zugabe/.test(plan[i].titel || ""));   // Griff-Zugabe: kurz behalten (neues Material), fällt erst spät weg
+  const steps = [
+    ...idx("abschluss").map(i => () => cut[i] = 0),
+    ...sk.map(i => () => cut[i] = Math.min(r(plan[i], i), 2)),
+    ...[...pairs].reverse().map(i => () => cut[i] = Math.min(r(plan[i], i), 2)),
+    ...zu.map(i => () => cut[i] = 1),
+    // welches Paar wegfällt, wechselt jede Woche (Paar 1 bleibt immer), damit bei «immer 30 Min» keine Übung ganz verschwindet
+    ...(() => { const rest = pairs.filter(i => !/Zugabe/.test(plan[i].titel || "")).slice(1).reverse(), wk = Math.max(0, PROG.wochen.findIndex(w => w.tage.includes(day)));
+      const rot = rest.length ? wk % rest.length : 0, order = [...rest.slice(rot), ...rest.slice(0, rot)];
+      return order.slice(0, 1).map(i => () => cut[i] = 0); })(),
+    ...sk.map(i => () => cut[i] = 1),   // Skills: 2 Runden bleiben, solange es geht (Benaja: «zwei Sätze»)
+    ...(() => { const rest = pairs.filter(i => !zu.includes(i)).slice(1).reverse(), wk = Math.max(0, PROG.wochen.findIndex(w => w.tage.includes(day)));
+      const rot = rest.length ? wk % rest.length : 0, order = [...rest.slice(rot), ...rest.slice(0, rot)];
+      return order.slice(1, Math.max(1, pairs.length - zu.length - 2)).map(i => () => cut[i] = 0); })(),
+    ...zu.map(i => () => cut[i] = 0),
+    ...sk.map(i => () => cut[i] = 0)
+  ];
+  for (const f of steps){ if (est() <= target) break; f(); }
+  return { cut, min: Math.round(est()) };
+}
+
+// Ablauf eines Tages: eine Übung nach der anderen (Regel 1)
+function buildSteps(day, log){
+  const steps = [];
+  const pre = PROG._meta.vorDemTraining?.antworten || [];
+  const preGroups = new Set(pre.filter(a => log.pre.includes(a.text)).flatMap(a => a.gruppen));
+  let pairs = 0, after = 0;
+  const cut = yearCut(day), tr = log.trim; // tr: mitten im Training gekürzt ab Block tr.bi (Nacht 2, A3)
+  const sc = shortCut(day, shortMin(log)).cut;
+  (day.plan || []).forEach((b, bi) => {
+    if (b.block === "paar") pairs++;
+    if (sc[bi] === 0) return; // Kurz-Version: Block fällt weg
+    if (tr && bi > tr.bi){ if (b.block === "abschluss" || b.block === "skills") return; if (b.block === "paar" && ++after > 2) return; }
+    const once = b.block === "aufwaermen" || b.block === "abschluss" || b.block === "test";
+    let rounds = once ? 1 : (b.runden || 1);
+    if (!once && log.light) rounds = Math.max(1, rounds - 1);
+    if (b.block === "paar" && preGroups.size && b.uebungen.some(u => preGroups.has(EX[log.swaps[`${bi}.${b.uebungen.indexOf(u)}`] || u.id]?.gruppe))) rounds = Math.max(1, rounds - 1);
+    if (cut[bi] != null) rounds = Math.min(rounds, cut[bi]);
+    if (sc[bi] != null) rounds = Math.min(rounds, sc[bi]);
+    if (tr && bi > tr.bi && b.block === "paar") rounds = Math.min(rounds, 2);
+    if (tr && bi === tr.bi && !once) rounds = Math.min(rounds, Math.max(tr.r, 2));
+    for (let r = 1; r <= rounds; r++) b.uebungen.forEach((u, ui) => {
+      const ov = (log.ov || {})[`${bi}.${ui}`];   // Trainings-Übersicht (Nacht 3): Sätze/Ziel pro Übung, weglassen
+      if (ov && (ov.skip || (ov.sets && r > ov.sets))) return;
+      const adj = (S.yearAdj || {})[u.id], ca = typeof COACH !== "undefined" ? COACH.adj(u.id) : null; // ca: Anpassung vom Claude-Coach (B)
+      const id = log.swaps[`${bi}.${ui}`] || ca?.stufe || adj?.stufe || u.id;
+      const yf = (adj?.f || 1) * (ca?.f || 1);
+      let ziel = u.ziel ? Math.round(u.ziel * yf) : u.ziel; if (log.light && ziel) ziel = Math.max(1, Math.round(ziel * .8));
+      let bereich = u.bereich ? u.bereich.map(x => Math.round(x * yf)) : u.bereich;
+      if (ov && ov.ziel){ ziel = ov.ziel; bereich = null; }
+      steps.push({ key:`${bi}.${ui}.${r}`, bi, ui, r, rounds, block:b.block, title:b.titel, id, ziel, bereich, einheit:u.einheit || EX[id]?.einheit || "wdh",
+        tempo:u.tempo || null, kg:u.hantelKg || null, text:u.text || null, test: b.block === "test",
+        pause: once ? (b.block === "test" ? 90 : 10) : (b.pauseSek || 35) });
+    });
+  });
+  return steps;
+}
+
+function yearCut(day){
+  const cut = {}; if (!S.yearAdj || !day.plan) return cut;
+  const Z = PROG._meta.zeitmodell || {sekProWdh:3, sekProWdhMitTempo:6, pauseSek:35, wechselSek:30, maxMin:60};
+  const est = () => day.plan.reduce((sum, b, bi) => {
+    const once = b.block === "aufwaermen" || b.block === "abschluss" || b.block === "test";
+    if (once || b.block === "skills") return sum + (b.min || 0) * 60;
+    const rounds = Math.min(b.runden || 1, cut[bi] ?? 99);
+    const per = b.uebungen.reduce((a, u) => { const f = (S.yearAdj[u.id]?.f || 1), z = (u.ziel || 10) * f;
+      return a + (isSec(u.einheit) ? z : z * (u.tempo ? Z.sekProWdhMitTempo : Z.sekProWdh)) * (String(u.einheit).includes("seite") ? 2 : 1) + (b.pauseSek || Z.pauseSek); }, 0);
+    return sum + rounds * per + Z.wechselSek;
+  }, 0) / 60;
+  const pairsIdx = day.plan.map((b, i) => b.block === "paar" ? i : -1).filter(i => i >= 0);
+  pairsIdx.forEach(i => { if (est() > Z.maxMin && (day.plan[i].runden || 1) >= 4) cut[i] = 3; });
+  const last = pairsIdx[pairsIdx.length - 1];
+  if (last != null && est() > Z.maxMin) cut[last] = 2;
+  if (last != null && pairsIdx.length > 3 && est() > Z.maxMin) cut[last] = 0;
+  return cut;
+}
+
+// Verlauf: letzter Wert und Rekord pro Übung (ohne den Tag k)
+function history(id, k){
+  let last = null, lastDate = null, best = null;
+  Object.keys(S.logs).sort().forEach(d => {
+    if (d >= k) return;
+    const vals = Object.values(S.logs[d].sets).filter(s => s.id === id).map(s => s.v);
+    (S.logs[d].extra || []).filter(e => e.id === id).forEach(e => vals.push(e.v));
+    if (!vals.length) return;
+    const m = Math.max(...vals); last = m; lastDate = d; best = best == null ? m : Math.max(best, m);
+  });
+  return { last, lastDate, best };
+}
+
+// Gefühl der letzten Einheiten einer Übung («leicht/gut/hart», Mehrheit pro Tag), neueste zuerst
+function feelHist(id, k){
+  return Object.keys(S.logs).sort().reverse().filter(d => d < k).map(d => {
+    const f = Object.values(S.logs[d].sets).filter(s => s.id === id && s.feel).map(s => s.feel);
+    if (!f.length) return null; const c = {}; f.forEach(x => c[x] = (c[x] || 0) + 1); return Object.entries(c).sort((a, b) => b[1] - a[1])[0][0];
+  }).filter(Boolean).slice(0, 2);
+}
+
+// ---------- Motivation ----------
+const MOT = D.motiv || {};
+const FALLBACK_QUOTES = [
+  {text:"Komm und hol sie.", quelle:"Leonidas, überliefert bei Plutarch"},
+  {text:"Mit ihm oder auf ihm.", quelle:"Spartanische Mutter zu ihrem Sohn über den Schild, bei Plutarch"},
+  {text:"Umso besser, dann kämpfen wir im Schatten.", quelle:"Dienekes, bei Herodot (Historien 7,226)"}
+];
+function quotes(){
+  const q = MOT.sprueche || MOT.zitate || [];
+  const list = Array.isArray(q) ? q : [];
+  return list.length ? list : FALLBACK_QUOTES;
+}
+function dayPick(list, salt = 0){ if (!list?.length) return null; const n = diffDays("2026-01-01", today()) + salt; return list[((n % list.length) + list.length) % list.length]; }
+function line(kind){
+  const own = MOT.saetze?.[kind] || MOT.eigene?.[kind];
+  const fb = { start:["Heute zählt nur diese eine Übung. Dann die nächste."], pause:["Atmen. Gleich wieder."], ende:["Erledigt. So baut man einen Körper: Tag für Tag."],
+    rekord:["Neuer Rekord. Gestern geschlagen."], verpasst:["Ein verpasster Tag ist kein verlorener Krieg. Heute wieder."] }[kind];
+  const l = Array.isArray(own) && own.length ? own : fb;
+  const pick = dayPick(l, kind.length); return typeof pick === "string" ? pick : (pick?.text || "");
+}
+function weeksDone(){
+  const done = new Set(); Object.entries(S.logs).forEach(([d, l]) => { if (l.done) done.add(weekOf(d)); });
+  let n = 0; done.forEach(w => { const c = DAYS.slice(0,6).filter((_, i) => S.logs[addDays(S.settings.start, (w-1)*7 + i)]?.done).length; if (c >= 4) n++; });
+  return n;
+}
+function rank(){
+  const r = MOT.raenge || MOT.raenge_list || [{ab:0,name:"Rekrut"},{ab:2,name:"Agoge-Schüler"},{ab:4,name:"Hoplit"},{ab:8,name:"Veteran"},{ab:13,name:"Krieger"},{ab:26,name:"Spartiat"},{ab:39,name:"Polemarch"},{ab:52,name:"Legende"}];
+  const w = weeksDone(); let cur = r[0], next = null;
+  r.forEach((x, i) => { const ab = x.ab ?? x.wochen ?? 0; if (w >= ab){ cur = x; next = r[i+1] || null; } });
+  return { name: cur.name, text: cur.text || "", next, w };
+}
+function streak(){
+  let k = today(), n = 0; if (!S.logs[k]?.done) k = addDays(k, -1);
+  for (let i = 0; i < 400; i++){ if (dayIdx(k) === 6){ k = addDays(k, -1); continue; } if (k < S.settings.start) break; if (S.logs[k]?.done){ n++; k = addDays(k, -1); } else break; }
+  return n;
+}
+
+// ---------- Kleinkram ----------
+let toastT;
+function toast(msg){ clearTimeout(toastT); $(".toast")?.remove(); const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; (document.getElementById("root") || document.body).appendChild(t); toastT = setTimeout(() => t.remove(), 2400); }
+let audio;
+function beep(f = 880, d = .2){ try { audio ||= new (window.AudioContext || window.webkitAudioContext)(); const o = audio.createOscillator(), g = audio.createGain(); o.frequency.value = f; g.gain.value = .16; o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime + d); } catch(e) {} try { navigator.vibrate && navigator.vibrate(d > .3 ? [180,80,180] : 40); } catch(e) {} }
+let wake = null;
+function lockScreen(){ try { navigator.wakeLock?.request("screen").then(w => wake = w).catch(() => {}); } catch(e) {} }
+function unlockScreen(){ try { wake?.release(); } catch(e) {} wake = null; }
+function glossify(text){
+  let out = esc(text); const used = new Set();
+  Object.keys(META.glossar || {}).sort((a, b) => b.length - a.length).forEach(w => {
+    if (used.has(w)) return;
+    const re = new RegExp(`(^|[^\\p{L}>])(${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})(?![\\p{L}])`, "iu");
+    if (re.test(out)){ out = out.replace(re, (m, a, b) => `${a}<button class="gl" data-gl="${esc(w)}">${b}</button>`); used.add(w); }
+  });
+  return out;
+}
+const ICON = {
+  heute:'<svg viewBox="0 0 24 24"><path d="M12 3 4 7v6c0 4 3.5 7 8 8 4.5-1 8-4 8-8V7z"/><path d="M12 8l3 8h-2l-1-3-1 3H9z"/></svg>',
+  plan:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>',
+  skills:'<svg viewBox="0 0 24 24"><path d="M12 2v5M9 4h6"/><path d="M6 22l6-15 6 15"/><path d="M8.5 16h7"/></svg>',
+  koerper:'<svg viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="2.5"/><path d="M6 9h12M12 9v6M12 15l-4 7M12 15l4 7"/></svg>',
+  essen:'<svg viewBox="0 0 24 24"><path d="M7 3v8a2 2 0 0 0 4 0V3M9 11v10M17 3c-2 2-3 5-3 8h3v10"/></svg>',
+  gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  play:'<svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z" fill="currentColor" stroke="none"/></svg>',
+  back:'<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+  pause:'<svg viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></svg>'
+};
+
+// ---------- Rahmen ----------
+function shell(){
+  const root = document.getElementById("root") || document.body.appendChild(Object.assign(document.createElement("div"), {id:"root"}));
+  root.innerHTML = `
+  <div class="app">
+    <header class="hdr">${logoSVG(38)}<div class="brand">WINTER ARC<small>TRAINING · 52 WOCHEN</small></div><div class="sp"></div>
+      <span class="rank-wrap" id="rankWrap"><span class="rank" id="rank"></span></span>
+      <a class="icon-btn" href="#einstellungen" aria-label="Einstellungen">${ICON.gear}</a></header>
+    <main id="view"></main>
+  </div>
+  <nav class="tabs" aria-label="Bereiche"><div class="in">
+    <a href="#heute">${ICON.heute}Heute</a><a href="#plan">${ICON.plan}Plan</a><a href="#skills">${ICON.skills}Skills</a><a href="#koerper">${ICON.koerper}Körper</a><a href="#essen">${ICON.essen}Essen</a>
+  </div></nav>`;
+}
+function setRank(){ const r = rank(); $("#rank").textContent = r.name.toUpperCase(); }
+
+// ---------- Router ----------
+const VIEWS = { heute: viewHeute, plan: viewPlan, skills: viewSkills, koerper: viewKoerper, essen: viewEssen, einstellungen: viewSettings, agoge: viewAgoge, bericht: viewBericht };
+function route(){
+  const name = (location.hash || "#heute").slice(1).split("-")[0];
+  const v = VIEWS[name] ? name : "heute";
+  document.body.classList.toggle("agoge", v === "agoge");
+  $$(".tabs a").forEach(a => a.setAttribute("aria-current", a.getAttribute("href") === "#" + v ? "page" : "false"));
+  if (v !== "agoge") stopTimers();
+  VIEWS[v]();
+  // Einblenden nur beim Seitenwechsel, nicht bei jedem Neuzeichnen innerhalb der Seite
+  const vw = $("#view"); vw.classList.remove("enter"); void vw.offsetWidth; vw.classList.add("enter");
+  clearTimeout(route.t); route.t = setTimeout(() => vw.classList.remove("enter"), 900);
+  setRank();
+  mountFigs($("#view"));
+  window.scrollTo(0, 0);
+}
+addEventListener("hashchange", route);
+document.addEventListener("click", e => {
+  const g = e.target.closest(".gl"); if (g){ e.preventDefault(); toast(`${g.dataset.gl}: ${META.glossar[g.dataset.gl]}`); }
+});
+
+// ---------- HEUTE ----------
+function shieldSVG(){ return `<svg viewBox="0 0 40 46"><path class="sd-o" d="M20 3 L36 9 V22 C36 33 28 40 20 43 C12 40 4 33 4 22 V9 Z"/><path class="sd-f" d="M20 8 L31 12 V22 C31 30 26 35 20 38 C14 35 9 30 9 22 V12 Z"/></svg>`; }
+function weekShields(k){
+  const mon = addDays(k, -dayIdx(k));
+  return `<div class="shield-row">${DAYS.slice(0, 6).map((d, i) => { const dk = addDays(mon, i); const l = S.logs[dk];
+    return `<div class="shield-day ${l?.done ? "done" : ""} ${dk === k ? "today" : ""}">${shieldSVG()}${d}</div>`; }).join("")}</div>`;
+}
+// Wochenschild: wie viele der 6 Trainingstage diese Woche erledigt sind (Idee B: kein Streak, der bricht)
+function weekCount(k){ const mon = addDays(k, -dayIdx(k)); return DAYS.slice(0, 6).filter((_, i) => S.logs[addDays(mon, i)]?.done).length; }
+// ---------- Trainings-Übersicht vor dem Start (Nacht 3, Wunsch Benaja) ----------
+// Alle Übungen des Tages; antippen → Vorschau, Sätze und Ziel anpassen, heute weglassen, tauschen (ähnliche Übungen mit Figur).
+let OV_OPEN = null;
+function overviewRows(day, log){
+  const by = new Map();
+  buildSteps(day, log).forEach(s => { const key = `${s.bi}.${s.ui}`; const g = by.get(key) || { key, s, n: 0 }; g.n++; by.set(key, g); });
+  (day.plan || []).forEach((b, bi) => b.uebungen.forEach((u, ui) => { const key = `${bi}.${ui}`;
+    if (!by.has(key) && (log.ov || {})[key]?.skip) by.set(key, { key, n: 0, skip: true, s: { bi, ui, id: log.swaps[key] || u.id, ziel: u.ziel, bereich: u.bereich, einheit: u.einheit || EX[u.id]?.einheit || "wdh" } }); }));
+  return [...by.values()].sort((a, b) => a.s.bi - b.s.bi || a.s.ui - b.s.ui);
+}
+const goalText = s => `${s.bereich ? `${s.bereich[0]}–${s.bereich[1]}` : (s.ziel ?? "")}${isSec(s.einheit) ? " Sek" : ""}`;
+function overviewCard(day, log, k){
+  const rows = overviewRows(day, log); let lastBi = -1;
+  return `<div class="card ov" id="ov"><div class="split"><span class="kicker" style="margin:0">Heute im Training</span><span class="small">${rows.filter(r => !r.skip).length} Übungen</span></div>
+    <p class="small" style="margin:4px 0 6px">Antippen: Vorschau, Sätze anpassen oder tauschen.</p>
+    <div class="ov-list">${rows.map(r => { const s = r.s, b = day.plan[s.bi]; let head = "";
+      if (s.bi !== lastBi){ lastBi = s.bi; head = `<div class="ov-h">${esc(b.block === "paar" ? b.titel.replace("Paar", "Supersatz") : b.titel)}</div>`; }
+      const h = history(s.id, k), o = (log.ov || {})[r.key] || {}, ch = o.sets || o.ziel || log.swaps[r.key];
+      return head + `<button class="ov-row${r.skip ? " off" : ""}${ch ? " changed" : ""}" data-ov="${r.key}">${figSVG(s.id, EX[s.id]?.muskeln || [], "fig-thumb")}<span class="ov-n"><b>${esc(exName(s.id))}</b><small>${r.skip ? "heute weggelassen" : `${r.n} × ${goalText(s)}`}${h.last != null && !r.skip ? ` · letztes Mal ${h.last}` : ""}</small></span><span class="ov-go" aria-hidden="true">›</span></button>`; }).join("")}</div>
+    <div id="ovSheet"></div></div>`;
+}
+function bindOverview(day, log, k){
+  $$("[data-ov]").forEach(btn => btn.onclick = () => { OV_OPEN = btn.dataset.ov; openOv(OV_OPEN, true); });
+  if (OV_OPEN && $(`[data-ov="${OV_OPEN}"]`)) openOv(OV_OPEN, false);
+  function refresh(){ const y = scrollY; viewHeute(); mountFigs($("#view")); scrollTo(0, y); }
+  function openOv(key, scroll){
+    const [bi, ui] = key.split(".").map(Number), b = day.plan[bi], u = b.uebungen[ui];
+    const ov = (log.ov ||= {}), o = ov[key] || {}, id = log.swaps[key] || u.id, ex = EX[id] || {};
+    const r = overviewRows(day, log).find(x => x.key === key), unit = ex.einheit || r?.s.einheit || "wdh";
+    const maxSets = (b.block === "aufwaermen" || b.block === "abschluss") ? 1 : Math.max(1, b.runden || 1);
+    const sets = o.sets || r?.n || maxSets, ziel = o.ziel || r?.s.ziel || (r?.s.bereich ? r.s.bereich[1] : 10);
+    const best = (ex.alternativen || EX[u.id]?.alternativen || []).map(x => EX[x]).filter(Boolean);
+    let alts = [...best, ...Object.values(EX).filter(x => x.gruppe === ex.gruppe && !x.gesperrt && !best.includes(x))].filter(x => x.id !== id).slice(0, 6);
+    if (u.id !== id && EX[u.id]) alts = [EX[u.id], ...alts.filter(x => x.id !== u.id)];
+    $$(".ov-row").forEach(x => x.classList.toggle("sel", x.dataset.ov === key));
+    $("#ovSheet").innerHTML = `<div class="ov-sheet"><div class="split"><h3>${esc(ex.name || id)}</h3><button class="icon-btn" id="ovX" aria-label="Schliessen">✕</button></div>
+      ${figSVG(id, ex.muskeln || [])}
+      <div class="ov-ctl"><span>Sätze</span><div class="ov-step"><button class="chip" data-os="-1" aria-label="weniger Sätze">−</button><b class="num">${sets}</b><button class="chip" data-os="1" aria-label="mehr Sätze"${sets >= maxSets ? " disabled" : ""}>+</button></div></div>
+      <div class="ov-ctl"><span>Ziel pro Satz</span><div class="ov-step"><button class="chip" data-oz="-1" aria-label="weniger">−</button><b class="num">${ziel}${isSec(unit) ? " Sek" : ""}</b><button class="chip" data-oz="1" aria-label="mehr">+</button></div></div>
+      <div class="row wrap" style="margin-top:10px"><button class="btn sm" id="ovSkip">${o.skip ? "Wieder aufnehmen" : "Heute weglassen"}</button>${o.sets || o.ziel || o.skip || log.swaps[key] ? `<button class="btn sm ghost" id="ovReset">Wie geplant</button>` : ""}</div>
+      ${alts.length ? `<div class="kicker" style="margin-top:14px">Tauschen gegen</div><div class="ov-alts">${alts.map(x => `<button class="ov-alt" data-oalt="${x.id}">${figSVG(x.id, x.muskeln || [], "fig-thumb")}<span>${x.id === u.id ? "Original: " : ""}${esc(x.name)}</span></button>`).join("")}</div>` : ""}
+    </div>`;
+    mountFigs($("#ovSheet")); if (scroll) $("#ovSheet").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const put = patch => { const n = { ...o, ...patch }; Object.keys(n).forEach(x => n[x] == null && delete n[x]); if (Object.keys(n).length) ov[key] = n; else delete ov[key]; save(); refresh(); };
+    $("#ovX").onclick = () => { OV_OPEN = null; $("#ovSheet").innerHTML = ""; $$(".ov-row").forEach(x => x.classList.remove("sel")); };
+    $$("[data-os]").forEach(x => x.onclick = () => put({ sets: Math.max(1, Math.min(maxSets, sets + Number(x.dataset.os))) }));
+    $$("[data-oz]").forEach(x => x.onclick = () => put({ ziel: Math.max(1, ziel + Number(x.dataset.oz) * (isSec(unit) ? 5 : 1)) }));
+    $("#ovSkip").onclick = () => put({ skip: o.skip ? null : true });
+    if ($("#ovReset")) $("#ovReset").onclick = () => { delete ov[key]; delete log.swaps[key]; save(); refresh(); };
+    $$("[data-oalt]").forEach(x => x.onclick = () => { const a = x.dataset.oalt; if (a === u.id) delete log.swaps[key]; else log.swaps[key] = a; delete (log.ov || {})[key]; save(); toast(`Getauscht: ${EX[a].name}`); refresh(); });
+  }
+}
+
+function viewHeute(){
+  const k = today(), { w, week, day, pre } = progDay(k), log = logOf(k), ph = phaseOf(Math.max(1, w));
+  const q = dayPick(quotes());
+  const st = streak(), r = rank();
+  let main;
+  if (day.name === "Ruhe" || dayIdx(k) === 6){
+    const next = progDay(addDays(k, 1)).day;
+    main = `<div class="card hero"><div class="eyebrow">${longDate(k)}</div><h1 class="title-xl" style="margin-top:6px">Ruhetag</h1>
+      <p class="muted" style="margin-top:6px">${esc(day.hinweis || "Erholung ist Teil des Trainings. Die Muskeln wachsen jetzt.")}</p></div>
+      <div class="card"><div class="kicker">Wochen-Check</div>${weightQuick()}</div>
+      ${typeof COACH !== "undefined" ? COACH.weekCard(k) : ""}
+      <div class="card"><div class="kicker">Morgen</div><h3>${esc(next.name)}</h3><p class="muted">${esc(next.muskelText || "")} · ${next.minuten} Min</p></div>`;
+  } else {
+    const steps = buildSteps(day, log);
+    const sm = shortMin(log), mins = sm ? Math.min(shortCut(day, sm).min, day.minuten) : log.light ? Math.round(day.minuten * .8) : day.minuten;
+    const goals = [...new Map(steps.filter(s => s.block === "paar" || s.block === "skills").map(s => [s.id, s])).values()].slice(0, 3);
+    const preQ = PROG._meta.vorDemTraining;
+    // Schlauer Heute-Screen (B): Start oben, Claude-Tipp, verpasster Tag freundlich, Ziele statt doppelter Fortschrittszeile
+    const lastCoach = Object.entries(S.coachLog || {}).filter(([d]) => d < k).sort((a, b) => a[0] < b[0] ? 1 : -1)[0];
+    const coachTip = lastCoach && lastCoach[1].res?.naechstesMal ? lastCoach[1].res.naechstesMal : "";
+    let yd = addDays(k, -1); if (dayIdx(yd) === 6) yd = addDays(yd, -1);
+    const missed = !log.started && yd >= S.settings.start && !S.logs[yd]?.done && progDay(yd).day.plan;
+    const goBtn = `<button class="btn primary hero-go" id="go">${ICON.play}${log.started && !log.done && (log.pos || log.pauseAt) ? `Weiter · Übung ${(log.pos || 0) + 1} von ${steps.length}` : `Training starten · ${mins} Min`}</button>`;
+    main = `<div class="card hero">
+        <div class="split"><span class="eyebrow">${longDate(k)}</span><span class="eyebrow">${pre ? "Start" : `Woche ${w} · Phase ${ROMAN[PROG._meta.phasen.indexOf(ph)] || ""}`}</span></div>
+        <h1 class="title-xl" style="margin-top:8px">${esc(day.name)}</h1>
+        <div class="chips" style="margin-top:8px">${(day.muskeln || []).slice(0, 4).map(m => `<span class="mchip">${esc(muscleShort(m))}</span>`).join("")}</div>
+        ${(() => { const h = missed ? line("verpasst") : coachTip && !log.done ? `Claude-Coach: ${coachTip}` : week.typ !== "normal" ? (week.typ === "deload" ? (line("deload") || "Leichte Woche: weniger Runden. Sehnen und Gelenke holen auf.") : (line("testwoche") || "Testwoche: Zeig, was du gewonnen hast.")) : ""; return h ? `<p class="hint${coachTip && !missed ? " coach-hint" : ""}" style="margin-top:10px">${esc(h)}</p>` : ""; })()}
+                ${log.done ? "" : `<div style="margin-top:14px">${goBtn}</div>`}
+      </div>
+      ${log.done ? `<div class="card"><div class="kicker">Erledigt</div><h3>Agoge bestanden ✓</h3><p class="muted" style="margin-top:6px">${esc(line("ende"))}</p>
+        <div class="row" style="margin-top:12px"><a class="btn sm" href="#bericht">Kampfbericht</a><button class="btn sm" id="again">Nochmal öffnen</button></div></div>` : `
+      ${overviewCard(day, log, k)}
+      <div class="card adjust"><div class="kicker">Wie viel heute?</div><div class="seg" role="group" aria-label="Umfang heute">
+        <button class="seg-b" id="normal" aria-pressed="${!sm}">Alles<small>${day.minuten} Min</small></button>
+        <button class="seg-b" id="s30" aria-pressed="${sm === 30}">30 Min<small>normaler Tag</small></button>
+        <button class="seg-b" id="s20" aria-pressed="${sm === 20}">20 Min<small>müde Tage</small></button>
+      </div>
+      <label class="light-tog"><input type="checkbox" id="light" ${log.light ? "checked" : ""}> Leichter (Muskelkater, sehr müde)</label>
+      <p class="small" style="margin-top:8px">${sm === 30 ? "30 Min: alle wichtigen Übungen, dafür meist 2 statt 3 Runden. Reicht zum Muskelaufbau, wenn die letzten Wiederholungen schwer sind." : sm === 20 ? "20 Min: die wichtigsten Paare, 2 Runden. Besser als auslassen." : "Ganzer Plan. Mitten im Training kannst du jederzeit kürzen (⋯ Mehr)."}</p><details class="pre-q"><summary>${esc(preQ?.frage || "Was hast du heute schon gemacht?")}${log.pre.length ? ` · ${esc(log.pre.join(", "))}` : ""}</summary>
+        <div class="chips" id="pre">${(preQ?.antworten || []).map(a => `<button class="chip" data-pre="${esc(a.text)}" aria-pressed="${a.text === "Nichts" ? !log.pre.length : log.pre.includes(a.text)}">${esc(a.text)}</button>`).join("")}</div>
+        <p class="small" style="margin-top:8px">Bereits Trainiertes bekommt 1 Runde weniger, nie ganz gestrichen.</p></details></div>
+            </div>`}`;
+  }
+  const yearDone = w > 52 ? `<div class="card hero"><div class="kicker">${S.year ? `Jahr ${S.year}` : "52 Wochen"} geschafft</div><h2>Ein Jahr Disziplin</h2><p class="muted" style="margin-top:6px">Schau unter «Körper», was aus deinen Startwerten geworden ist. Ein neues Jahr beginnt wieder mit Phase I, auf deinem neuen Niveau.</p>
+      <button class="btn wide" id="newYear" style="margin-top:10px">Neues Jahr ab nächstem Montag</button></div>` : "";
+  const welcome = !S.onboarded ? `<div class="card hero"><div class="kicker">Willkommen</div><h2>Deine Werte, 30 Sekunden</h2>
+      <p class="muted" style="margin-top:6px">Daraus rechnet die App Essen und Ziele. Alles bleibt auf deinem Gerät.</p>
+      <div class="tiles" style="margin-top:10px">
+        <label class="lbl">Name<input class="field" id="oName" value="${esc(S.profile.name)}" placeholder="Jive"></label>
+        <label class="lbl">Gewicht (kg)<input class="field" id="oKg" type="number" step="0.1" inputmode="decimal" value="${latestKg()}"></label>
+        <label class="lbl">Grösse (cm)<input class="field" id="oCm" type="number" inputmode="numeric" value="${S.profile.cm}"></label>
+        <label class="lbl">Alter<input class="field" id="oAlter" type="number" inputmode="numeric" value="${S.profile.alter}"></label>
+      </div><button class="btn wide" id="oGo" style="margin-top:10px">Passt so</button></div>` : "";
+  $("#view").innerHTML = `<div class="stack">
+    ${welcome}
+    ${yearDone}
+    ${main}
+    <div class="card prog-card"><div class="prog-top"><div><b class="num prog-big">${Object.values(S.logs).filter(l => l.done).length}</b><span class="prog-lbl">${Object.values(S.logs).filter(l => l.done).length === 1 ? "Tag" : "Tage"} trainiert</span></div><div class="prog-wk"><b class="num">${weekCount(k)}<small>/6</small></b><span class="prog-lbl">diese Woche</span></div></div>
+      <div style="margin-top:10px">${weekShields(k)}</div>
+      <p class="small" style="margin-top:8px">Rang: <b>${esc(r.name)}</b>${r.text ? ` · ${esc(r.text)}` : ""}${r.next ? ` · «${esc(r.next.name)}» nach ${r.next.ab ?? r.next.wochen} Wochen mit mindestens 4 Trainings` : ""}</p></div>
+    ${q ? `<div class="quote"><p>«${esc(q.text)}»</p><small>${esc([q.wer, q.quelle || q.stelle].filter(Boolean).join(" · "))}</small></div>` : ""}
+    <details class="card more-card"><summary class="kicker" style="margin:0;cursor:pointer">Mehr: Vers der Woche, selbst eintragen</summary><div style="margin-top:10px">
+    ${(() => { const v = (MOT.bibel || [])[(weekOf(k) % Math.max(1, (MOT.bibel || []).length) + (MOT.bibel || []).length) % Math.max(1, (MOT.bibel || []).length)]; return v ? `<div class="card"><div class="kicker">Vers der Woche</div><p>${esc(v.sinngemaess || v.text || "")}</p><p class="small" style="margin-top:6px">${esc(v.stelle)} (sinngemäss)</p></div>` : ""; })()}
+    <div class="card"><div class="kicker">Selbst eintragen</div><p class="small">Extra trainiert? Trag es ein, es zählt für Rekorde.</p>${extraForm()}</div>
+    </div></details>
+  </div>`;
+  $("#oGo")?.addEventListener("click", () => {
+    S.profile.name = $("#oName").value.trim(); S.profile.cm = Number($("#oCm").value) || S.profile.cm; S.profile.alter = Number($("#oAlter").value) || S.profile.alter;
+    const kg = parseFloat(String($("#oKg").value).replace(",", ".")); if (kg > 25 && kg < 200){ S.profile.kg = kg; if (!S.body.w.length) S.body.w.push({d: k, kg}); }
+    S.onboarded = true; save(); toast(S.profile.name ? `Willkommen in der Agoge, ${S.profile.name}.` : "Willkommen in der Agoge."); route();
+  });
+  $("#newYear")?.addEventListener("click", () => {
+    const f = {}, firstWeek = PROG.wochen[0].tage, lastWeek = PROG.wochen[50].tage;
+    firstWeek.forEach((t, di) => (t.plan || []).forEach(b => b.uebungen.forEach(u => {
+      if (!u.ziel || f[u.id]) return;
+      const best = history(u.id, addDays(k, 1)).best; if (best == null) return;
+      const fac = Math.min(2.5, Math.max(1, best / u.ziel));
+      const z51 = (lastWeek[di].plan || []).flatMap(x => x.uebungen).find(x => x.id === u.id)?.ziel || Infinity;
+      const tooBig = Math.round(u.ziel * fac) > z51 || (isSec(u.einheit) && Math.round(u.ziel * fac) > 60);
+      f[u.id] = tooBig && EX[u.id]?.schwerer ? {stufe: EX[u.id].schwerer, f: 1} : {f: tooBig ? 1 : fac};
+    })));
+    S.year = (S.year || 1) + 1; S.yearAdj = f; S.settings.start = addDays(k, 7 - dayIdx(k)); save();
+    toast(`Jahr ${S.year} startet ${longDate(S.settings.start)}, mit deinen Werten als Start.`); route();
+  });
+  $("#go")?.addEventListener("click", () => { OV_OPEN = null; if (log.short === undefined) log.short = shortMin(log) || false; log.started ||= Date.now(); save(); location.hash = "#agoge"; });
+  $("#again")?.addEventListener("click", () => { log.pos = 0; save(); location.hash = "#agoge"; });
+  $("#light")?.addEventListener("change", () => { log.light = $("#light").checked; save(); viewHeute(); mountFigs($("#view")); });
+  if ($("#ov")) bindOverview(progDay(k).day, logOf(k), k);
+  const setShort = v => { log.short = v; save(); viewHeute(); mountFigs($("#view")); };
+  $("#normal")?.addEventListener("click", () => setShort(false));
+  $("#s30")?.addEventListener("click", () => setShort(30));
+  $("#s20")?.addEventListener("click", () => setShort(20));
+  $$("#pre .chip").forEach(b => b.addEventListener("click", () => {
+    const t = b.dataset.pre;
+    if (t === "Nichts") log.pre = []; else log.pre = log.pre.includes(t) ? log.pre.filter(x => x !== t) : [...log.pre, t];
+    save(); viewHeute(); mountFigs($("#view"));
+  }));
+  bindWeight(); bindExtra(k);
+  if (typeof COACH !== "undefined" && $("#coachCard")) COACH.weekBind(k);
+}
+function timeline(day, log = {}){
+  let t = 0, pairs = 0; const sc = shortCut(day, shortMin(log)).cut;
+  return (day.plan || []).map((b, bi) => {
+    if (b.block === "paar") pairs++;
+    if (sc[bi] === 0) return "";
+    const title = b.block === "paar" ? `Supersatz ${pairs}` : b.titel;
+    const row = `<i>${t}</i><span><b>${esc(title)}</b> · ${b.uebungen.map(u => esc(exName(u.id))).join(" + ")}</span>`; t += b.min || 0; return row; }).join("") + `<i>${t}</i><span>Fertig</span>`;
+}
+function extraForm(){
+  const opts = Object.values(EX).filter(u => !u.gesperrt).map(u => `<option value="${esc(u.name)}"></option>`).join("");
+  return `<div class="row wrap" style="margin-top:8px"><input class="field grow" id="xName" list="xList" placeholder="Übung, z. B. Klimmzug" style="flex:2 1 180px"><datalist id="xList">${opts}</datalist>
+    <input class="field" id="xVal" type="number" inputmode="numeric" min="0" placeholder="Zahl" style="flex:1 1 80px"><button class="btn sm" id="xAdd">Eintragen</button></div><div id="xMusBox"></div>`;
+}
+function bindExtra(k){
+  $("#xAdd")?.addEventListener("click", () => {
+    const name = $("#xName").value.trim(), v = Number($("#xVal").value);
+    if (!name || !v){ toast("Übung und Zahl eintragen."); return; }
+    let ex = Object.values(EX).find(u => u.name.toLowerCase() === name.toLowerCase());
+    if (!ex){
+      let c = S.custom.find(c => c.name.toLowerCase() === name.toLowerCase());
+      if (!c){
+        // Eigene Übung: Muskeln wählen statt tippen (Idee I8 mit Verbesserung von B)
+        const chosen = $$("#xMus [aria-pressed='true']").map(b => b.dataset.mus);
+        if (!chosen.length){
+          $("#xMusBox").innerHTML = `<p class="small" style="margin-top:10px">Neue Übung. Welche Muskeln arbeiten?</p><div class="chips" id="xMus" style="margin-top:6px">${Object.keys(META.muskeln).map(m => `<button class="chip" data-mus="${m}" aria-pressed="false">${esc(muscleShort(m))}</button>`).join("")}</div>`;
+          $$("#xMus .chip").forEach(b => b.onclick = () => b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true"));
+          toast("Wähle die Muskeln, dann nochmal «Eintragen»."); return;
+        }
+        c = {id:"c" + Date.now().toString(36), name, einheit:"wdh", muskeln: chosen, gruppe:"eigene"}; S.custom.push(c);
+      }
+      ex = c;
+    }
+    logOf(k).extra.push({id: ex.id, v, t: Date.now()}); save();
+    const h = history(ex.id, k); toast(h.best != null && v > h.best ? `Neuer Rekord: ${ex.name} ${v}!` : `Eingetragen: ${ex.name} ${v}`);
+    $("#xName").value = ""; $("#xVal").value = ""; $("#xMusBox").innerHTML = "";
+  });
+}
+function latestKg(){ const w = S.body.w; return w.length ? w[w.length - 1].kg : S.profile.kg; }
+function weightQuick(){ return `<div class="row"><input class="field grow" id="wIn" type="number" step="0.1" inputmode="decimal" placeholder="Gewicht in kg" value=""><button class="btn sm" id="wSave">Speichern</button></div><p class="small" style="margin-top:6px">Einmal pro Woche, am Morgen vor dem Essen. Letzter Wert: ${latestKg()} kg</p>`; }
+function bindWeight(){
+  $("#wSave")?.addEventListener("click", () => {
+    const v = parseFloat(String($("#wIn").value).replace(",", "."));
+    if (!(v > 25 && v < 200)){ toast("Bitte ein Gewicht in kg eingeben."); return; }
+    const k = today(); S.body.w = S.body.w.filter(x => x.d !== k); S.body.w.push({d:k, kg:v}); S.body.w.sort((a, b) => a.d < b.d ? -1 : 1); S.profile.kg = v; save();
+    toast(`Gespeichert: ${v} kg`); route();
+  });
+}
+
+// ---------- AGOGE (Training, Schritt für Schritt) ----------
+let T = null; // laufender Timer
+function stopTimers(){ if (T){ clearInterval(T.iv); T = null; } unlockScreen(); }
+function viewAgoge(){
+  const k = today(), { day } = progDay(k), log = logOf(k);
+  if (!day.plan){ location.hash = "#heute"; return; }
+  const steps = buildSteps(day, log);
+  log.pos = Math.min(log.pos || 0, steps.length - 1); save();
+  if (log.pauseAt){ pauseView(steps, log, k); return; }
+  lockScreen();
+  renderStep(steps, log, k);
+}
+// Pause (z. B. Essen): Zeit läuft nicht weiter, Platz bleibt gespeichert
+function pauseView(steps, log, k){
+  stopTimers();
+  const s = steps[log.pos];
+  $("#view").innerHTML = `<div class="stack"><div class="card hero"><div class="kicker">Pause</div>
+    <h2 style="margin-top:6px">Training pausiert</h2>
+    <p class="muted" style="margin-top:6px">Dein Platz ist gespeichert: Übung ${log.pos + 1} von ${steps.length}, ${esc(exName(s.id))}. Die Trainingszeit läuft nicht weiter. Du kannst die App ruhig schliessen.</p>
+    <button class="btn primary wide" id="resume" style="margin-top:12px">${ICON.play}Weiter</button></div>
+    <a class="btn ghost wide" href="#heute">Zu Heute</a></div>`;
+  $("#resume").onclick = () => { log.pauseMs = (log.pauseMs || 0) + (Date.now() - log.pauseAt); delete log.pauseAt; save(); lockScreen(); renderStep(steps, log, k); mountFigs($("#view")); window.scrollTo(0, 0); };
+}
+function lastNote(id, k){
+  const d = Object.keys(S.logs).sort().reverse().find(d => d < k && S.logs[d].notes?.[id]);
+  return d ? { d, t: S.logs[d].notes[id] } : null;
+}
+function renderStep(steps, log, k){
+  stopTimers(); lockScreen();
+  const i = log.pos, s = steps[i], u = EX[s.id] || {name: exName(s.id), schritte:[], muskeln:[], fehler:[]};
+  const h = history(s.id, k), next = steps[i + 1];
+  if (log.short === undefined) log.short = shortMin(log) || false;   // Kurz-Version beim Start festhalten
+  const started = log.started || Date.now(); log.started = started;
+  const planMin = shortMin(log) ? Math.min(shortMin(log), progDay(k).day.minuten) : progDay(k).day.minuten;
+  const fullLen = log.trim ? buildSteps(progDay(k).day, { ...log, trim: null }).length : steps.length;
+  const perStep = planMin * 60 / fullLen, remainMin = (steps.length - i) * perStep / 60;
+  const endAt = new Date(Date.now() + remainMin * 6e4);
+  const prev = log.sets[s.key]?.v;
+  const startVal = prev ?? (h.last != null ? h.last : (s.ziel || 0));
+  const goal = s.test ? "Maximum" : (s.bereich ? `${s.bereich[0]}–${s.bereich[1]}` : (s.ziel ?? ""));
+  const vid = VIDEOS[s.id];
+  const showKg = (u.material || []).includes("hanteln");
+  $("#view").innerHTML = `
+    <div class="ag-top">
+      <div class="row"><a class="icon-btn" href="#heute" aria-label="Zurück zu Heute">${ICON.back}</a>
+        <button class="icon-btn" id="pause" aria-label="Pause" title="Pause">${ICON.pause}</button><div class="grow ag-meta"><span class="num">Übung ${i + 1} von ${steps.length}</span><span class="num" id="clock">0:00</span><span class="num">fertig ca. ${String(endAt.getHours()).padStart(2,"0")}:${String(endAt.getMinutes()).padStart(2,"0")}</span></div></div>
+      <div class="ag-prog"><i style="width:${(i / steps.length) * 100}%"></i></div>
+    </div>
+    <div class="ag-card">
+      ${i === 0 ? `<p class="hint">Agoge: so hiess die Ausbildung der Spartaner. Hier immer nur eine Übung, dann die nächste.</p>` : ""}
+      <div class="eyebrow">${esc(s.block === "paar" ? "Supersatz" : s.title)}${s.rounds > 1 ? ` · Runde ${s.r} von ${s.rounds}` : ""}</div>
+      ${s.block === "skills" && s.r === 1 && s.ui === 0 ? `<p class="hint">Skills: ${s.rounds} kurze Runden, die Übungen abwechselnd. Kurz, frisch und sauber lernt man Skills am schnellsten.</p>` : ""}
+      ${u.handgelenk && s.block !== "aufwaermen" && log.wrist == null ? `<div class="card"><div class="kicker">Handgelenke heute?</div><div class="row"><button class="chip grow" data-wr="ok">Gut</button><button class="chip grow" data-wr="zwickt">Zwickt</button></div></div>` : ""}
+      ${figSVG(s.id, u.muskeln || [])}
+      <h2 class="ag-name">${esc(u.name)}</h2>
+      <div class="chips">${(u.muskeln || []).slice(0, 4).map(m => `<span class="mchip">${esc(muscleShort(m))}</span>`).join("")}</div>
+      <div class="goal"><b class="num">${esc(goal)}</b><span>${esc(s.test ? (s.text || "") : unitText(s.einheit))}${s.kg ? ` · ${S.settings.hantelKg} kg` : ""}</span></div>
+      ${h.last != null ? `<div class="beat"><span>Letztes Mal <b class="num">${h.last}</b></span><span>Heute? <b class="num">${h.last + 1}</b></span><span>Rekord <b class="num">${h.best}</b></span></div>` :(() => { const sv = (PROG._meta?.startwerte || {})[s.id]; return typeof sv === "number" ? `<div class="beat"><span>Dein Startwert vom Test <b class="num">${sv}${isSec(u.einheit) ? " Sek" : ""}</b></span><span>Heute schlagen?</span></div>` : ""; })()}
+      ${(() => { const n = log.notes?.[s.id] ? { d: k, t: log.notes[s.id] } : lastNote(s.id, k); return n ? `<p class="hint">${n.d === k ? "Deine Notiz heute" : `Deine Notiz vom ${DAYS[dayIdx(n.d)]} ${parse(n.d).getDate()}.${parse(n.d).getMonth() + 1}.`}: ${esc(n.t)}</p>` : ""; })()}
+      ${s.tempo ? `<p class="hint">Tempo: ${esc(s.tempo)}</p>` : ""}
+      ${u.handgelenk && (log.wrist === "zwickt" || !log.wristTip || log.wristTip === s.key) ? `<p class="hint">${log.wrist === "zwickt" ? "Heute zwicken die Handgelenke: auf die Parallettes oder auf die Fäuste, Handtuch unter die Handballen, weniger weit lehnen. Sticht es: «Schmerz?» tippen." : esc(META.handgelenkTipp)}</p>` : ""}
+      ${(() => { const f = feelHist(s.id, k); return f.length >= 2 && f.every(x => x === "leicht") && u.schwerer && EX[u.schwerer] ? `<div class="beat"><span>Zweimal «leicht». Bereit für <b>${esc(EX[u.schwerer].name)}</b>?</span><button class="chip" id="harder">Ja</button></div>` : ""; })()}
+      ${(() => { const ca = typeof COACH !== "undefined" ? COACH.adj(s.id) : null; return ca?.grund ? `<p class="hint coach-hint">Claude-Coach hat das angepasst: ${esc(ca.grund)}</p>` : ""; })()}
+      <details class="more howto" ${h.last == null ? "open" : ""}><summary>So geht's</summary><ol class="steps">${(u.schritte || []).map(t => `<li>${glossify(t)}</li>`).join("")}</ol></details>
+      ${typeof hasPhoto === "function" && hasPhoto(s.id) ? `<details class="more photo-more"><summary>Echtes Foto ansehen</summary>${photoBox(s.id)}</details>` : ""}
+      <details class="more"><summary>Fehler vermeiden</summary><ul class="steps" style="margin-top:6px">${(u.fehler || []).map(t => `<li>${esc(t)}</li>`).join("")}</ul>${u.sicherheit ? `<p class="small" style="margin-top:6px">${esc(u.sicherheit)}</p>` : ""}</details>
+      ${vid && (S.videoOk || {})[s.id] !== false ? `<div id="vidSlot"><button class="btn wide" id="vid">${ICON.play}Video ansehen${vid.kanal ? ` · ${esc(vid.kanal)}` : ""}</button>${(S.videoOk || {})[s.id] ? "" : `<p class="small" style="margin-top:4px">Aus einer Suche, von uns noch nicht angeschaut (englisch).</p>`}</div>` : ""}
+      ${showKg ? `<div class="row small"><span>Hanteln</span><button class="chip" id="kgm">−</button><b class="num" id="kgv">${S.settings.hantelKg} kg</b><button class="chip" id="kgp">+</button></div>` : ""}
+      ${next ? `<p class="next">Danach: ${esc(exName(next.id))}</p>` : ""}
+      <div id="panel"></div>
+      <div class="ag-dock">
+        ${isSec(s.einheit) ? `<button class="watch" id="watch" style="min-height:46px;font-size:18px">⏱ Halten starten</button>` : ""}
+        <div class="stepper"><button id="minus" aria-label="weniger">−</button><input id="val" class="num" type="number" inputmode="numeric" min="0" value="${startVal}" aria-label="${isSec(s.einheit) ? "Sekunden" : "Wiederholungen"}"><button id="plus" aria-label="mehr">+</button></div>
+        <button class="btn primary" id="done">${next ? "Fertig ✓" : "Agoge beenden ✓"}</button>
+        <div class="ag-tools">
+          <button class="btn" id="easier">${u.leichter ? "Zu schwer?" : "Leichter?"}</button>
+          <button class="btn" id="pain">Schmerz?</button>
+          <button class="btn" id="moreBtn" aria-expanded="false">⋯ Mehr</button>
+        </div>
+        <div class="ag-more" id="morePanel" hidden>
+          <button class="btn" id="swap">Übung tauschen</button>
+          <button class="btn" id="note">Notiz schreiben</button>
+          <button class="btn" id="prev" ${i === 0 ? "disabled" : ""}>Eine zurück</button>
+          <button class="btn" id="skip">Überspringen</button>
+          ${!log.trim && !shortMin(log) && steps.length - i > 8 && s.block !== "aufwaermen" ? `<button class="btn wide" id="trim">Wenig Zeit? Rest kürzen</button>` : log.trim ? `<p class="small" style="grid-column:1/-1;text-align:center">Gekürzt: nur noch das Wichtigste.</p>` : ""}
+        </div>
+      </div>
+    </div>`;
+  if (u.handgelenk && !log.wristTip){ log.wristTip = s.key; save(); }
+  const clock = () => { const el = $("#clock"); if (el) el.textContent = fmt((Date.now() - started - (log.pauseMs || 0)) / 1000); };
+  clock(); const clockIv = setInterval(clock, 1000);
+  const val = $("#val");
+  $("#minus").onclick = () => { val.value = Math.max(0, (Number(val.value) || 0) - 1); };
+  $("#plus").onclick = () => { val.value = (Number(val.value) || 0) + 1; };
+  if (showKg){ const setKg = d => { S.settings.hantelKg = Math.max(1, Math.round((S.settings.hantelKg + d) * 2) / 2); save(); $("#kgv").textContent = `${S.settings.hantelKg} kg`; }; $("#kgm").onclick = () => setKg(-.5); $("#kgp").onclick = () => setKg(.5); }
+  $("#vid")?.addEventListener("click", () => {
+    const m = String(vid.url).match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([\w-]{11})/);
+    const link = `<a class="small" href="${esc(vid.url)}" target="_blank" rel="noopener">Auf YouTube öffnen</a>`;
+    if (!navigator.onLine){ $("#vidSlot").innerHTML = `<p class="small">Offline: Video geht nur mit Internet.</p>`; return; }
+    $("#vidSlot").innerHTML = (m ? `<div class="video-box"><iframe src="https://www.youtube-nocookie.com/embed/${m[1]}?rel=0&modestbranding=1&playsinline=1" title="${esc(vid.titel || u.name)}" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>` : "") +
+      `<div class="row wrap" style="margin-top:6px">${link}<span class="grow"></span><span class="small">Zeigt es die Übung gut?</span><button class="chip" data-vok="1">Passt</button><button class="chip" data-vok="0">Nein</button></div>`;
+    $$("[data-vok]").forEach(c => c.onclick = () => { S.videoOk ||= {}; S.videoOk[s.id] = c.dataset.vok === "1"; save(); toast(c.dataset.vok === "1" ? "Gemerkt: Video passt." : "Ausgeblendet. Danke."); if (c.dataset.vok !== "1") $("#vidSlot").remove(); });
+  });
+  // Stoppuhr im Knopf: 3 Sek Vorlauf, dann zählt sie hoch, tippen = Stopp
+  $("#watch")?.addEventListener("click", () => {
+    const b = $("#watch");
+    if (T && T.kind === "watch"){ const sec = T.start ? Math.round((Date.now() - T.start) / 1000) : 0; stopTimers(); lockScreen(); b.classList.remove("run"); b.textContent = "⏱ Halten starten"; if (sec){ val.value = sec; $("#done").click(); } return; }
+    stopTimers(); lockScreen(); b.classList.add("run");
+    T = {kind:"watch", start:0, prep: Date.now() + 3000, last:4};
+    T.iv = setInterval(() => {
+      if (!T.start){ const left = Math.ceil((T.prep - Date.now()) / 1000); if (left <= 0){ T.start = Date.now(); beep(); } else if (left !== T.last){ T.last = left; beep(620, .06); b.textContent = `Bereit … ${left}`; } }
+      else b.textContent = `${fmt((Date.now() - T.start) / 1000)} · Stopp = fertig`;
+    }, 200);
+  });
+  const go = d => { clearInterval(clockIv); log.pos = Math.max(0, Math.min(steps.length - 1, i + d)); save(); renderStep(steps, log, k); mountFigs($("#view")); window.scrollTo(0, 0); };
+  $("#prev").onclick = () => go(-1);
+  $("#trim")?.addEventListener("click", () => {
+    const t = { bi: s.bi, r: s.r }, ns = buildSteps(progDay(k).day, { ...log, trim: t }), ni = ns.findIndex(x => x.key === s.key);
+    const hhmm = m => { const d = new Date(Date.now() + m * 6e4); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; };
+    const nowEnd = hhmm(remainMin), newEnd = hhmm((ns.length - ni) * perStep / 60);
+    const dropped = (progDay(k).day.plan || []).filter((b, bi) => bi > s.bi && b.block === "paar").length - 2;
+    $("#panel").innerHTML = `<div class="card"><div class="kicker">Rest kürzen</div>
+      <p style="margin-top:6px">Fertig ca. <b class="num">${newEnd}</b> statt ${nowEnd}. Noch <b class="num">${ns.length - ni}</b> statt ${steps.length - i} Übungen.</p>
+      <p class="small" style="margin-top:4px">Die nächsten 2 Supersätze bleiben, je 2 Runden${dropped > 0 ? `, ${dropped} Supersatz fällt weg` : ""}${(progDay(k).day.plan || []).some(b => b.block === "abschluss") ? ", Abschluss fällt weg" : ""}. Was du schon gemacht hast, bleibt gespeichert.</p>
+      <button class="btn primary wide" id="trimGo" style="margin-top:10px">Kürzen</button></div>`;
+    $("#trimGo").onclick = () => { log.trim = t; log.pos = ni; save(); toast(`Gekürzt. Fertig ca. ${newEnd}.`); clearInterval(clockIv); renderStep(ns, log, k); mountFigs($("#view")); window.scrollTo(0, 0); };
+    $("#panel").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+  $("#moreBtn").onclick = () => { const m = $("#morePanel"), b = $("#moreBtn"); m.hidden = !m.hidden; b.setAttribute("aria-expanded", String(!m.hidden)); if (!m.hidden) m.scrollIntoView({ behavior: "smooth", block: "nearest" }); };
+  $("#pause").onclick = () => { clearInterval(clockIv); log.pauseAt = Date.now(); save(); pauseView(steps, log, k); window.scrollTo(0, 0); };
+  $("#note").onclick = () => {
+    const cur = log.notes?.[s.id] || "";
+    $("#panel").innerHTML = `<div class="card"><div class="kicker">Notiz zu ${esc(u.name)}</div>
+      <div class="chips" style="margin-top:6px">${["Zu schwer","Zu leicht","Technik unklar","Tat weh","Gut gegangen"].map(t => `<button class="chip" data-nt="${t}">${t}</button>`).join("")}</div>
+      <input class="field" id="noteTxt" style="margin-top:8px" placeholder="Oder selbst schreiben" value="${esc(cur)}">
+      <button class="btn wide" id="noteSave" style="margin-top:8px">Speichern</button>
+      <p class="small" style="margin-top:6px">Erscheint beim nächsten Mal bei dieser Übung.</p></div>`;
+    $$("[data-nt]").forEach(c => c.onclick = () => { const f = $("#noteTxt"); f.value = f.value ? `${f.value}, ${c.dataset.nt.toLowerCase()}` : c.dataset.nt; });
+    $("#noteSave").onclick = () => { const t = $("#noteTxt").value.trim(); log.notes ||= {}; if (t) log.notes[s.id] = t; else delete log.notes[s.id]; save(); toast(t ? "Notiz gespeichert" : "Notiz gelöscht"); $("#panel").innerHTML = ""; };
+    $("#panel").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  };
+  $("#skip").onclick = () => { if (!next){ finish(log, k, steps); return; } go(1); };
+  // Fertig: Wert speichern, dann zählt der Knopf selbst die Pause runter (Regel 2)
+  $("#done").onclick = () => {
+    const b = $("#done");
+    if (T && T.kind === "rest"){ stopTimers(); go(1); return; }
+    const v = Math.max(0, Number(val.value) || 0);
+    log.sets[s.key] = {id: s.id, v, kg: showKg ? S.settings.hantelKg : null, t: Date.now(), block: s.block}; save();
+    if (h.best != null && v > h.best) toast(`Neuer Rekord: ${v}! ${line("rekord")}`);
+    if (!next){ clearInterval(clockIv); finish(log, k, steps); return; }
+    stopTimers(); lockScreen();
+    // Idee B1: ein Tipp «Wie war's?» während der Pause, steuert die nächste Steigerung
+    if (!s.test && s.block !== "aufwaermen" && s.block !== "abschluss"){
+      b.insertAdjacentHTML("afterend", `<div class="row" id="feel"><span class="small">Wie war's?</span>${["leicht","gut","hart"].map(f => `<button class="chip grow" data-feel="${f}">${f}</button>`).join("")}</div>`);
+      $$("[data-feel]").forEach(c => c.onclick = () => { log.sets[s.key].feel = c.dataset.feel; save(); $$("[data-feel]").forEach(x => x.setAttribute("aria-pressed", x === c)); });
+    }
+    // Pause: Figur zeigt schon die nächste Übung (vorbereiten, Gerät holen), Kennzeichen «Gleich»
+    if (next.id !== s.id){ const cur = document.querySelector(".ag-card canvas.fig3d, .ag-card svg.fig");
+      if (cur){ const nz = next.bereich ? `${next.bereich[0]}–${next.bereich[1]}` : (next.ziel ?? ""), wrap = document.createElement("div"); wrap.className = "next-prev";
+        wrap.innerHTML = `<div class="eyebrow" style="margin-bottom:4px">Gleich: ${esc(exName(next.id))}${nz !== "" ? ` · ${nz}${isSec(next.einheit) ? " Sek" : ""}` : ""}</div>${figSVG(next.id, EX[next.id]?.muskeln || [])}`;
+        cur.replaceWith(wrap); mountFigs(wrap); }
+      // Kritik A: in der Pause gehört der Kopf zur nächsten Übung, Titel/Ziel der fertigen dimmen, «Halten starten» weg
+      document.querySelectorAll(".ag-card > .ag-name, .ag-card > .goal, .ag-card > .eyebrow, .ag-card > .chips").forEach(el => { el.style.opacity = ".45"; });
+      const wb = $("#watch"); if (wb) wb.style.display = "none"; }
+    let left = s.pause; b.classList.add("rest");
+    const nn = exName(next.id), short = nn.length > 22 ? nn.slice(0, 21) + "…" : nn;
+    const paint = () => { b.innerHTML = `<span>Pause <b class="num">${fmt(left)}</b></span><span class="nx">→ ${esc(short)}</span>`; };
+    paint();
+    T = {kind:"rest"}; T.iv = setInterval(() => { left--; if (left > 0 && left <= 3) beep(620, .06); if (left <= 0){ beep(880, .4); stopTimers(); go(1); return; } paint(); }, 1000);
+  };
+  $$("[data-wr]").forEach(c => c.onclick = () => { log.wrist = c.dataset.wr; save(); clearInterval(clockIv); renderStep(steps, log, k); mountFigs($("#view")); });
+  $("#harder")?.addEventListener("click", () => { log.swaps[`${s.bi}.${s.ui}`] = u.schwerer; save(); toast(`Neue Stufe: ${EX[u.schwerer].name}`); clearInterval(clockIv); viewAgoge(); mountFigs($("#view")); });
+  $("#easier").onclick = () => {
+    if (u.leichter && EX[u.leichter]){ log.swaps[`${s.bi}.${s.ui}`] = u.leichter; save(); toast(`Leichtere Stufe: ${EX[u.leichter].name}. ${line("leichtereStufe")}`); clearInterval(clockIv); viewAgoge(); mountFigs($("#view")); }
+    else toast(u.leichterTipp || "Weniger Wiederholungen oder langsamer, dafür sauber.");
+  };
+  $("#swap").onclick = () => {
+    const best = (u.alternativen || []).map(id => EX[id]).filter(Boolean);   // B: passende Alternativen zuerst (gleiche Muskeln, Einheit, Material)
+    const alts = [...best, ...Object.values(EX).filter(x => x.gruppe === u.gruppe && x.id !== s.id && !x.gesperrt && !best.includes(x))].slice(0, 8);
+    $("#panel").innerHTML = `<div class="card"><div class="kicker">Statt ${esc(u.name)}</div><div class="list">${alts.map(x => `<button class="btn sm wide" data-alt="${x.id}" style="justify-content:flex-start">${esc(x.name)}</button>`).join("")}</div></div>`;
+    $$("[data-alt]").forEach(b => b.onclick = () => { log.swaps[`${s.bi}.${s.ui}`] = b.dataset.alt; save(); clearInterval(clockIv); viewAgoge(); mountFigs($("#view")); });
+  };
+  $("#pain").onclick = () => {
+    $("#panel").innerHTML = `<div class="pain"><p><b>${esc(META.stoppRegel)}</b></p>
+      <button class="btn wide" id="painJoint">Gelenk sticht: leichtere oder andere Übung</button>
+      <button class="btn wide" id="painStop">Schwindel, Schwarzwerden oder Brustschmerz: jetzt stoppen</button></div>`;
+    $("#painJoint").onclick = () => { if (u.leichter && EX[u.leichter]){ $("#easier").click(); } else $("#swap").click(); };
+    $("#painStop").onclick = () => { clearInterval(clockIv); stopTimers(); $("#view").innerHTML = `<div class="stack"><div class="pain"><h3>Training gestoppt</h3><p>Setz oder leg dich hin, Beine hoch, trink Wasser. Wenn es nicht nach ein paar Minuten weggeht, oder bei Brustschmerz: sofort deinen Eltern sagen oder 144 anrufen.</p></div><a class="btn wide" href="#heute">Zu Heute</a></div>`; };
+  };
+}
+function finish(log, k, steps){
+  stopTimers();
+  log.done = true; log.finished = Date.now(); log.pos = 0; delete log.pauseAt; save();
+  location.hash = "#bericht";
+}
+
+// ---------- KAMPFBERICHT ----------
+// Werte eines Tages ansehen, nachtragen, korrigieren (−/+ pro Satz, sofort gespeichert)
+function editCard(k, open){
+  const { day } = progDay(k); if (!day.plan) return "";
+  const log = logOf(k), steps = buildSteps(day, log).filter(s => s.block !== "aufwaermen" && s.block !== "abschluss");
+  let lastT = null;
+  const rows = steps.map(s => { const v = log.sets[s.key]?.v; const head = s.title !== lastT ? `<div class="eyebrow" style="margin-top:10px">${esc(s.block === "paar" ? s.title.replace("Paar", "Supersatz") : s.title)}</div>` : ""; lastT = s.title;
+    return `${head}<div class="erow"><span>${esc(exName(s.id))}${s.rounds > 1 ? ` <small class="muted">Runde ${s.r}</small>` : ""}</span>
+      <button class="chip" data-em="${s.key}" aria-label="weniger">−</button><b class="num" data-ev="${s.key}">${v ?? "–"}</b><button class="chip" data-ep="${s.key}" aria-label="mehr">+</button></div>`; }).join("");
+  return `<details class="card" id="editCard" style="width:100%;text-align:left" ${open ? "open" : ""}><summary><b>Werte ansehen und korrigieren</b></summary>
+    <p class="small" style="margin-top:6px">Tippe −/+ pro Satz. Wird sofort gespeichert. «–» heisst: nicht eingetragen.</p>${rows}
+    ${!log.done ? `<button class="btn wide" id="markDone" style="margin-top:12px">Training als gemacht zählen</button>` : ""}</details>`;
+}
+function bindEdit(k){
+  const { day } = progDay(k), log = logOf(k), steps = buildSteps(day, log), by = Object.fromEntries(steps.map(s => [s.key, s]));
+  const ch = (key, d) => { const s = by[key]; if (!s) return; const cur = log.sets[key];
+    const v = cur ? Math.max(0, cur.v + d) : Math.max(0, (s.ziel || 0) + (d < 0 ? -1 : 0));
+    log.sets[key] = { ...(cur || { id: s.id, kg: null, block: s.block }), id: s.id, v, t: Date.now(), block: s.block }; save();
+    const el = $(`[data-ev="${key}"]`); if (el) el.textContent = v; };
+  $$("[data-em]").forEach(b => b.onclick = () => ch(b.dataset.em, -1));
+  $$("[data-ep]").forEach(b => b.onclick = () => ch(b.dataset.ep, 1));
+  $("#markDone")?.addEventListener("click", () => { log.done = true; log.finished ||= Date.now(); save(); toast("Gezählt ✓"); route(); });
+}
+function viewBericht(){
+  const hk = (location.hash.match(/^#bericht-(\d{4}-\d\d-\d\d)$/) || [])[1];
+  const k = hk || today(), log = logOf(k), { day } = progDay(k);
+  const dur = log.finished && log.started ? (log.finished - log.started - (log.pauseMs || 0)) / 1000 : 0;
+  const ids = [...new Set(Object.values(log.sets).map(s => s.id))];
+  const recs = ids.map(id => { const h = history(id, k); const best = Math.max(...Object.values(log.sets).filter(s => s.id === id).map(s => s.v)); return {id, best, prev: h.best}; }).filter(r => r.prev != null && r.best > r.prev);
+  const q = dayPick(quotes(), 7);
+  $("#view").innerHTML = `<div class="report">
+    ${log.done && typeof HOPLITE_IMG === "string" && HOPLITE_IMG ? `<div class="hop-hero"><img src="${HOPLITE_IMG}" alt="" width="182" height="460"></div>` : logoSVG(96)}
+    <div class="eyebrow">Kampfbericht · ${longDate(k)}</div>
+    <h1 class="title-xl">${log.done ? "Agoge bestanden" : "Noch nicht fertig"}</h1>
+    <div class="tiles" style="width:100%"><div class="tile"><b class="num">${dur ? fmt(dur) : "–"}</b><span>Minuten</span></div><div class="tile"><b class="num">${Object.values(log.sets).filter(isHard).length}</b><span>harte Sätze</span></div>
+      <div class="tile"><b class="num">${weekCount(k)}/6</b><span>Diese Woche</span></div><div class="tile"><b class="num">${recs.length}</b><span>Rekorde</span></div></div>
+    ${recs.length ? `<div class="recs">${recs.map(r => `<div class="rec"><span>${esc(exName(r.id))}</span><b class="num">${r.prev} → ${r.best}</b></div>`).join("")}</div>` : `<p class="muted">${esc(line("ende"))}</p>`}
+    ${q ? `<div class="quote" style="text-align:left"><p>«${esc(q.text)}»</p><small>${esc([q.wer, q.quelle].filter(Boolean).join(" · "))}</small></div>` : ""}
+    ${typeof COACH !== "undefined" ? COACH.card(k) : ""}
+    <div class="card" style="width:100%;text-align:left"><div class="kicker">Heute trainiert</div>${muscleMapSVG(muscleLoad([k]))}</div>
+    ${(() => { let nk = addDays(k, 1); if (dayIdx(nk) === 6) nk = addDays(nk, 1); const nd = progDay(nk).day;
+      return `<div class="card" style="width:100%;text-align:left"><div class="kicker">${dayIdx(addDays(k, 1)) === 6 ? "Morgen Ruhetag, dann" : "Morgen"}</div><h3>${esc(nd.name)}</h3><p class="muted" style="margin-top:4px">${esc(nd.muskelText || "")} · ${nd.minuten} Min</p></div>`; })()}
+    ${editCard(k, !!hk)}
+    <a class="btn wide" href="${hk ? "#plan" : "#heute"}">${hk ? "Zum Plan" : "Fertig, zu Heute"}</a>
+  </div>`;
+  bindEdit(k);
+  if (typeof COACH !== "undefined") COACH.bind(k);
+  if (hk) setTimeout(() => $("#editCard")?.scrollIntoView({ block: "start" }), 50);
+}
+// Ein Satz zählt als hart, wenn er aus Skills, Supersatz oder Test kommt (nicht Aufwärmen/Abschluss)
+const isHard = x => x.block ? ["skills","paar","test"].includes(x.block) : !["aufwaermen","dehnen","haltung"].includes(EX[x.id]?.gruppe);
+// Harte Sätze pro Muskel: Hauptmuskel zählt 1, die anderen ½ (Vorschlag B). Aufwärmen/Dehnen zählen nicht.
+function muscleSets(days){
+  const c = {}, skip = new Set(["aufwaermen","dehnen","haltung"]), skill = new Set(["handstand","planche","lsit","press"]);
+  const noMap = new Set(["nacken","fuss","finger","handgelenk","schienbein","ruecken_unten","bein_innen"]);
+  const add = id => { const u = EX[id] || S.custom.find(x => x.id === id); if (!u || skip.has(u.gruppe)) return; const f = skill.has(u.gruppe) ? .5 : 1;
+    (u.muskeln || []).forEach((m, i) => { if (!noMap.has(m)) c[m] = (c[m] || 0) + (i === 0 ? 1 : .5) * f; }); };
+  days.forEach(d => { const l = S.logs[d]; if (!l) return; Object.values(l.sets).filter(isHard).forEach(s => add(s.id)); (l.extra || []).forEach(e => add(e.id)); });
+  return c;
+}
+function muscleLoad(days, week = false){
+  const st = {}; Object.entries(muscleSets(days)).forEach(([m, n]) => st[m] = week ? (n >= 10 ? 3 : n >= 6 ? 2 : n > 0 ? 1 : 0) : (n >= 4 ? 3 : n >= 2 ? 2 : n > 0 ? 1 : 0));
+  return st;
+}
+
+// ---------- PLAN ----------
+let planSel = null;
+function viewPlan(){   // B, Nacht 3: Woche zuerst, Tag klappt direkt auf, Jahr mit Erklärung zugeklappt
+  const k = today(), cw = Math.max(1, Math.min(52, weekOf(k))); planSel ??= cw;
+  const wk = PROG.wochen[planSel - 1], ph = phaseOf(planSel), phNr = PROG._meta.phasen.indexOf(ph), mon = addDays(S.settings.start, (planSel - 1) * 7);
+  const trainDays = wk.tage.filter(t => t.plan).length, doneDays = wk.tage.filter((t, i) => t.plan && S.logs[addDays(mon, i)]?.done).length;
+  const typ = wk.typ === "deload" ? "Leichte Woche" : wk.typ === "test" ? "Testwoche" : "";
+  let g = "";
+  ROMAN.forEach((rn, r) => { g += `<span class="rn">${rn}</span>`; for (let i = 1; i <= 13; i++){ const w = r * 13 + i, x = PROG.wochen[w - 1];
+    g += `<button class="wc ${x.typ === "deload" ? "dl" : ""} ${x.typ === "test" ? "ts" : ""} ${w < cw ? "past" : ""} ${w === cw ? "now" : ""} ${w === planSel ? "sel" : ""}" data-w="${w}" aria-label="Woche ${w}">${x.typ === "test" ? "T" : ""}</button>`; } });
+  const phases = PROG._meta.phasen.map((p, i) => `<div class="line"><span><b>${ROMAN[i]}</b> ${esc(p.name)}</span><span class="small">Woche ${i * 13 + 1}–${i * 13 + 13}</span></div>`).join("");
+  $("#view").innerHTML = `<div class="stack">
+    <div><div class="eyebrow">Dein Plan · 52 Wochen</div><h1 class="title-xl" style="margin-top:6px">Woche ${planSel}</h1></div>
+    <div class="card pl-week">
+      <div class="split"><button class="btn sm" id="plPrev" aria-label="Vorige Woche" ${planSel <= 1 ? "disabled" : ""}>‹</button>
+        <div style="text-align:center"><div class="kicker" style="margin:0">Phase ${ROMAN[phNr]} · ${esc(ph.name)}</div>
+          <div class="small">${planSel === cw ? "diese Woche" : planSel < cw ? "vorbei" : `in ${planSel - cw} Woche${planSel - cw > 1 ? "n" : ""}`} · ${longDate(mon)}${typ ? ` · <b>${typ}</b>` : ""}</div></div>
+        <button class="btn sm" id="plNext" aria-label="Nächste Woche" ${planSel >= 52 ? "disabled" : ""}>›</button></div>
+      <div class="pl-prog" aria-label="${doneDays} von ${trainDays} Trainings">${wk.tage.map((t, i) => t.plan ? `<i class="${S.logs[addDays(mon, i)]?.done ? "on" : ""}"></i>` : "").join("")}<span class="small">${doneDays} von ${trainDays} Trainings</span></div>
+      ${wk.fokus ? `<p class="small" style="margin-top:6px">${esc(wk.fokus)}</p>` : ""}
+      <div style="margin-top:6px">${wk.tage.map((t, i) => { const dk = addDays(mon, i), done = S.logs[dk]?.done, isToday = dk === k;
+        return `<button class="dayrow ${isToday ? "pl-today" : ""}" data-day="${i}" aria-expanded="false"><b>${DAYS[i]}</b><span>${esc(t.name)}${isToday ? ' <span class="pl-badge">heute</span>' : ""}<br><span class="small">${esc(t.muskelText || t.hinweis || "")}</span></span><span class="${done ? "ok" : "small num"}">${t.minuten ? t.minuten + " Min" : ""}${done ? " ✓" : ""}</span></button><div class="pl-day" data-dd="${i}" hidden></div>`; }).join("")}</div>
+      <p class="small" style="margin-top:8px">Tag antippen: alle Übungen mit Zielen.</p></div>
+    <details class="card more-card"><summary class="kicker" style="margin:0;cursor:pointer">Ganzes Jahr</summary><div style="margin-top:10px">
+      <p class="small">Das Jahr hat 4 Phasen zu je 13 Wochen. Jede 5. Woche ist leichter (der Körper baut auf, wenn er sich erholt). Am Ende jeder Phase eine Testwoche: dort misst du neu, und die Ziele passen sich an.</p>
+      <div class="wgrid" style="margin-top:10px">${g}</div>
+      <div class="legend" style="margin-top:10px"><span><i class="wc now"></i>jetzt</span><span><i class="wc past"></i>vorbei</span><span><i class="wc dl"></i>leichte Woche</span><span><i class="wc ts"></i>Test</span></div>
+      <div class="list" style="margin-top:10px">${phases}</div>
+      <p class="small" style="margin-top:6px">${esc(ph.ziel)}</p></div></details>
+  </div>`;
+  $$(".wc[data-w]").forEach(b => b.onclick = () => { planSel = Number(b.dataset.w); viewPlan(); window.scrollTo(0, 0); });
+  $("#plPrev").onclick = () => { planSel = Math.max(1, planSel - 1); viewPlan(); };
+  $("#plNext").onclick = () => { planSel = Math.min(52, planSel + 1); viewPlan(); };
+  $$(".dayrow").forEach(b => b.onclick = () => {
+    const i = Number(b.dataset.day), t = wk.tage[i], box = document.querySelector(`.pl-day[data-dd="${i}"]`), open = !box.hidden;
+    $$(".pl-day").forEach(x => { x.hidden = true; x.innerHTML = ""; }); $$(".dayrow").forEach(x => x.setAttribute("aria-expanded", "false"));
+    if (open) return;
+    const dk = addDays(mon, i);
+    box.innerHTML = !t.plan ? `<p class="muted pl-pad">${esc(t.hinweis || "Ruhetag.")}</p>` : `<div class="pl-pad">
+      ${dk <= k ? `<a class="btn sm wide" href="#bericht-${dk}">${S.logs[dk]?.done ? "Werte ansehen und korrigieren" : "Werte nachtragen"}</a>` : ""}
+      ${t.plan.map(bl => `<div style="margin-top:8px"><div class="eyebrow">${esc(bl.block === "paar" ? bl.titel.replace("Paar", "Supersatz") : bl.titel)}${bl.runden > 1 ? ` · ${bl.runden} Mal` : ""}</div>${bl.uebungen.map(u => `<div class="pline">${figSVG(u.id, EX[u.id]?.muskeln || [], "fig-thumb")}<span>${esc(exName(u.id))}</span><b class="num">${u.bereich ? `${u.bereich[0]}–${u.bereich[1]}` : (u.ziel ?? "")} ${isSec(u.einheit) ? "Sek" : ""}</b></div>`).join("")}</div>`).join("")}</div>`;
+    box.hidden = false; b.setAttribute("aria-expanded", "true");
+    mountFigs(box);
+    b.scrollIntoView({behavior: "smooth", block: "start"});
+  });
+}
+
+// ---------- SKILLS ----------
+function ladderPos(L){
+  if (S.skills[L.id]) return S.skills[L.id];
+  const done = new Set(D.skills._meta?.startStand?.geschafft || []);
+  let pos = 1; L.stufen.forEach(st => { if (done.has(st.uebung)) pos = Math.max(pos, st.nr + 1); });
+  if (pos === 1 && L.startUebung){ const st = L.stufen.find(x => x.uebung === L.startUebung); if (st) pos = st.nr; }
+  return Math.min(pos, L.stufen.length);
+}
+function viewSkills(){
+  $("#view").innerHTML = `<div class="stack"><div><div class="eyebrow">Skill-Leitern</div><h1 class="title-xl" style="margin-top:6px">Meisterschaft</h1>
+    <p class="muted" style="margin-top:6px">${esc(D.skills._meta?.regel || "")}</p></div>
+    ${D.skills.leitern.map(L => { const pos = ladderPos(L), cur = L.stufen.find(s => s.nr === pos) || L.stufen[L.stufen.length - 1]; const ex = EX[cur.uebung] || {};
+      return `<div class="card" id="L-${L.id}"><div class="split"><h3>${esc(L.name)}</h3><span class="small num">Stufe ${pos} von ${L.stufen.length}</span></div>${!S.skills[L.id] && pos > 1 ? `<p class="small" style="margin-top:2px">Startstufe aus deinem Test vom 1. November</p>` : ""}
+        <div style="margin-top:10px">${figSVG(cur.uebung, ex.muskeln || [])}</div>
+        <p style="margin-top:10px"><b>${esc(cur.name)}</b></p><p class="hint" style="margin-top:6px">Test: ${esc(cur.test.text)}</p>
+        <button class="btn wide" style="margin-top:10px" data-pass="${L.id}">Test geschafft ✓</button>
+        <div class="ladder" style="margin-top:12px">${L.stufen.map(st => `<div class="lstep ${st.nr < pos ? "done" : st.nr === pos ? "cur" : "lock"}"><span class="ic">${st.nr < pos ? "✓" : st.nr === pos ? "●" : "○"}</span><span>${esc(st.name)}</span><small class="num">${st.test.wert} ${esc(D.skills._meta.einheiten?.[st.test.einheit] || st.test.einheit)}</small></div>`).join("")}</div></div>`; }).join("")}
+  </div>`;
+  $$("[data-pass]").forEach(b => b.onclick = () => {
+    if (b.dataset.armed !== "1"){ b.dataset.armed = "1"; b.textContent = "Wirklich sauber geschafft? Nochmal tippen"; setTimeout(() => { b.dataset.armed = ""; b.textContent = "Test geschafft ✓"; }, 3500); return; }
+    const L = D.skills.leitern.find(x => x.id === b.dataset.pass); const pos = ladderPos(L);
+    if (pos >= L.stufen.length){ toast("Höchste Stufe erreicht. Legende."); return; }
+    S.skills[L.id] = pos + 1; save(); toast(`Freigeschaltet: ${L.stufen[pos].name}`); viewSkills(); mountFigs($("#view"));
+  });
+}
+
+// ---------- KÖRPER ----------
+function weightChart(){
+  const W = S.body.w; if (W.length < 2) return `<p class="small">Ab 2 Messungen siehst du hier die Kurve.</p>`;
+  const X0 = 36, X1 = 300, Y0 = 130, Y1 = 12, start = W[0].d, span = Math.max(7, diffDays(start, W[W.length - 1].d));
+  const vals = W.map(x => x.kg); const lo = Math.floor(Math.min(...vals) - .5), hi = Math.ceil(Math.max(...vals, W[0].kg + span / 7 * .5) + .5);
+  const x = d => X0 + (X1 - X0) * diffDays(start, d) / span, y = v => Y0 - (Y0 - Y1) * (v - lo) / (hi - lo || 1);
+  let s = ""; for (let v = lo; v <= hi; v++) if ((hi - lo) <= 6 || v % 2 === 0) s += `<line class="gl1" x1="${X0}" x2="${X1}" y1="${y(v)}" y2="${y(v)}"/><text x="2" y="${y(v) + 3}">${v} kg</text>`;
+  const e = W[W.length - 1].d; s += `<polygon class="band" points="${x(start)},${y(W[0].kg)} ${x(e)},${y(W[0].kg + diffDays(start, e) / 7 * .25)} ${x(e)},${y(W[0].kg + diffDays(start, e) / 7 * .5)}"/>`;
+  s += `<polyline class="ln" points="${W.map(p => `${x(p.d)},${y(p.kg)}`).join(" ")}"/>` + W.map((p, i) => `<circle class="${i === W.length - 1 ? "end" : "pt"}" cx="${x(p.d)}" cy="${y(p.kg)}" r="${i === W.length - 1 ? 4.5 : 2.5}"/>`).join("");
+  return `<svg class="chart" viewBox="0 0 310 150" role="img" aria-label="Gewichtsverlauf">${s}</svg><p class="small">Bronzenes Band = Ziel +0.25 bis +0.5 kg pro Woche.</p>`;
+}
+function viewKoerper(){   // B, Nacht 3: neu aufgebaut (Gewicht gross, Hinweis bei Sprüngen, eine Fortschrittsliste, Masse/Fotos zugeklappt)
+  const k = today(), mon = addDays(k, -dayIdx(k)), weekDays = DAYS.map((_, i) => addDays(mon, i));
+  const W = S.body.w, M = S.body.m[S.body.m.length - 1] || {};
+  const lastPhoto = S.body.photos[S.body.photos.length - 1], nextPhoto = lastPhoto ? addDays(lastPhoto, 14) : S.settings.start;
+  // Gewicht: Mittel der letzten 3 Messungen (eine einzelne Messung schwankt um 1–2 kg)
+  const lw = W[W.length - 1], last3 = lw ? W.slice(-3).filter(x => diffDays(x.d, lw.d) <= 3) : [], avg = last3.length ? last3.reduce((a, x) => a + x.kg, 0) / last3.length : S.profile.kg;
+  const first = W[0], gain = first ? avg - first.kg : 0, R = D.nut.rechnung.zielProWoche || [0.25, 0.5];
+  const wk = first ? diffDays(first.d, k) / 7 : 0, perWeek = first && W.length > 1 && wk >= 2 ? gain / wk : null;   // Trend erst ab 2 Wochen
+  const lastW = W[W.length - 1], prev = lastW ? [...W].reverse().find(x => diffDays(x.d, lastW.d) >= 3) : null, jump = prev ? lastW.kg - prev.kg : 0;
+  const status = perWeek == null ? "Trend ab 2 Wochen Messungen." : perWeek < R[0] ? "Unter dem Ziel: mehr essen, vor allem an Trainingstagen." : perWeek > R[1] + 0.2 ? "Schneller als geplant: Süsses etwas weniger, sonst gleich." : "Im Ziel. Weiter so.";
+  const warn = Math.abs(jump) >= 1.5 ? `<div class="card kp-note"><div class="kicker">${jump < 0 ? "Gewicht gesunken" : "Gewicht gestiegen"} (${jump > 0 ? "+" : ""}${jump.toFixed(1)} kg in ${diffDays(prev.d, lastW.d)} Tagen)</div>
+    <p class="small">So schnell ändert sich der Körper selten. Meist sind es Waage, Tageszeit oder Wasser. <b>3 Tage hintereinander morgens</b> wiegen, gleiche Waage, nach dem WC, vor dem Essen. Es zählt der Durchschnitt.${jump < 0 ? " Mehr Training braucht mehr Essen: an Trainingstagen eine Mahlzeit mehr. Sinkt es trotzdem weiter, mit den Eltern oder dem Arzt reden." : ""}</p></div>` : "";
+  // Fortschritt: Startwert (Test) und bester Wert in einer Liste, nur Kraft und Skills
+  const skipG = new Set(["aufwaermen", "dehnen", "haltung"]), sw = PROG._meta.startwerte || {}, best = {};
+  Object.keys(S.logs).forEach(d => Object.values(S.logs[d].sets).forEach(x => { if (!EX[x.id] || skipG.has(EX[x.id].gruppe)) return; best[x.id] = Math.max(best[x.id] || 0, x.v || 0); }));
+  const ids = [...new Set([...Object.keys(sw).filter(id => EX[id] && typeof sw[id] === "number"), ...Object.keys(best)])];
+  const rows = ids.map(id => {
+      const s0 = typeof sw[id] === "number" ? sw[id] : null, b0 = best[id] ?? null, sek = isSec(EX[id].einheit) ? " Sek" : "";
+      const up = s0 != null && b0 != null && b0 > s0, showB = b0 != null && (s0 == null || b0 >= s0);
+      return { id, up, html: `<div class="line"><span>${esc(exName(id))}</span><b class="num">${s0 != null ? `<span class="tbd">${s0} →</span> ` : ""}${showB ? b0 + sek : `<span class="tbd">${s0 != null ? "Test" : ""}</span>`}${up ? ' <span class="kp-up">▲</span>' : ""}</b></div>` }; })
+    .sort((x, y) => (y.up - x.up) || exName(x.id).localeCompare(exName(y.id)));
+  $("#view").innerHTML = `<div class="stack">
+    <div><div class="eyebrow">Fortschritt</div><h1 class="title-xl" style="margin-top:6px">Dein Körper</h1></div>
+    <div class="card kp-hero"><div class="split"><div><div class="kicker" style="margin:0">Gewicht</div><b class="num kp-big">${avg.toFixed(1)}<small> kg</small></b></div>
+      <div style="text-align:right"><b class="num">${gain >= 0 ? "+" : ""}${gain.toFixed(1)} kg</b><div class="small">seit Start${perWeek != null ? ` · ${perWeek >= 0 ? "+" : ""}${perWeek.toFixed(2)}/Woche` : ""}</div></div></div>
+      <p class="small" style="margin-top:4px">${status} Ziel: +${R[0]} bis +${R[1]} kg pro Woche.${last3.length > 1 ? ` Mittel der letzten ${last3.length} Messungen.` : ""}</p>
+      <div style="margin-top:10px">${weightChart()}</div><div style="margin-top:10px">${weightQuick()}</div></div>
+    ${warn}
+    <div class="card"><div class="kicker">Diese Woche trainiert</div>${muscleMapSVG(muscleLoad(weekDays, true))}<p class="small" style="margin-top:6px">Rot = trainiert, je kräftiger, desto mehr harte Sätze (voll ab 10). Grau = noch nichts.</p></div>
+    <div class="card"><div class="kicker">Stärker geworden</div>${rows.length ? `<div class="list">${rows.slice(0, 7).map(r => r.html).join("")}</div>${rows.length > 7 ? `<details class="more" style="margin-top:6px"><summary>Alle ${rows.length} Übungen</summary><div class="list">${rows.slice(7).map(r => r.html).join("")}</div></details>` : ""}` : `<p class="muted">Nach dem ersten Training stehen hier deine besten Werte.</p>`}
+      <p class="small" style="margin-top:6px">Grau = Startwert vom Test (1. Nov.), weiss = dein bester Wert. Neu messen in den Testwochen 13, 26, 39, 52.</p></div>
+    <details class="card more-card"><summary class="kicker" style="margin:0;cursor:pointer">Masse und Fotos</summary><div style="margin-top:10px">
+      <p class="small">Masse einmal im Monat, Fotos alle 2 Wochen (${nextPhoto <= k ? "heute fällig" : `nächste ${longDate(nextPhoto)}`}). Fotos bleiben auf deinem Handy.</p>
+      <div class="tiles" style="margin-top:8px">${[["arm", "Oberarm"], ["brust", "Brust"], ["taille", "Taille"], ["bein", "Oberschenkel"]].map(([kk, l]) => `<label class="lbl">${l} (cm)<input class="field" data-m="${kk}" type="number" step="0.5" inputmode="decimal" value="${M[kk] ?? ""}"></label>`).join("")}</div>
+      <button class="btn wide" id="mSave" style="margin-top:10px">Masse speichern</button>${M.d ? `<p class="small" style="margin-top:6px">Zuletzt: ${longDate(M.d)}</p>` : ""}
+      <button class="btn wide" id="pSave" style="margin-top:10px">Fotos gemacht</button></div></details>
+  </div>`;
+  bindWeight();
+  $("#mSave").onclick = () => { const m = {d: k}; $$("[data-m]").forEach(i => { const v = parseFloat(String(i.value).replace(",", ".")); if (v) m[i.dataset.m] = v; }); S.body.m.push(m); save(); toast("Masse gespeichert"); };
+  $("#pSave").onclick = () => { S.body.photos.push(k); save(); toast("Notiert. Nächste Fotos in 2 Wochen."); viewKoerper(); };
+}
+
+// Idee B3: Startwerte gegen heute, schwarz auf weiss
+function beforeAfter(){
+  const sw = PROG._meta.startwerte || {}, k = today();
+  const rows = Object.entries(sw).filter(([id, v]) => EX[id] && typeof v === "number").map(([id, v]) => {
+    // Trainingssätze liegen absichtlich unter dem Maximaltest: nur Fortschritt zeigen, sonst neutral auf den nächsten Test verweisen
+    const h = history(id, addDays(k, 1)), sek = isSec(EX[id].einheit) ? " Sek" : "", nt = [13, 26, 39, 52].find(w => w >= weekOf(k)) || 52;
+    const right = h.best == null ? `<span class="tbd">offen</span>` : h.best >= v ? `${h.best}${sek}` : `<span class="tbd">Test W${nt}</span>`;
+    return `<div class="line"><span>${esc(exName(id))}</span><b class="num">${v}${h.best != null && h.best < v ? sek : ""} → ${right}</b></div>`; });
+  return rows.length ? `<div class="card"><div class="kicker">Start gegen jetzt</div><div class="list">${rows.join("")}</div><p class="small" style="margin-top:6px">Startwerte vom 1. November. In jeder Testwoche (13, 26, 39, 52) misst du neu.</p></div>` : "";
+}
+
+// ---------- ESSEN ----------
+function targets(){
+  const kg = latestKg(), { cm, alter } = S.profile, R = D.nut.rechnung;
+  const r50 = v => Math.round(v / 50) * 50, r5 = v => Math.round(v / 5) * 5;
+  return { kcal: r50((10 * kg + 6.25 * cm - 5 * alter + 5) * R.aktivitaet + R.plusZunehmen), protein: r5(R.proteinProKg * kg), kg };
+}
+// Kalorien-Booster (Nacht 3, Benaja: «zum Zunehmen zählen Kalorien»). Richtwerte, gerundet.
+const BOOST = [
+  { n: "Shake", wie: "4 dl Vollmilch, 1 Banane, 4 EL Haferflocken, 2 EL Erdnussbutter", kcal: 700 },
+  { n: "Erdnussbutter-Brot", wie: "2 Scheiben Vollkornbrot, 2 EL Erdnussbutter", kcal: 380 },
+  { n: "Handvoll Nüsse", wie: "etwa 50 g gemischte Nüsse", kcal: 300 },
+  { n: "Käsebrot", wie: "2 Scheiben Brot, 2 Scheiben Gruyère", kcal: 370 },
+  { n: "Glas Vollmilch", wie: "3 dl", kcal: 200 },
+  { n: "Datteln", wie: "5 Stück", kcal: 120 },
+  { n: "Löffel Olivenöl", wie: "1 EL über Pasta, Reis, Kartoffeln", kcal: 120 },
+  { n: "Griechischer Joghurt mit Honig", wie: "200 g, 1 EL Honig", kcal: 300 }
+];
+const BOOST_BUY = [
+  { was: "Erdnussbutter", menge: "1 Glas extra" }, { was: "Gemischte Nüsse", menge: "400 g" }, { was: "Datteln oder Rosinen", menge: "250 g" },
+  { was: "Olivenöl", menge: "1 Flasche (hält lange)" }, { was: "Gruyère oder Emmentaler", menge: "250 g" }, { was: "Griechischer Joghurt", menge: "2 × 500 g" }
+];
+function viewEssen(){
+  const k = today(), f = (S.food[k] ||= {checks:[], koffein:[]}), t = targets(), N = D.nut;
+  const mg = f.koffein.reduce((a, x) => a + x, 0), max = Math.round((N.koffein.maxMgProKg || 3) * t.kg / 5) * 5, late = new Date().getHours() >= (N.koffein.nachUhr || 14);
+  $("#view").innerHTML = `<div class="stack">
+    <div><div class="eyebrow">Zum Zunehmen zählen Kalorien</div><h1 class="title-xl" style="margin-top:6px">Essen</h1></div>
+    ${(() => { const extra = (f.boost || []).reduce((a, x) => a + x, 0), trainDay = !!progDay(k).day.plan && dayIdx(k) !== 6;
+      return `<div class="card hero kcal-hero"><div class="kicker">Dein Ziel pro Tag</div>
+      <div class="kcal-big"><b class="num">≈${t.kcal}</b><span>kcal</span></div>
+      <div class="kcal-sub"><span><b class="num">${t.protein} g</b> Protein</span><span>+0.25 bis +0.5 kg pro Woche</span></div>
+      ${trainDay ? `<p class="hint" style="margin-top:10px">Heute ist Training: iss eher etwas mehr, zum Beispiel ein Booster extra.</p>` : ""}
+      ${extra ? `<p class="small" style="margin-top:8px">Booster heute: <b class="num">+${extra} kcal</b></p>` : ""}
+      <p class="small" style="margin-top:6px">Aus ${t.kg} kg, ${S.profile.cm} cm, ${S.profile.alter} Jahren. Richtwert: Zeigt die Waage nach 2 Wochen nichts, mehr essen.</p></div>`; })()}
+    <div class="card"><div class="split"><span class="kicker" style="margin:0">Kalorien-Booster</span><span class="small">antippen = gegessen</span></div>
+      <p class="small" style="margin:4px 0 8px">Kleine Portion, viele Kalorien. Ideal als Snack oder dazu.</p>
+      <div class="boost">${BOOST.map((b, i) => `<button class="boost-b" data-bo="${i}"><b>${esc(b.n)}</b><small>${esc(b.wie)}</small><span class="num">≈${b.kcal} kcal</span></button>`).join("")}</div>
+      ${(f.boost || []).length ? `<button class="btn sm ghost" id="boUndo" style="margin-top:8px">Letzten Booster zurücknehmen</button>` : ""}</div>
+    <div class="card"><div class="kicker">Protein dabei?</div><div class="tiles" style="grid-template-columns:repeat(3,1fr)">${["Morgen","Mittag","Abend"].map(m => `<button class="chip" data-p="${m}" aria-pressed="${(f.prot || []).includes(m)}" style="min-height:56px">${(f.prot || []).includes(m) ? "✓ " : ""}${m}</button>`).join("")}</div>
+      <p class="small" style="margin-top:8px">Drei Tipps am Tag reichen. Milch, Quark, Eier, Thon, Poulet, Linsen zählen.</p>
+      <details class="more" style="margin-top:10px"><summary>Ganze Checkliste (${f.checks.length}/${N.checkliste.length})</summary>
+      <div class="check" style="margin-top:10px">${N.checkliste.map(c => `<button data-c="${c.id}" aria-pressed="${f.checks.includes(c.id)}"><i>${f.checks.includes(c.id) ? "✓" : ""}</i><span>${esc(c.text)}<small>${esc(c.tipp || "")}</small></span></button>`).join("")}</div></details></div>
+    <div class="card"><div class="split"><span class="kicker" style="margin:0">Koffein heute</span><span class="small num">${mg} / ${max} mg</span></div>
+      <div class="meter ${mg > max ? "over" : ""}" style="margin-top:8px"><i style="width:${Math.min(100, mg / max * 100)}%"></i></div>
+      <p class="small" style="margin-top:6px">${mg > max ? "Über der Grenze. Kein Koffein mehr heute, viel Wasser trinken." : late ? `Nach ${N.koffein.nachUhr} Uhr: kein Koffein mehr, sonst schläfst du schlecht.` : esc(N.koffein.text)}</p>
+      <div class="chips" style="margin-top:8px">${N.koffein.getraenke.map((g, i) => `<button class="chip" data-k="${i}">+ ${esc(g.name)} (${g.mg}${g.mg > max ? " · über deiner Grenze" : ""})</button>`).join("")}${f.koffein.length ? `<button class="chip" id="kUndo">Rückgängig</button>` : ""}</div></div>
+    <div class="card"><div class="kicker">Mahlzeiten ohne Kochen</div><div class="list">${N.mahlzeiten.map(m => `<details class="more"><summary class="plain meal"><span>${esc(m.name)}</span><small>${m.protein} g Protein · ${m.kcal} kcal</small></summary><p class="small" style="margin-top:4px">${esc((m.zutaten || []).join(", "))}${m.hinweis ? ` · ${esc(m.hinweis)}` : ""}${m.preis ? ` · ca. ${m.preis.toFixed(2)} Fr.` : ""}</p></details>`).join("")}</div></div>
+    <div class="card"><div class="kicker">Booster einkaufen</div><div class="list">${BOOST_BUY.map(e => `<div class="line"><span>${esc(e.was)}</span><b class="num">${esc(e.menge)}</b></div>`).join("")}</div>
+      <p class="small" style="margin-top:6px">Zusätzlich zur Wochenliste. Hält lange, passt in die Schultasche.</p></div>
+    <div class="card"><div class="kicker">Einkauf pro Woche</div><div class="list">${N.einkauf.proWoche.map(e => `<div class="line"><span>${esc(e.was)}</span><b class="num">${esc(e.menge)}</b></div>`).join("")}</div>${N.einkauf.summeCHF ? `<p class="small" style="margin-top:6px">Ca. ${N.einkauf.summeCHF} Fr. pro Woche (Schätzung).</p>` : ""}</div>
+    ${N.nichtNehmen ? `<div class="card"><details class="more"><summary>Nicht nehmen (unter 18)</summary><ul class="steps" style="margin-top:6px">${(Array.isArray(N.nichtNehmen) ? N.nichtNehmen : N.nichtNehmen.liste || []).map(x => `<li>${esc(typeof x === "string" ? x : (x.was || x.text || ""))}${x.warum ? `: ${esc(x.warum)}` : ""}</li>`).join("")}</ul></details></div>` : ""}
+  </div>`;
+  $$("[data-p]").forEach(b => b.onclick = () => { const m = b.dataset.p; f.prot ||= []; f.prot = f.prot.includes(m) ? f.prot.filter(x => x !== m) : [...f.prot, m]; save(); viewEssen(); });
+  $$("[data-c]").forEach(b => b.onclick = () => { const id = b.dataset.c; f.checks = f.checks.includes(id) ? f.checks.filter(x => x !== id) : [...f.checks, id]; save(); viewEssen(); });
+  $$("[data-k]").forEach(b => b.onclick = () => { f.koffein.push(N.koffein.getraenke[Number(b.dataset.k)].mg); save(); viewEssen(); });
+  $$("[data-bo]").forEach(b => b.onclick = () => { const x = BOOST[Number(b.dataset.bo)]; (f.boost ||= []).push(x.kcal); save(); toast(`+${x.kcal} kcal: ${x.n}`); viewEssen(); });
+  $("#boUndo")?.addEventListener("click", () => { (f.boost || []).pop(); save(); viewEssen(); });
+  $("#kUndo")?.addEventListener("click", () => { f.koffein.pop(); save(); viewEssen(); });
+}
+
+// ---------- EINSTELLUNGEN ----------
+function viewSettings(){
+  const P = S.profile;
+  $("#view").innerHTML = `<div class="stack">
+    <div><div class="eyebrow">Einstellungen</div><h1 class="title-xl" style="margin-top:6px">Dein Profil</h1></div>
+    <div class="card"><div class="tiles">
+      <label class="lbl">Name<input class="field" id="sName" value="${esc(P.name)}" placeholder="Jive"></label>
+      <label class="lbl">Alter<input class="field" id="sAlter" type="number" inputmode="numeric" value="${P.alter}"></label>
+      <label class="lbl">Grösse (cm)<input class="field" id="sCm" type="number" inputmode="numeric" value="${P.cm}"></label>
+      <label class="lbl">Hanteln (kg)<input class="field" id="sKg" type="number" step="0.5" inputmode="decimal" value="${S.settings.hantelKg}"></label>
+      <label class="lbl">Start des Plans<input class="field" id="sStart" type="date" value="${S.settings.start}"></label>
+      <label class="lbl">Training normal<select class="field" id="sDauer"><option value="">ganzer Plan (45–60 Min)</option><option value="30" ${stdDauer() === 30 ? "selected" : ""}>30 Min</option><option value="20" ${stdDauer() === 20 ? "selected" : ""}>20 Min</option></select></label>
+      <label class="lbl">Aussehen<select class="field" id="sTheme"><option value="">wie das Gerät</option><option value="dark" ${S.settings.theme === "dark" ? "selected" : ""}>Dunkel</option><option value="light" ${S.settings.theme === "light" ? "selected" : ""}>Hell</option></select></label>
+    </div><button class="btn wide" id="sSave" style="margin-top:12px">Speichern</button></div>
+    <div class="card"><div class="kicker">Daten sichern</div><p class="small">${CLOUD ? "Gesichert in deinem Claude-Konto und in diesem Browser. Eine Kopie als Datei schadet trotzdem nicht." : "Alles bleibt in diesem Browser. Sichere ab und zu eine Kopie."}</p>
+      <div class="row wrap" style="margin-top:10px"><button class="btn sm" id="exp">Als Datei sichern</button><button class="btn sm" id="copy">Kopieren</button><label class="btn sm">Datei laden<input type="file" id="imp" accept="application/json" hidden></label></div>
+      <textarea class="field" id="io" rows="3" placeholder="Oder hier eine Kopie einfügen und «Einfügen» tippen" style="margin-top:10px"></textarea>
+      <button class="btn sm" id="paste" style="margin-top:8px">Einfügen</button></div>
+    ${Object.entries(S.videoOk || {}).filter(([, ok]) => ok === false).length ? `<div class="card"><div class="kicker">Ausgeblendete Videos</div><div class="list">${Object.entries(S.videoOk).filter(([, ok]) => ok === false).map(([id]) => `<div class="line"><span>${esc(exName(id))}</span><button class="chip" data-vshow="${id}">Wieder zeigen</button></div>`).join("")}</div></div>` : ""}
+    <div class="card"><div class="kicker">Neu anfangen</div><button class="btn sm danger" id="reset">Alles löschen</button></div>
+    <p class="small">Winter Arc Training · Inhalte von Claude A (App, Design) und Claude B (3D-Körper, Übungen, Programm, Essen, Coach). Keine Medizin: bei Schmerzen oder Unsicherheit Arzt fragen.</p>
+    <p class="small">Logo: «Spartan helmet» von Delapouite, <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>, Lizenz CC BY 3.0 (eingefärbt). Hoplit im Kampfbericht: 3D-Modell von Sketchfab («Aegis Sentinel», von Benaja geladen), gerendert. Übungs-Puppe: Mixamo «Y Bot», Bewegungen von Mixamo. Fotos: free-exercise-db, Public Domain. 3D-Körper: <a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/" target="_blank" rel="noopener">BodyParts3D</a> © DBCLS, Lizenz <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (vereinfacht, Kopf ersetzt, eingefärbt, bewegt).</p>
+  </div>`;
+  $("#sSave").onclick = () => {
+    P.name = $("#sName").value.trim(); P.alter = Number($("#sAlter").value) || P.alter; P.cm = Number($("#sCm").value) || P.cm;
+    S.settings.hantelKg = parseFloat($("#sKg").value) || S.settings.hantelKg; S.settings.start = $("#sStart").value || S.settings.start; S.settings.theme = $("#sTheme").value || null;
+    S.settings.dauer = Number($("#sDauer").value) || null;
+    save(); applyTheme(); toast("Gespeichert");
+  };
+  const dump = () => JSON.stringify(S, null, 1);
+  $("#exp").onclick = async () => {
+    // Im Claude-Artefakt über die Download-Erlaubnis, auf GitHub Pages über einen normalen Download
+    if (window.claude?.use){
+      try { const dl = await window.claude.use("downloads"); if (dl){ await dl.save({filename:`winterarc-training-${today()}.json`, data: dump()}); toast("Gesichert"); return; } } catch(e) {}
+      $("#io").value = dump(); toast("In dieser Vorschau geht kein Download. Nimm «Kopieren»."); return;
+    }
+    try { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([dump()], {type:"application/json"})); a.download = `winterarc-training-${today()}.json`; a.click(); toast("Datei wird gespeichert"); } catch(e) { $("#io").value = dump(); toast("Kopie unten, bitte selbst kopieren"); } };
+  $("#copy").onclick = () => { navigator.clipboard?.writeText(dump()).then(() => toast("Kopiert"), () => { $("#io").value = dump(); $("#io").select(); toast("Unten markiert, bitte kopieren"); }); };
+  const load = txt => { try { const o = JSON.parse(txt); if (o.v !== 1 || !o.logs) throw 0; S = Object.assign(fresh(), o); save(); applyTheme(); toast("Geladen"); route(); } catch(e) { toast("Das ist keine gültige Sicherung."); } };
+  $("#imp").onchange = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => load(r.result); r.readAsText(f); };
+  $("#paste").onclick = () => load($("#io").value);
+  $$("[data-vshow]").forEach(b => b.onclick = () => { delete S.videoOk[b.dataset.vshow]; save(); viewSettings(); });
+  $("#reset").onclick = e => { const b = e.currentTarget; if (b.dataset.armed !== "1"){ b.dataset.armed = "1"; b.textContent = "Wirklich alles löschen? Nochmal tippen"; return; } S = fresh(); save(); toast("Gelöscht"); route(); };
+}
+
+// ---------- Start ----------
+function applyTheme(){ const t = S.settings.theme; if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme; }
+applyTheme();
+shell();
+route();
+cloudInit();
+if ("serviceWorker" in navigator && location.protocol === "https:" && document.querySelector('link[rel="manifest"]')){
+  addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+}
