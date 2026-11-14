@@ -252,6 +252,16 @@ function rank(){
   r.forEach((x, i) => { const ab = x.ab ?? x.wochen ?? 0; if (w >= ab){ cur = x; next = r[i+1] || null; } });
   return { name: cur.name, text: cur.text || "", next, w };
 }
+// Rang-Leiter (14.11., Benaja: «woher sehe ich, wie lange ich Rekrut bin?»)
+function rankLadder(k){
+  const R = MOT.raenge || [], r = rank(), wc = weekCount(k), thisCounts = wc >= 4;
+  const rows = R.map(x => { const ab = x.ab ?? x.wochen ?? 0, have = r.w >= ab, cur = x.name === r.name;
+    return `<div class="rl-row ${have ? "have" : ""} ${cur ? "cur" : ""}"><b class="num rl-w">${ab}</b><div><b>${esc(x.name)}</b>${cur ? ` <span class="rl-now">jetzt</span>` : ""}<div class="small">${esc(x.text || "")}</div></div></div>`; }).join("");
+  const nx = r.next, need = nx ? (nx.ab ?? nx.wochen) - r.w : 0;
+  return `<div class="rl">${rows}</div>
+    <p class="small" style="margin-top:8px">Die Zahl links: so viele <b>Wochen mit mindestens 4 Trainings</b> brauchst du. Du hast <b class="num">${r.w}</b>.${nx ? ` Noch ${need} ${need === 1 ? "Woche" : "Wochen"} bis «${esc(nx.name)}».` : ""}
+    Diese Woche: <b class="num">${wc}/4</b>${thisCounts ? " ✓ zählt" : ` (noch ${4 - wc} Training${4 - wc === 1 ? "" : "s"}, dann zählt sie)`}. Pro Muskel gibt es eigene Ränge unter «Körper».</p>`;
+}
 function streak(){
   let k = today(), n = 0; if (!S.logs[k]?.done) k = addDays(k, -1);
   for (let i = 0; i < 400; i++){ if (dayIdx(k) === 6){ k = addDays(k, -1); continue; } if (k < S.settings.start) break; if (S.logs[k]?.done){ n++; k = addDays(k, -1); } else break; }
@@ -293,7 +303,7 @@ function shell(){
   root.innerHTML = `
   <div class="app">
     <header class="hdr">${logoSVG(38)}<div class="brand">WINTER ARC<small>TRAINING · 52 WOCHEN</small></div><div class="sp"></div>
-      <span class="rank-wrap" id="rankWrap"><span class="rank" id="rank"></span></span>
+      <a class="rank-wrap" id="rankWrap" href="#heute" aria-label="Rang anzeigen"><span class="rank" id="rank"></span></a>
       <a class="icon-btn" href="#einstellungen" aria-label="Einstellungen">${ICON.gear}</a></header>
     <main id="view"></main>
   </div>
@@ -301,7 +311,8 @@ function shell(){
     <a href="#heute">${ICON.heute}Heute</a><a href="#plan">${ICON.plan}Plan</a><a href="#skills">${ICON.skills}Skills</a><a href="#koerper">${ICON.koerper}Körper</a><a href="#essen">${ICON.essen}Essen</a>
   </div></nav>`;
 }
-function setRank(){ const r = rank(); $("#rank").textContent = r.name.toUpperCase(); }
+function setRank(){ const r = rank(); $("#rank").textContent = r.name.toUpperCase();
+  const w = $("#rankWrap"); if (w && !w.__b){ w.__b = 1; w.addEventListener("click", () => setTimeout(() => { const d = $(".rank-lad"); if (d){ d.open = true; d.scrollIntoView({ block: "center", behavior: "smooth" }); } }, 80)); } }
 
 // ---------- Router ----------
 const VIEWS = { heute: viewHeute, plan: viewPlan, skills: viewSkills, koerper: viewKoerper, essen: viewEssen, einstellungen: viewSettings, agoge: viewAgoge, bericht: viewBericht };
@@ -446,7 +457,7 @@ function viewHeute(){
     ${main}
     <div class="card prog-card"><div class="prog-top"><div><b class="num prog-big">${Object.values(S.logs).filter(l => l.done).length}</b><span class="prog-lbl">${Object.values(S.logs).filter(l => l.done).length === 1 ? "Tag" : "Tage"} trainiert</span></div><div class="prog-wk"><b class="num">${weekCount(k)}<small>/6</small></b><span class="prog-lbl">diese Woche</span></div></div>
       <div style="margin-top:10px">${weekShields(k)}</div>
-      <p class="small" style="margin-top:8px">Rang: <b>${esc(r.name)}</b>${r.text ? ` · ${esc(r.text)}` : ""}${r.next ? ` · «${esc(r.next.name)}» nach ${r.next.ab ?? r.next.wochen} Wochen mit mindestens 4 Trainings` : ""}</p></div>
+      <details class="rank-lad" style="margin-top:8px"><summary class="small">Rang: <b>${esc(r.name)}</b>${r.next ? ` · nächster: «${esc(r.next.name)}» (${r.w} von ${r.next.ab ?? r.next.wochen} Wochen)` : ""}</summary>${rankLadder(k)}</details></div>
     ${q ? `<div class="quote"><p>«${esc(q.text)}»</p><small>${esc([q.wer, q.quelle || q.stelle].filter(Boolean).join(" · "))}</small></div>` : ""}
     <details class="card more-card"><summary class="kicker" style="margin:0;cursor:pointer">Mehr: Vers der Woche, selbst eintragen</summary><div style="margin-top:10px">
     ${(() => { const v = (MOT.bibel || [])[(weekOf(k) % Math.max(1, (MOT.bibel || []).length) + (MOT.bibel || []).length) % Math.max(1, (MOT.bibel || []).length)]; return v ? `<div class="card"><div class="kicker">Vers der Woche</div><p>${esc(v.sinngemaess || v.text || "")}</p><p class="small" style="margin-top:6px">${esc(v.stelle)} (sinngemäss)</p></div>` : ""; })()}
@@ -767,6 +778,7 @@ function viewBericht(){
     <h1 class="title-xl">${log.done ? "Agoge bestanden" : "Noch nicht fertig"}</h1>
     <div class="tiles" style="width:100%"><div class="tile"><b class="num">${dur ? fmt(dur) : "–"}</b><span>Minuten</span></div><div class="tile"><b class="num">${Object.values(log.sets).filter(isHard).length}</b><span>harte Sätze</span></div>
       <div class="tile"><b class="num">${weekCount(k)}/6</b><span>Diese Woche</span></div><div class="tile"><b class="num">${recs.length}</b><span>Rekorde</span></div></div>
+    ${(() => { const up = log.done ? rankUps(k) : []; return up.length ? `<div class="card mr-up" style="width:100%;text-align:left"><div class="kicker">Rang-Aufstieg</div>${up.map(r => `<div class="line"><span>${esc(mrName(r.m))}</span>${rankBadge(r.tier)}</div>`).join("")}</div>` : ""; })()}
     ${recs.length ? `<div class="recs">${recs.map(r => `<div class="rec"><span>${esc(exName(r.id))}</span><b class="num">${r.prev} → ${r.best}</b></div>`).join("")}</div>` : `<p class="muted">${esc(line("ende"))}</p>`}
     ${q ? `<div class="quote" style="text-align:left"><p>«${esc(q.text)}»</p><small>${esc([q.wer, q.quelle].filter(Boolean).join(" · "))}</small></div>` : ""}
     ${typeof COACH !== "undefined" ? COACH.card(k) : ""}
@@ -791,6 +803,45 @@ function muscleSets(days){
   days.forEach(d => { const l = S.logs[d]; if (!l) return; Object.values(l.sets).filter(isHard).forEach(s => add(s.id)); (l.extra || []).forEach(e => add(e.id)); });
   return c;
 }
+// ---------- Muskel-Ränge (14.11., Idee Benaja aus einem Video) ----------
+// Jede Woche zählt pro Muskel die harten Sätze. 8 harte Sätze = eine «volle Woche» (mehr zählt nicht extra,
+// damit viel Bauch nicht alles überholt). Die vollen Wochen sammeln sich zum Rang.
+const MR_FULL = 8;
+const MR_TIERS = [
+  { ab: 0, name: "Ungeübt", cls: "t0" }, { ab: 1, name: "Bronze", cls: "t1" }, { ab: 4, name: "Silber", cls: "t2" },
+  { ab: 10, name: "Gold", cls: "t3" }, { ab: 20, name: "Platin", cls: "t4" }, { ab: 32, name: "Diamant", cls: "t5" }, { ab: 48, name: "Spartaner", cls: "t6" }
+];
+const MR_MUSCLES = ["brust","schulter_vorne","schulter_seite","schulter_hinten","trizeps","bizeps","unterarm","ruecken_breit","ruecken_oben","bauch","bauch_seite","hueftbeuger","po","bein_vorne","bein_hinten","wade"];
+function muscleRanks(until){   // until: Tage bis und mit diesem Datum (für Rang-Aufstiege im Kampfbericht)
+  const end = until || today(), pts = {}, wk = {};
+  for (let mon = S.settings.start; mon <= end; mon = addDays(mon, 7)){
+    const days = DAYS.map((_, i) => addDays(mon, i)).filter(d => d <= end), n = muscleSets(days);
+    MR_MUSCLES.forEach(m => { pts[m] = (pts[m] || 0) + Math.min(1, (n[m] || 0) / MR_FULL); wk[m] = n[m] || 0; });
+  }
+  return MR_MUSCLES.map(m => { const p = pts[m] || 0; let i = 0; MR_TIERS.forEach((t, j) => { if (p >= t.ab) i = j; });
+    const cur = MR_TIERS[i], nx = MR_TIERS[i + 1] || null;
+    return { m, p, tier: cur, i, next: nx, frac: nx ? (p - cur.ab) / (nx.ab - cur.ab) : 1, week: wk[m] || 0 }; });
+}
+const MR_SHORT = { unterarm: "Unterarm", ruecken_breit: "Rücken breit", ruecken_oben: "Rücken oben", bauch: "Bauch", bein_vorne: "Beine vorne", bein_hinten: "Beine hinten", schulter_seite: "Schulter seitl.", hueftbeuger: "Hüftbeuger" };
+const mrName = m => MR_SHORT[m] || muscleShort(m);
+function rankBadge(t){ return `<span class="mr-badge ${t.cls}">${esc(t.name)}</span>`; }
+function muscleRankCard(){
+  const R = muscleRanks(), low = [...R].sort((a, b) => a.p - b.p || a.week - b.week)[0];
+  const row = r => `<div class="mr-row"><span class="mr-name">${esc(mrName(r.m))}</span>${rankBadge(r.tier)}
+      <span class="mr-bar"><i style="width:${Math.round(r.frac * 100)}%"></i></span>
+      <span class="mr-wk num ${r.week >= MR_FULL ? "ok" : ""}">${Math.round(r.week * 2) / 2}/${MR_FULL}</span></div>`;
+  return `<div class="card" id="mrCard"><div class="kicker">Muskel-Ränge</div>
+    <div class="mr-list">${R.map(row).join("")}</div>
+    <p class="small" style="margin-top:8px">Rechts: harte Sätze diese Woche. Ab ${MR_FULL} pro Woche zählt die Woche voll für den Rang.${low && low.p < R.reduce((a, r) => a + r.p, 0) / R.length - 1 ? ` Am meisten aufzuholen: <b>${esc(mrName(low.m))}</b>.` : ""}</p>
+    <details class="more" style="margin-top:6px"><summary>So steigst du auf</summary><div class="list">${MR_TIERS.slice(1).map(t => `<div class="line"><span>${rankBadge(t)}</span><b class="num">${t.ab} ${t.ab === 1 ? "volle Woche" : "volle Wochen"}</b></div>`).join("")}</div>
+      <p class="small" style="margin-top:6px">Eine volle Woche = mindestens ${MR_FULL} harte Sätze für diesen Muskel (Hauptmuskel 1 Satz, mitarbeitende Muskeln ½, Skills ½). Weniger Sätze zählen anteilig. Aufwärmen und Dehnen zählen nicht.</p></details></div>`;
+}
+// Aufstiege durch das Training an Tag k (für den Kampfbericht)
+function rankUps(k){
+  const before = muscleRanks(addDays(k, -1)), after = muscleRanks(k);
+  return after.filter((r, i) => r.i > before[i].i).map(r => r);
+}
+
 function muscleLoad(days, week = false){
   const st = {}; Object.entries(muscleSets(days)).forEach(([m, n]) => st[m] = week ? (n >= 10 ? 3 : n >= 6 ? 2 : n > 0 ? 1 : 0) : (n >= 4 ? 3 : n >= 2 ? 2 : n > 0 ? 1 : 0));
   return st;
@@ -909,6 +960,7 @@ function viewKoerper(){   // B, Nacht 3: neu aufgebaut (Gewicht gross, Hinweis b
       <div style="margin-top:10px">${weightChart()}</div><div style="margin-top:10px">${weightQuick()}</div></div>
     ${warn}
     <div class="card"><div class="kicker">Diese Woche trainiert</div>${muscleMapSVG(muscleLoad(weekDays, true))}<p class="small" style="margin-top:6px">Rot = trainiert, je kräftiger, desto mehr harte Sätze (voll ab 10). Grau = noch nichts.</p></div>
+    ${muscleRankCard()}
     <div class="card"><div class="kicker">Stärker geworden</div>${rows.length ? `<div class="list">${rows.slice(0, 7).map(r => r.html).join("")}</div>${rows.length > 7 ? `<details class="more" style="margin-top:6px"><summary>Alle ${rows.length} Übungen</summary><div class="list">${rows.slice(7).map(r => r.html).join("")}</div></details>` : ""}` : `<p class="muted">Nach dem ersten Training stehen hier deine besten Werte.</p>`}
       <p class="small" style="margin-top:6px">Grau = Startwert vom Test (1. Nov.), weiss = dein bester Wert. Neu messen in den Testwochen 13, 26, 39, 52.</p></div>
     <details class="card more-card"><summary class="kicker" style="margin:0;cursor:pointer">Masse und Fotos</summary><div style="margin-top:10px">

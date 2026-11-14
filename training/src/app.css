@@ -537,3 +537,23 @@ canvas.fig3d.bot{background:radial-gradient(120% 95% at 50% 105%,#3d342b,#1c1813
 /* Kurz-Version (11.11.) */
 .light-tog{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13.5px;color:var(--bone-2)}
 .light-tog input{width:18px;height:18px;accent-color:var(--bronze)}
+
+/* Muskel-Ränge und Rang-Leiter (14.11.) */
+.mr-list{display:grid;gap:7px;margin-top:4px}
+.mr-row{display:grid;grid-template-columns:minmax(0,1.3fr) auto minmax(40px,1fr) 38px;align-items:center;gap:8px;font-size:14px}
+.mr-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mr-badge{display:inline-block;font:700 10.5px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;padding:4px 7px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.mr-badge.t0{color:var(--bone-3);opacity:.7}.mr-badge.t1{color:#c08a52}.mr-badge.t2{color:#c4cad1}.mr-badge.t3{color:#e2bb52}
+.mr-badge.t4{color:#8fd6cc}.mr-badge.t5{color:#93bcff}.mr-badge.t6{color:#ff6a4d;background:color-mix(in srgb,#c4402f 22%,transparent)}
+.mr-bar{height:6px;border-radius:99px;background:color-mix(in srgb,var(--bone) 12%,transparent);overflow:hidden}
+.mr-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--bronze),color-mix(in srgb,var(--bronze) 60%,#fff));border-radius:inherit}
+.mr-wk{font-size:12px;color:var(--bone-3);text-align:right}.mr-wk.ok{color:var(--bronze)}
+.mr-up .line{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+.rank-lad summary{cursor:pointer;list-style:none}.rank-lad summary::-webkit-details-marker{display:none}
+.rank-lad summary::after{content:" ▾";color:var(--bone-3)}.rank-lad[open] summary::after{content:" ▴"}
+.rl{display:grid;gap:8px;margin-top:10px}
+.rl-row{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start;opacity:.55}
+.rl-row.have{opacity:1}.rl-row.cur .rl-w{background:var(--bronze);color:#140f0b}
+.rl-w{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;border:1px solid var(--edge);font-size:14px}
+.rl-now{font:700 10px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--bronze)}
+a.rank-wrap{text-decoration:none;color:inherit;cursor:pointer}
