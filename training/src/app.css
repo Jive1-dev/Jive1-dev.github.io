@@ -557,3 +557,8 @@ canvas.fig3d.bot{background:radial-gradient(120% 95% at 50% 105%,#3d342b,#1c1813
 .rl-w{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;border:1px solid var(--edge);font-size:14px}
 .rl-now{font:700 10px var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--bronze)}
 a.rank-wrap{text-decoration:none;color:inherit;cursor:pointer}
+
+/* Freestyle (17.11.) */
+.free-link{margin-top:8px;width:100%;justify-content:center}
+.free-prev .ov-h{margin-top:10px}
+.free-prev .line{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:14.5px}

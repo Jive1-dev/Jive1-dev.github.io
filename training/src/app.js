@@ -94,7 +94,7 @@ const logOf = k => (S.logs[k] ||= {done:false, light:false, pre:[], swaps:{}, se
 // ---------- Programm ----------
 function weekOf(k){ return Math.floor(diffDays(S.settings.start, k) / 7) + 1; }
 function progWeek(w){ if (w < 1) w = 1; if (w > 52) w = 40 + ((w - 53) % 13); return PROG.wochen[w - 1]; }
-function progDay(k){ const w = weekOf(k); return { w, week: progWeek(w), day: progWeek(w).tage[dayIdx(k)], pre: w < 1 }; }
+function progDay(k){ const w = weekOf(k), f = S.logs[k]?.free; return { w, week: progWeek(w), day: f || progWeek(w).tage[dayIdx(k)], pre: w < 1, free: !!f }; }
 function phaseOf(w){ const ph = PROG._meta.phasen; return ph.find(p => w >= p.von && w <= p.bis) || ph[ph.length - 1]; }
 const ROMAN = ["I","II","III","IV"];
 const exName = id => EX[id]?.name || (S.custom.find(c => c.id === id) || {}).name || id;
@@ -315,7 +315,7 @@ function setRank(){ const r = rank(); $("#rank").textContent = r.name.toUpperCas
   const w = $("#rankWrap"); if (w && !w.__b){ w.__b = 1; w.addEventListener("click", () => setTimeout(() => { const d = $(".rank-lad"); if (d){ d.open = true; d.scrollIntoView({ block: "center", behavior: "smooth" }); } }, 80)); } }
 
 // ---------- Router ----------
-const VIEWS = { heute: viewHeute, plan: viewPlan, skills: viewSkills, koerper: viewKoerper, essen: viewEssen, einstellungen: viewSettings, agoge: viewAgoge, bericht: viewBericht };
+const VIEWS = { frei: viewFrei, heute: viewHeute, plan: viewPlan, skills: viewSkills, koerper: viewKoerper, essen: viewEssen, einstellungen: viewSettings, agoge: viewAgoge, bericht: viewBericht };
 function route(){
   const name = (location.hash || "#heute").slice(1).split("-")[0];
   const v = VIEWS[name] ? name : "heute";
@@ -334,6 +334,112 @@ addEventListener("hashchange", route);
 document.addEventListener("click", e => {
   const g = e.target.closest(".gl"); if (g){ e.preventDefault(); toast(`${g.dataset.gl}: ${META.glossar[g.dataset.gl]}`); }
 });
+
+// ---------- FREESTYLE (17.11., Benaja: «selber auswählen, wie lange und welche Übungen») ----------
+// Dauer + Muskelgruppen (+ Wunsch-Übungen) -> die App stellt Supersätze auf deinem Niveau zusammen.
+// Der Tag wird als log.free gespeichert und ersetzt für dieses Datum den Plan (Übersicht, Tauschen, Bericht laufen normal).
+const FREE_G = [
+  { k: "ruecken", n: "Rücken / Klimmzüge", m: ["ruecken_breit", "ruecken_oben"] }, { k: "brust", n: "Brust", m: ["brust"] },
+  { k: "schultern", n: "Schultern", m: ["schulter_vorne", "schulter_seite", "schulter_hinten"] }, { k: "trizeps", n: "Trizeps", m: ["trizeps"] },
+  { k: "bizeps", n: "Bizeps", m: ["bizeps"] }, { k: "bauch", n: "Bauch", m: ["bauch", "bauch_seite"] },
+  { k: "beine", n: "Beine und Po", m: ["bein_vorne", "bein_hinten", "po"] }, { k: "waden", n: "Waden", m: ["wade"] },
+  { k: "griff", n: "Unterarm und Griff", m: ["unterarm", "finger"] }, { k: "skills", n: "Skills (Handstand, Krähe …)", m: [] }
+];
+const FREE_SKIP = new Set(["aufwaermen", "dehnen", "haltung", "handstand", "planche", "lsit", "press"]);
+// Ziel für eine Übung: aus dem Plan dieser Woche, sonst letzter Wert, sonst Standard
+function freeGoal(id, k){
+  const wk = progWeek(Math.max(1, Math.min(52, weekOf(k)))), u = EX[id] || {};
+  const inPlan = wk.tage.flatMap(t => (t.plan || []).filter(b => b.block !== "aufwaermen" && b.block !== "abschluss").flatMap(b => b.uebungen)).find(x => x.id === id);
+  const h = history(id, addDays(k, 1)), e = u.einheit || "wdh";
+  const z = inPlan?.ziel || h.last || (isSec(e) ? 30 : e === "wdh_seite" ? 8 : 10);
+  return { id, ziel: z, bereich: e === "versuche" ? [z, z] : isSec(e) ? [z, z + 5] : [z, z + 2], einheit: e, ...((u.material || []).includes("hanteln") ? { hantelKg: S.settings.hantelKg } : {}) };
+}
+// Wie gut passt eine Übung zu deinem Stand: zuletzt gemacht, im Plan dieser Woche, nicht zu schwer
+function freeLevel(id, k){
+  const h = history(id, addDays(k, 1)), wk = progWeek(Math.max(1, Math.min(52, weekOf(k))));
+  const inWeek = wk.tage.some(t => (t.plan || []).some(b => b.uebungen.some(u => u.id === id)));
+  let sc = (h.lastDate && diffDays(h.lastDate, k) <= 28 ? 4 : h.lastDate ? 2 : 0) + (inWeek ? 3 : 0);
+  const e = EX[id]; if (e?.leichter && !inWeek && !h.lastDate && history(e.leichter, addDays(k, 1)).lastDate) sc -= 1;   // nächste Stufe: noch nicht
+  if (e?.schwerer && history(e.schwerer, addDays(k, 1)).lastDate) sc -= 2;   // schon weiter
+  return sc;
+}
+function freeCands(){ return Object.values(EX).filter(e => !e.gesperrt && !(e.material || []).includes("tuer") && !FREE_SKIP.has(e.gruppe) && (FIGS[e.id] || e.ohneFigur)); }
+function makeFree(k, min, groups, must = []){
+  const G = FREE_G.filter(g => groups.includes(g.k) && g.m.length), skills = groups.includes("skills");
+  const R = min >= 30 ? 3 : 2, F = 1.25;   // F: Umbau, Trinken, Atmen (wie im Plan geeicht)
+  const secOf = id => { const g = freeGoal(id, k), e = g.einheit; const w = isSec(e) ? g.ziel : g.ziel * 3; return (String(e).includes("seite") ? 2 * w : w) + 35; };
+  const upper = G.some(g => !["beine", "waden", "bauch"].includes(g.k)) || skills, lower = G.some(g => ["beine", "waden"].includes(g.k)) || !upper;
+  const warmIds = upper && lower ? ["wrist", "legswing", "circles"] : lower ? ["legswing", "squat"] : ["wrist", "circles"];
+  let budget = min * 60 / F - warmIds.length * 40;
+  // Skills: 2 Runden der Skills aus dem heutigen (oder letzten) Plan-Tag
+  let skillBlock = null;
+  if (skills){
+    const wk = progWeek(Math.max(1, Math.min(52, weekOf(k))));
+    const t = [wk.tage[dayIdx(k)], ...wk.tage].find(x => x?.plan?.some(b => b.block === "skills"));
+    const sb = t?.plan.find(b => b.block === "skills");
+    if (sb){ skillBlock = { block: "skills", titel: "Skills", runden: 2, pauseSek: 45, min: 0, uebungen: sb.uebungen.slice(0, 2).map(u => ({ ...u })) };
+      budget -= skillBlock.uebungen.reduce((a, u) => a + (isSec(u.einheit) ? u.ziel : u.ziel * 4) + 45, 0) * 2; }
+  }
+  // Übungen gierig wählen: jede Gruppe soll vorkommen, Wunsch-Übungen zuerst
+  const C = freeCands(), cover = {}, picks = [];
+  const gain = e => G.reduce((a, g) => { const i = e.muskeln.findIndex(m => g.m.includes(m)); if (i < 0) return a; return a + (i === 0 ? 1 : 0.4) / (1 + (cover[g.k] || 0) * 1.5); }, 0);
+  const take = e => { picks.push(e); G.forEach(g => { const i = e.muskeln.findIndex(m => g.m.includes(m)); if (i >= 0) cover[g.k] = (cover[g.k] || 0) + (i === 0 ? 1 : 0.4); }); budget -= R * secOf(e.id); };
+  must.forEach(id => EX[id] && take(EX[id]));
+  while (picks.length < 10){
+    const chain = new Set(); picks.forEach(p => { [["leichter"], ["schwerer"]].forEach(([dir]) => { let x = p; for (let i = 0; i < 3 && x; i++){ x = EX[x[dir]]; if (x) chain.add(x.id); } }); });
+    const best = C.filter(e => !picks.includes(e) && !chain.has(e.id))
+      .map(e => ({ e, sc: gain(e) * 3 + freeLevel(e.id, k) * 0.35 })).filter(x => x.sc > 1.2).sort((a, b) => b.sc - a.sc)[0];
+    if (!best) break;
+    if (picks.length >= (skillBlock ? 1 : 2) && budget - R * secOf(best.e.id) < -20) break;
+    take(best.e);
+  }
+  // Supersätze: Drücken mit Ziehen, Rest zusammen
+  const push = picks.filter(e => e.gruppe === "druecken"), pull = picks.filter(e => e.gruppe === "ziehen"), rest = picks.filter(e => !push.includes(e) && !pull.includes(e));
+  const order = []; while (push.length || pull.length){ if (pull.length) order.push(pull.shift()); if (push.length) order.push(push.shift()); }
+  order.push(...rest);
+  const pairs = []; for (let i = 0; i < order.length; i += 2) pairs.push(order.slice(i, i + 2));
+  const plan = [{ block: "aufwaermen", titel: "Aufwärmen", min: 2, uebungen: warmIds.map(id => ({ id, ziel: isSec(EX[id]?.einheit) ? 30 : 10, einheit: EX[id]?.einheit || "wdh" })) }];
+  if (skillBlock) plan.push(skillBlock);
+  pairs.forEach((p, i) => plan.push({ block: "paar", titel: `Paar ${i + 1}`, runden: R, pauseSek: 35, min: 0, uebungen: p.map(e => freeGoal(e.id, k)) }));
+  plan.forEach(b => { if (!b.min) b.min = Math.max(1, Math.round(blockSec(b, b.runden || 1) * F / 60)); });
+  const mus = [...new Set(picks.flatMap(e => e.muskeln))];
+  const weak = G.filter(g => !picks.some(e => g.m.includes(e.muskeln[0]))).map(g => g.n);   // nur mittrainiert, keine eigene Übung
+  return { weak, tag: DAYS[dayIdx(k)], name: "Freestyle", free: true, minuten: Math.round(plan.reduce((a, b) => a + b.min, 0)), muskelText: [...G.map(g => g.n), ...(skills ? ["Skills"] : [])].join(", "), muskeln: mus, plan };
+}
+let FREE = null;
+function viewFrei(){
+  const k = today(), log = logOf(k), last = S.settings.free || {};
+  FREE ||= { min: last.min || 15, groups: last.groups || ["ruecken", "brust"], must: [] };
+  const busy = Object.keys(log.sets || {}).length && !log.free;
+  const day = FREE.groups.length ? makeFree(k, FREE.min, FREE.groups, FREE.must) : null;
+  const sug = freeCands().filter(e => FREE_G.some(g => FREE.groups.includes(g.k) && g.m.includes(e.muskeln[0])))
+    .map(e => ({ e, sc: freeLevel(e.id, k) })).sort((a, b) => b.sc - a.sc || a.e.name.localeCompare(b.e.name)).slice(0, 12).map(x => x.e);
+  FREE.must.forEach(id => { if (EX[id] && !sug.includes(EX[id])) sug.unshift(EX[id]); });
+  $("#view").innerHTML = `<div class="stack">
+    <div><div class="eyebrow">Selbst zusammenstellen</div><h1 class="title-xl" style="margin-top:6px">Freestyle</h1></div>
+    ${busy ? `<div class="card kp-note"><p class="small">Heute ist schon ein Plan-Training angefangen. Freestyle ersetzt es nicht; trag Extras unter «Heute → Mehr» ein.</p></div>` : ""}
+    <div class="card"><div class="kicker">Wie lange?</div><div class="chips">${[10, 15, 20, 30, 45].map(m => `<button class="chip" data-fm="${m}" aria-pressed="${FREE.min === m}">${m} Min</button>`).join("")}</div></div>
+    <div class="card"><div class="kicker">Was willst du trainieren?</div><div class="chips">${FREE_G.map(g => `<button class="chip" data-fg="${g.k}" aria-pressed="${FREE.groups.includes(g.k)}">${esc(g.n)}</button>`).join("")}</div></div>
+    ${sug.length ? `<div class="card"><div class="kicker">Unbedingt dabei? (optional)</div><div class="chips">${sug.map(e => `<button class="chip" data-fx="${e.id}" aria-pressed="${FREE.must.includes(e.id)}">${esc(e.name)}</button>`).join("")}</div>
+      <p class="small" style="margin-top:6px">Zuerst stehen Übungen, die du gerade machst. Den Rest wählt die App passend zur Zeit.</p></div>` : ""}
+    ${day ? `<div class="card hero"><div class="split"><span class="kicker" style="margin:0">Dein Training</span><span class="small num">ca. ${day.minuten} Min</span></div>
+      <div class="free-prev">${day.plan.map(b => `<div class="ov-h">${esc(b.block === "paar" ? b.titel.replace("Paar", "Supersatz") : b.titel)}${b.runden > 1 ? ` · ${b.runden} Runden` : ""}</div>${b.uebungen.map(u => `<div class="line"><span>${esc(exName(u.id))}</span><b class="num">${u.bereich ? `${u.bereich[0]}–${u.bereich[1]}` : u.ziel}${isSec(u.einheit) ? " Sek" : ""}</b></div>`).join("")}`).join("")}</div>
+      ${day.weak.length ? `<p class="small" style="margin-top:8px">Für ${FREE.min} Min zu viel: <b>${esc(day.weak.join(", "))}</b> ${day.weak.length > 1 ? "arbeiten" : "arbeitet"} nur mit. Mehr Zeit wählen oder oben eine Übung antippen.</p>` : ""}
+      <button class="btn primary wide" id="fGo" style="margin-top:12px"${busy ? " disabled" : ""}>Übernehmen</button>
+      <p class="small" style="margin-top:6px">Danach siehst du es unter «Heute» und kannst jede Übung antippen: Sätze ändern oder tauschen.</p></div>` : `<p class="muted">Wähl mindestens eine Muskelgruppe.</p>`}
+    <a class="btn wide ghost" href="#heute">Zurück</a>
+  </div>`;
+  const re = () => { const y = scrollY; viewFrei(); mountFigs($("#view")); scrollTo(0, y); };
+  $$("[data-fm]").forEach(b => b.onclick = () => { FREE.min = Number(b.dataset.fm); re(); });
+  $$("[data-fg]").forEach(b => b.onclick = () => { const g = b.dataset.fg; FREE.groups = FREE.groups.includes(g) ? FREE.groups.filter(x => x !== g) : [...FREE.groups, g]; re(); });
+  $$("[data-fx]").forEach(b => b.onclick = () => { const id = b.dataset.fx; FREE.must = FREE.must.includes(id) ? FREE.must.filter(x => x !== id) : [...FREE.must, id]; re(); });
+  $("#fGo")?.addEventListener("click", () => {
+    if (busy) return;
+    S.settings.free = { min: FREE.min, groups: FREE.groups };
+    Object.assign(log, { free: day, short: false, swaps: {}, ov: {}, pos: 0 }); delete log.trim;
+    save(); FREE = null; toast("Freestyle für heute gespeichert"); location.hash = "#heute";
+  });
+}
 
 // ---------- HEUTE ----------
 function shieldSVG(){ return `<svg viewBox="0 0 40 46"><path class="sd-o" d="M20 3 L36 9 V22 C36 33 28 40 20 43 C12 40 4 33 4 22 V9 Z"/><path class="sd-f" d="M20 8 L31 12 V22 C31 30 26 35 20 38 C14 35 9 30 9 22 V12 Z"/></svg>`; }
@@ -402,13 +508,14 @@ function viewHeute(){
   const q = dayPick(quotes());
   const st = streak(), r = rank();
   let main;
-  if (day.name === "Ruhe" || dayIdx(k) === 6){
+  if ((day.name === "Ruhe" || dayIdx(k) === 6) && !day.free){
     const next = progDay(addDays(k, 1)).day;
     main = `<div class="card hero"><div class="eyebrow">${longDate(k)}</div><h1 class="title-xl" style="margin-top:6px">Ruhetag</h1>
       <p class="muted" style="margin-top:6px">${esc(day.hinweis || "Erholung ist Teil des Trainings. Die Muskeln wachsen jetzt.")}</p></div>
       <div class="card"><div class="kicker">Wochen-Check</div>${weightQuick()}</div>
       ${typeof COACH !== "undefined" ? COACH.weekCard(k) : ""}
-      <div class="card"><div class="kicker">Morgen</div><h3>${esc(next.name)}</h3><p class="muted">${esc(next.muskelText || "")} · ${next.minuten} Min</p></div>`;
+      <div class="card"><div class="kicker">Morgen</div><h3>${esc(next.name)}</h3><p class="muted">${esc(next.muskelText || "")} · ${next.minuten} Min</p></div>
+      <a class="btn wide ghost" href="#frei">Trotzdem Lust? Freestyle</a>`;
   } else {
     const steps = buildSteps(day, log);
     const sm = shortMin(log), mins = sm ? Math.min(shortCut(day, sm).min, day.minuten) : log.light ? Math.round(day.minuten * .8) : day.minuten;
@@ -426,6 +533,8 @@ function viewHeute(){
         <div class="chips" style="margin-top:8px">${(day.muskeln || []).slice(0, 4).map(m => `<span class="mchip">${esc(muscleShort(m))}</span>`).join("")}</div>
         ${(() => { const h = missed ? line("verpasst") : coachTip && !log.done ? `Claude-Coach: ${coachTip}` : week.typ !== "normal" ? (week.typ === "deload" ? (line("deload") || "Leichte Woche: weniger Runden. Sehnen und Gelenke holen auf.") : (line("testwoche") || "Testwoche: Zeig, was du gewonnen hast.")) : ""; return h ? `<p class="hint${coachTip && !missed ? " coach-hint" : ""}" style="margin-top:10px">${esc(h)}</p>` : ""; })()}
                 ${log.done ? "" : `<div style="margin-top:14px">${goBtn}</div>`}
+        ${log.done ? "" : day.free ? `<div class="row wrap" style="margin-top:8px"><a class="btn sm ghost" href="#frei">Freestyle ändern</a>${Object.keys(log.sets).length ? "" : `<button class="btn sm ghost" id="freeOff">Zurück zum Plan</button>`}</div>`
+          : Object.keys(log.sets).length ? "" : `<a class="btn sm ghost free-link" href="#frei">Freestyle: Dauer und Übungen selbst wählen</a>`}
       </div>
       ${log.done ? `<div class="card"><div class="kicker">Erledigt</div><h3>Agoge bestanden ✓</h3><p class="muted" style="margin-top:6px">${esc(line("ende"))}</p>
         <div class="row" style="margin-top:12px"><a class="btn sm" href="#bericht">Kampfbericht</a><button class="btn sm" id="again">Nochmal öffnen</button></div></div>` : `
@@ -486,6 +595,7 @@ function viewHeute(){
   $("#again")?.addEventListener("click", () => { log.pos = 0; save(); location.hash = "#agoge"; });
   $("#light")?.addEventListener("change", () => { log.light = $("#light").checked; save(); viewHeute(); mountFigs($("#view")); });
   if ($("#ov")) bindOverview(progDay(k).day, logOf(k), k);
+  $("#freeOff")?.addEventListener("click", () => { delete log.free; log.swaps = {}; log.ov = {}; delete log.short; save(); toast("Wieder der Plan"); viewHeute(); mountFigs($("#view")); });
   const setShort = v => { log.short = v; save(); viewHeute(); mountFigs($("#view")); };
   $("#normal")?.addEventListener("click", () => setShort(false));
   $("#s30")?.addEventListener("click", () => setShort(30));
