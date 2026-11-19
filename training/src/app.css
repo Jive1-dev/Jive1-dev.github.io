@@ -562,3 +562,7 @@ a.rank-wrap{text-decoration:none;color:inherit;cursor:pointer}
 .free-link{margin-top:8px;width:100%;justify-content:center}
 .free-prev .ov-h{margin-top:10px}
 .free-prev .line{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:14.5px}
+
+/* Sicherung (19.11.) */
+.sync-warn{border:1px solid color-mix(in srgb,#e0a030 60%,transparent);background:color-mix(in srgb,#e0a030 14%,transparent);color:#f0c060;border-radius:999px;padding:5px 10px;font:600 11.5px var(--body, inherit);margin-right:6px;white-space:nowrap}
+.sync-warn[hidden]{display:none}

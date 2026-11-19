@@ -33,50 +33,94 @@ try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(fresh(),
 S._st ||= {};
 // Teile für die Cloud-Sicherung: «core» (alles ausser Trainings) + ein Teil pro Trainingstag (je < 256 KB)
 const parts = () => { const { logs, _st, ...core } = S, p = { core: JSON.stringify(core) }; for (const k in logs) p["log-" + k] = JSON.stringify(logs[k]); return p; };
-let SNAP = parts(); const DIRTY = new Set(); let CLOUD = null, pushT = null, BOOT = true; // BOOT: Cloud-Stand noch nicht geladen, nichts als «neuer» markieren
+let SNAP = parts(); const DIRTY = new Set(); let CLOUD = null, pushT = null, BOOT = true; // BOOT: Cloud-Stand noch nicht geladen
+// Sicherung (19.11., Fix nach verlorenen Trainings Mo 9.11., Mo 16.11., Mi 18.11.):
+//  - Cloud-Verbindung wird nie aufgegeben: bei Fehler/Timeout neuer Versuch (5 s, 10 s, 20 s … max. 60 s)
+//  - Trainingstage werden beim Laden ZUSAMMENGEFÜHRT statt überschrieben: jeder Satz bleibt (neuester pro Satz),
+//    «gemacht» bleibt gemacht. Ein leerer Tag überschreibt nie einen Tag mit Einträgen.
+//  - Änderungen während des Ladens bekommen trotzdem einen Zeitstempel und werden danach hochgeladen
+//  - Läuft gerade eine Sicherung, wird die nächste nachgeholt (früher: verworfen)
+//  - Fehlgeschlagene Sicherungen werden wiederholt; Anzeige «nicht gesichert», solange etwas fehlt
+const logHas = l => !!l && (l.done || l.started || Object.keys(l.sets || {}).length || (l.extra || []).length);
+function mergeLog(a, b){   // a = lokal, b = Cloud
+  if (!logHas(a)) return b; if (!logHas(b)) return a;
+  const newer = (a._t || 0) >= (b._t || 0) ? a : b, m = { ...b, ...a, ...newer };
+  m.sets = { ...(b.sets || {}) }; for (const key in (a.sets || {})){ const x = a.sets[key], y = m.sets[key]; if (!y || (x.t || 0) >= (y.t || 0)) m.sets[key] = x; }
+  const ex = new Map(); [...(b.extra || []), ...(a.extra || [])].forEach(e => ex.set(JSON.stringify(e), e)); m.extra = [...ex.values()];
+  m.done = !!(a.done || b.done); if (m.done){ m.finished = Math.max(a.finished || 0, b.finished || 0) || Date.now(); m.pos = 0; delete m.pauseAt; }
+  if (a.started && b.started) m.started = Math.min(a.started, b.started);
+  if (!m.done) m.pos = Math.max(a.pos || 0, b.pos || 0);
+  return m;
+}
 const save = () => {
   S._st ||= {}; const p = parts(), now = Date.now();
-  if (!BOOT){
-    let ch = false;
-    for (const id in p) if (p[id] !== SNAP[id]){ S._st[id] = now; DIRTY.add(id); ch = true; }
-    if (ch && !CLOUD) flashSaved("✓ gespeichert");
-    for (const id in SNAP) if (p[id] == null) DIRTY.add(id); // gelöscht (z. B. «Alles löschen»)
-    SNAP = p;
-  }
+  let ch = false;
+  for (const id in p) if (p[id] !== SNAP[id]){
+    // beim Laden (BOOT) nur echte Einträge stempeln, nicht leere Tage, die die Ansicht anlegt
+    if (BOOT && (id === "core" || !logHas(S.logs[id.slice(4)]))) continue;
+    S._st[id] = now; DIRTY.add(id); ch = true; }
+  for (const id in SNAP) if (p[id] == null && !BOOT) DIRTY.add(id); // gelöscht (z. B. «Alles löschen»)
+  SNAP = p;
+  if (ch && !CLOUD) flashSaved(SYNC_FAIL ? "Nur auf dem Gerät, wird nachgeholt" : "✓ gespeichert", !!SYNC_FAIL);
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {}
-  if (CLOUD){ clearTimeout(pushT); pushT = setTimeout(push, 1200); }
+  if (CLOUD){ clearTimeout(pushT); pushT = setTimeout(push, 400); }
+  syncBadge();
 };
-let pushing = false;
+let pushing = false, pushAgain = false, retryT = null, SYNC_FAIL = 0;
 async function push(){
-  if (!CLOUD || pushing) return; pushing = true;
-  try { for (const id of [...DIRTY]){ DIRTY.delete(id);
-    try { if (SNAP[id] == null) await CLOUD.doc(id).delete(); else await CLOUD.doc(id).set({ json: SNAP[id], t: S._st[id] || Date.now() }); } catch(e){ DIRTY.add(id); throw e; } }
-    flashSaved("✓ gesichert"); }
-  catch(e) { flashSaved("Nur auf dem Gerät gespeichert", true); } finally { pushing = false; }
-}
-// Beim Öffnen: Stand aus der Cloud holen (falls der Browser-Speicher leer ist oder älter), danach automatisch mitspeichern
-async function cloudInit(){
+  if (!CLOUD) return;
+  if (pushing){ pushAgain = true; return; }
+  pushing = true; clearTimeout(retryT);
   try {
-    if (!window.claude?.use) return;
+    for (const id of [...DIRTY]){ DIRTY.delete(id);
+      try { if (SNAP[id] == null) await CLOUD.doc(id).delete(); else await CLOUD.doc(id).set({ json: SNAP[id], t: S._st[id] || Date.now() }); } catch(e){ DIRTY.add(id); throw e; } }
+    SYNC_FAIL = 0; flashSaved("✓ gesichert");
+  } catch(e) { SYNC_FAIL++; flashSaved("Nicht gesichert, neuer Versuch …", true); retryT = setTimeout(push, Math.min(60000, 3000 * 2 ** Math.min(4, SYNC_FAIL))); }
+  finally { pushing = false; syncBadge(); if (pushAgain || (DIRTY.size && !SYNC_FAIL)){ pushAgain = false; if (DIRTY.size) setTimeout(push, 50); } }
+}
+const flush = () => { clearTimeout(pushT); push(); };
+// Beim Öffnen: Stand aus der Cloud holen und zusammenführen, danach automatisch mitspeichern. Gibt nie auf.
+let initTry = 0, initRun = false;
+async function cloudInit(){
+  if (initRun || CLOUD) return; initRun = true;
+  try {
+    if (!window.claude?.use){ BOOT = false; initRun = false; return; }
     const [db, user] = await Promise.all([claude.use("db"), claude.use("user")]);
-    if (!db || !user) return;
-    const uid = await user.id(); if (!uid) return;
+    if (!db || !user){ BOOT = false; initRun = false; return; }
+    const uid = await user.id(); if (!uid) throw new Error("kein Nutzer");
     const col = db.collection("data/users/" + uid);
-    const snap = await Promise.race([col.get(), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 10000))]);
+    const snap = await Promise.race([col.get(), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 15000))]);
     let changed = false; const seen = new Set();
     snap.docs.forEach(d => { const x = d.data() || {}; seen.add(d.id); if (typeof x.json !== "string") return;
-      if ((x.t || 0) > (S._st[d.id] || 0)){
-        try { const v = JSON.parse(x.json);
-          if (d.id === "core") S = Object.assign(fresh(), v, { logs: S.logs, _st: S._st });
-          else if (d.id.startsWith("log-")) S.logs[d.id.slice(4)] = v;
-          S._st[d.id] = x.t; changed = true; } catch(e) {}
-      } else if ((S._st[d.id] || 0) > (x.t || 0)) DIRTY.add(d.id);
+      let v; try { v = JSON.parse(x.json); } catch(e){ return; }
+      const lt = S._st[d.id] || 0, ct = x.t || 0;
+      if (d.id.startsWith("log-")){
+        const k = d.id.slice(4), loc = S.logs[k];
+        const m = mergeLog(loc ? { ...loc, _t: lt } : null, { ...v, _t: ct }); delete m._t;
+        const ms = JSON.stringify(m);
+        if (ms !== JSON.stringify(loc || null)){ S.logs[k] = m; changed = true; }
+        if (ms !== x.json){ S._st[d.id] = Math.max(Date.now(), ct + 1); DIRTY.add(d.id); } else S._st[d.id] = ct;
+      } else if (d.id === "core"){
+        if (ct > lt || !S.onboarded){ S = Object.assign(fresh(), v, { logs: S.logs, _st: S._st }); S._st.core = ct; changed = true; }
+        else if (lt > ct) DIRTY.add("core");
+      }
     });
-    SNAP = parts(); Object.keys(SNAP).forEach(id => { if (!seen.has(id)) DIRTY.add(id); });
-    CLOUD = col;
-    if (changed){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} applyTheme(); route(); toast("Stand geladen"); }
-    push();
-  } catch(e) {} finally { if (BOOT){ BOOT = false; SNAP = parts(); } }
+    SNAP = parts(); Object.keys(SNAP).forEach(id => { if (!seen.has(id) && (id === "core" || logHas(S.logs[id.slice(4)]))) DIRTY.add(id); });
+    CLOUD = col; initTry = 0;
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {}
+    if (changed){ applyTheme(); if (!document.body.classList.contains("agoge")) route(); }
+    BOOT = false; initRun = false; push();
+  } catch(e) {
+    BOOT = false; initRun = false; SYNC_FAIL = Math.max(SYNC_FAIL, 1); initTry++; syncBadge();
+    setTimeout(cloudInit, Math.min(60000, 5000 * 2 ** Math.min(4, initTry - 1)));
+  }
+}
+// Dauerhafte Anzeige, solange etwas nicht in der Cloud ist (nur im Claude-Artefakt; antippen = jetzt versuchen)
+function syncBadge(){
+  if (!window.claude?.use) return;
+  const el = document.getElementById("syncWarn"); if (!el) return;
+  const bad = !CLOUD ? initTry > 0 : (DIRTY.size > 0 && SYNC_FAIL > 0);
+  el.hidden = !bad;
 }
 // kleine Anzeige in der Kopfzeile (über dem Rang): Benaja sieht, dass nichts verloren geht, ohne dass sie Inhalt verdeckt
 let svT = null;
@@ -87,8 +131,9 @@ function flashSaved(text, warn = false){
   el.textContent = text; el.className = warn ? "warn on" : "on";
   clearTimeout(svT); svT = setTimeout(() => el.classList.remove("on"), 1800);
 }
-addEventListener("pagehide", () => push());
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") push(); });
+addEventListener("pagehide", () => flush());
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(); else if (CLOUD && DIRTY.size) push(); });
+addEventListener("online", () => { if (CLOUD) push(); });
 const logOf = k => (S.logs[k] ||= {done:false, light:false, pre:[], swaps:{}, sets:{}, extra:[]});
 
 // ---------- Programm ----------
@@ -303,6 +348,7 @@ function shell(){
   root.innerHTML = `
   <div class="app">
     <header class="hdr">${logoSVG(38)}<div class="brand">WINTER ARC<small>TRAINING · 52 WOCHEN</small></div><div class="sp"></div>
+      <button class="sync-warn" id="syncWarn" hidden aria-label="Nicht gesichert, jetzt sichern">⚠ nicht gesichert</button>
       <a class="rank-wrap" id="rankWrap" href="#heute" aria-label="Rang anzeigen"><span class="rank" id="rank"></span></a>
       <a class="icon-btn" href="#einstellungen" aria-label="Einstellungen">${ICON.gear}</a></header>
     <main id="view"></main>
@@ -803,7 +849,7 @@ function renderStep(steps, log, k){
     const b = $("#done");
     if (T && T.kind === "rest"){ stopTimers(); go(1); return; }
     const v = Math.max(0, Number(val.value) || 0);
-    log.sets[s.key] = {id: s.id, v, kg: showKg ? S.settings.hantelKg : null, t: Date.now(), block: s.block}; save();
+    log.sets[s.key] = {id: s.id, v, kg: showKg ? S.settings.hantelKg : null, t: Date.now(), block: s.block}; save(); flush();
     if (h.best != null && v > h.best) toast(`Neuer Rekord: ${v}! ${line("rekord")}`);
     if (!next){ clearInterval(clockIv); finish(log, k, steps); return; }
     stopTimers(); lockScreen();
@@ -848,7 +894,7 @@ function renderStep(steps, log, k){
 }
 function finish(log, k, steps){
   stopTimers();
-  log.done = true; log.finished = Date.now(); log.pos = 0; delete log.pauseAt; save();
+  log.done = true; log.finished = Date.now(); log.pos = 0; delete log.pauseAt; save(); flush();
   location.hash = "#bericht";
 }
 
@@ -1204,6 +1250,7 @@ function applyTheme(){ const t = S.settings.theme; if (t) document.documentEleme
 applyTheme();
 shell();
 route();
+document.getElementById("syncWarn")?.addEventListener("click", () => { toast("Sichere …"); if (!CLOUD) cloudInit(); else { SYNC_FAIL = 0; push(); } });
 cloudInit();
 if ("serviceWorker" in navigator && location.protocol === "https:" && document.querySelector('link[rel="manifest"]')){
   addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
